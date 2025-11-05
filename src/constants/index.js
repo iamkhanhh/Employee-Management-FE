@@ -2,7 +2,7 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 // App constants
-export const APP_NAME = 'Hệ thống Quản lý Nhân sự'
+export const APP_NAME = 'Employee Management System'
 export const APP_VERSION = '1.0.0'
 
 // Storage keys

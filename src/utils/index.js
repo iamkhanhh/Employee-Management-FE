@@ -35,6 +35,6 @@ export const getErrorMessage = (error) => {
   if (error?.message) {
     return error.message
   }
-  return 'Đã xảy ra lỗi. Vui lòng thử lại sau.'
+  return 'An error occurred. Please try again later.'
 }
 
