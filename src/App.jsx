@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
-import EmployeeList from "./pages/admin/employeeScreens/EmployeeList";
+import EmployeeList from "./pages/employeeScreens/EmployeeList";
 import DepartmentList from "./pages/admin/DepartmentList";
-import ContractList from "./pages/admin/contractScreens/ContractList";
+import ContractList from "./pages/contractScreens/ContractList";
 import AttendanceList from "./pages/admin/AttendanceList";
 import TaskList from "./pages/admin/TaskList";
 import PayrollList from "./pages/admin/PayrollList";
 import KPIList from "./pages/admin/KPIList";
-import EmployeeDetail from "./pages/admin/employeeScreens/EmployeeDetail";
-import ContractCreate from "./pages/admin/contractScreens/ContractCreate";
+import EmployeeDetail from "./pages/employeeScreens/EmployeeDetail";
+import ContractCreate from "./pages/contractScreens/ContractCreate";
 
 function App() {
   return (
