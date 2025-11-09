@@ -1,27 +1,34 @@
-import React from "react";
-import { DataGrid } from "@mui/x-data-grid";
-import { Paper } from "@mui/material";
+import React, { useState } from "react"; // 1. Import useState
+import { Calendar, momentLocalizer } from "react-big-calendar";
+import moment from 'moment'
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+const localizer = momentLocalizer(moment)
 
 export default function TaskList() {
-  const rows = [
-    { id: 1, task: "Build API", assigned_to: "Nguyen Van A", deadline: "2025-11-10", status: "In Progress" },
-    { id: 2, task: "Design UI", assigned_to: "Tran Thi B", deadline: "2025-11-15", status: "Completed" },
-  ];
+  // State cho việc điều hướng NGÀY (tháng trước/sau)
+  const [date, setDate] = useState(new Date());
 
-  const columns = [
-    { field: "id", headerName: "ID", width: 70 },
-    { field: "task", headerName: "Task", width: 200 },
-    { field: "assigned_to", headerName: "Assigned To", width: 180 },
-    { field: "deadline", headerName: "Deadline", width: 150 },
-    { field: "status", headerName: "Status", width: 150 },
-  ];
+  // 2. Thêm state để quản lý VIEW (Tháng/Tuần/Ngày)
+  const [view, setView] = useState('month'); // Đặt 'month' làm mặc định
+
+  const [events, setEvents] = useState([]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-800">Task Management</h1>
-      <Paper sx={{ height: 400, width: "100%" }}>
-        <DataGrid rows={rows} columns={columns} pageSizeOptions={[5, 10]} />
-      </Paper>
+    <div style={{padding: 20 }}>
+      <Calendar
+        localizer={localizer}
+        events={events}
+        startAccessor="start"
+        endAccessor="end"
+        toolbar={true} 
+        style={{ height: '100vh' }}
+        date={date} 
+        onNavigate={(newDate) => setDate(newDate)}
+        view={view} // Báo cho Calendar biết view hiện tại là gì
+        onView={(newView) => setView(newView)} // Khi bấm nút (Week, Day...), cập nhật state      
+        views={['month', 'week', 'day', 'agenda']} 
+      />
     </div>
   );
 }

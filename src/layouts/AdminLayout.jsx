@@ -233,7 +233,11 @@ export default function AdminLayout() {
                     </ListItemButton>
                     <Collapse in={openTimekeeping} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
+                            <ListItemButton                          
+                                sx={{ pl: 4 }} 
+                                component={NavLink} 
+                                to="/admin/tasks" 
+                            > 
                                 <ListItemIcon><ListAltIcon /></ListItemIcon>
                                 <ListItemText primary="Task list" />
                             </ListItemButton>
