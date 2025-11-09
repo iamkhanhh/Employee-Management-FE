@@ -10,21 +10,20 @@ import PayrollList from "./pages/admin/PayrollList";
 import KPIList from "./pages/admin/KPIList";
 import EmployeeDetail from "./pages/employeeScreens/EmployeeDetail";
 import ContractCreate from "./pages/contractScreens/ContractCreate";
+import AccountManagement from "./pages/admin/AccountManagement";
 
 function App() {
   return (
     <Routes>
       <Route path="/admin" element={<AdminLayout />}>
-        <Route path="Dashboard" element={<Dashboard />} />
-
+        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="account-management" element={<AccountManagement />} />
         <Route path="employees" element={<EmployeeList />} />
         <Route path="employees/:id" element={<EmployeeDetail />} />
-
         <Route path="departments" element={<DepartmentList />} />
-
         <Route path="contracts" element={<ContractList />} />
         <Route path="contracts/create" element={<ContractCreate />} />
-
         <Route path="attendance" element={<AttendanceList />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="payroll" element={<PayrollList />} />

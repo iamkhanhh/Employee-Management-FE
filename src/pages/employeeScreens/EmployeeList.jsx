@@ -10,14 +10,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  FormHelperText // <-- 1. THÊM IMPORT NÀY
 } from "@mui/material";
 import { DataGrid } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 
 const columns = [
+  // ... (Nội dung các cột không đổi)
   { field: 'id', headerName: 'ID', width: 90, type: 'number' },
   {
     field: 'full_name',
@@ -45,6 +47,17 @@ const columns = [
 ];
 const paginationModel = { page: 0, pageSize: 5 };
 
+// --- 2. THÊM DỮ LIỆU GIẢ CHO PHÒNG BAN ---
+const mockDepartments = [
+  { id: 1, name: 'Phòng Kỹ thuật (IT)' },
+  { id: 2, name: 'Phòng Nhân sự (HR)' },
+  { id: 3, name: 'Phòng Kế toán' },
+  { id: 4, name: 'Phòng Marketing' },
+  { id: 5, name: 'Ban Giám đốc' },
+];
+// -----------------------------------------
+
+
 export default function EmployeeList() {
   const [query, setQuery] = useState("");
   const [department, setDepartment] = useState("all");
@@ -56,8 +69,10 @@ export default function EmployeeList() {
   const [openHr, setOpenHr] = useState(true);
   const [openPayroll, setOpenPayroll] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [employees, setEmployees] = useState([
+    // ... (Dữ liệu employees không đổi)
     {
       id: 1,
       user_id: 11,
@@ -103,41 +118,51 @@ export default function EmployeeList() {
       created_at: e.created_at,
       updated_at: e.updated_at,
     }));
-  const [formName, setFormName] = useState("");
-  const [formEmail, setFormEmail] = useState("");
-  const [formRole, setFormRole] = useState("User");
-  const [formDepartment, setFormDepartment] = useState("");
-  const [formGroup, setFormGroup] = useState("");
-  const [formTimekeepingCode, setFormTimekeepingCode] = useState("");
-  const [formJoinDate, setFormJoinDate] = useState("");
+    
+  const [formFullName, setFormFullName] = useState("");
+  const [formUserId, setFormUserId] = useState("");
+  const [formDeptId, setFormDeptId] = useState(""); // State này vẫn giữ nguyên
+  const [formGender, setFormGender] = useState("");
+  const [formDob, setFormDob] = useState("");
+  const [formPhoneNumber, setFormPhoneNumber] = useState("");
+  const [formAddress, setFormAddress] = useState("");
+  const [formHireDate, setFormHireDate] = useState("");
+  const [formStatus, setFormStatus] = useState("active");
+  const [formRoleInDept, setFormRoleInDept] = useState("Staff");
 
   const resetForm = () => {
-    setFormName("");
-    setFormEmail("");
-    setFormRole("User");
-    setFormDepartment("");
-    setFormGroup("");
-    setFormTimekeepingCode("");
-    setFormJoinDate("");
+    setFormFullName("");
+    setFormUserId("");
+    setFormDeptId("");
+    setFormGender("");
+    setFormDob("");
+    setFormPhoneNumber("");
+    setFormAddress("");
+    setFormHireDate("");
+    setFormStatus("active");
+    setFormRoleInDept("Staff");
   };
 
   const handleSaveEmployee = (e) => {
     e.preventDefault();
-    if (!formName || !formEmail) return;
+    if (!formFullName || !formUserId || !formDeptId) {
+        console.error("Missing required fields: Full Name, User ID, Dept ID");
+        return;
+    }
 
     const nextId = employees.length ? Math.max(...employees.map((e) => e.id)) + 1 : 1;
     const newEmployee = {
       id: nextId,
-      user_id: 100 + nextId,
-      dept_id: formDepartment ? 1 : 0,
-      full_name: formName,
-      gender: '',
-      dob: '',
-      phone_number: '',
-      address: '',
-      hire_date: formJoinDate || new Date().toISOString().slice(0, 10),
-      status: 'active',
-      role_in_dept: formRole || 'Staff',
+      user_id: parseInt(formUserId, 10) || null,
+      dept_id: parseInt(formDeptId, 10) || null, // Vẫn lưu Dept ID là một con số
+      full_name: formFullName,
+      gender: formGender,
+      dob: formDob,
+      phone_number: formPhoneNumber,
+      address: formAddress,
+      hire_date: formHireDate || new Date().toISOString().slice(0, 10),
+      status: formStatus,
+      role_in_dept: formRoleInDept,
       created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
       updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
       is_deleted: false,
@@ -147,6 +172,7 @@ export default function EmployeeList() {
     setOpenAdd(false);
     resetForm();
   };
+
   const handleToggleHr = () => {
     setOpenHr(!openHr);
   };
@@ -154,13 +180,18 @@ export default function EmployeeList() {
     setOpenPayroll(!openPayroll);
   };
 
+  const handleRowClick = (params) => {
+    navigate(`/admin/employees/${params.row.id}`);
+  };
+
   return (
       <div className="min-h-screen flex bg-linear-to-br from-white via-gray-50 to-white">
-        {/* Sidebar */}
         {/* Main content */}
         <div className="flex-1 flex items-start justify-center">
           <div className="mx-auto w-full max-w-6xl my-6">
             <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb' }}>
+          
+          {/* ... (Phần Filters và Actions không đổi) ... */}
           <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Employee List</h1>
 
           {/* Filters grid */}
@@ -229,64 +260,117 @@ export default function EmployeeList() {
                   columns={columns}
                   initialState={{ pagination: { paginationModel } }}
                   pageSizeOptions={[5, 10]}
-                  checkboxSelection                  
-                  sx={{ border: 0 }}
+                  checkboxSelection
+                  onRowClick={handleRowClick}
+                  sx={{ 
+                    border: 0,
+                    '& .MuiDataGrid-row': {
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                      }
+                    }
+                  }}
                 />
             </Paper>
             </Paper>
           </div>
         </div>
-       <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="sm" fullWidth>
+        
+       {/* --- Cập nhật Dialog Add Employee --- */}
+       <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="md" fullWidth>
         <DialogTitle>Add employee</DialogTitle>
         <form onSubmit={handleSaveEmployee}>
           <DialogContent dividers>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TextField
                 label="Full name"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
+                value={formFullName}
+                onChange={(e) => setFormFullName(e.target.value)}
                 required
               />
               <TextField
-                label="Email"
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
+                label="User ID"
+                type="number"
+                value={formUserId}
+                onChange={(e) => setFormUserId(e.target.value)}
                 required
+                helperText="ID của tài khoản (user account)"
               />
-              <FormControl>
-                <InputLabel>Role</InputLabel>
+              
+              {/* --- 3. BẮT ĐẦU THAY ĐỔI: Thay thế TextField bằng Select --- */}
+              <FormControl required>
+                <InputLabel>Department</InputLabel>
                 <Select
-                  label="Role"
-                  value={formRole}
-                  onChange={(e) => setFormRole(e.target.value)}
+                  label="Department"
+                  value={formDeptId}
+                  onChange={(e) => setFormDeptId(e.target.value)}
                 >
-                  <MenuItem value="User">User</MenuItem>
-                  <MenuItem value="Admin">Admin</MenuItem>
+                  {/* Lặp qua dữ liệu giả để tạo MenuItem */}
+                  {mockDepartments.map((dept) => (
+                    <MenuItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <FormHelperText>Chọn phòng ban</FormHelperText>
+              </FormControl>
+              {/* --- KẾT THÚC THAY ĐỔI --- */}
+
+              <FormControl>
+                <InputLabel>Gender</InputLabel>
+                <Select
+                  label="Gender"
+                  value={formGender}
+                  onChange={(e) => setFormGender(e.target.value)}
+                >
+                  <MenuItem value="Male">Male</MenuItem>
+                  <MenuItem value="Female">Female</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
                 </Select>
               </FormControl>
               <TextField
-                label="Timekeeping code"
-                value={formTimekeepingCode}
-                onChange={(e) => setFormTimekeepingCode(e.target.value)}
-                placeholder="e.g. 0001"
-              />
-              <TextField
-                label="Department"
-                value={formDepartment}
-                onChange={(e) => setFormDepartment(e.target.value)}
-              />
-              <TextField
-                label="Work group"
-                value={formGroup}
-                onChange={(e) => setFormGroup(e.target.value)}
-              />
-              <TextField
-                label="Join date"
+                label="Date of birth"
                 type="date"
-                value={formJoinDate}
-                onChange={(e) => setFormJoinDate(e.target.value)}
+                value={formDob}
+                onChange={(e) => setFormDob(e.target.value)}
                 InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Phone number"
+                value={formPhoneNumber}
+                onChange={(e) => setFormPhoneNumber(e.target.value)}
+              />
+              <TextField
+                label="Hire date"
+                type="date"
+                value={formHireDate}
+                onChange={(e) => setFormHireDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+               <FormControl>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  label="Status"
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value)}
+                >
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="inactive">Inactive</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Role in dept"
+                value={formRoleInDept}
+                onChange={(e) => setFormRoleInDept(e.target.value)}
+                placeholder="e.g. Staff, Manager"
+              />
+              <TextField
+                label="Address"
+                value={formAddress}
+                onChange={(e) => setFormAddress(e.target.value)}
+                className="md:col-span-2"
               />
             </div>
           </DialogContent>
