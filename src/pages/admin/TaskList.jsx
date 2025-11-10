@@ -2,21 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import TaskCalendar from '../../components/Task/TaskCalendar';
+import TaskDialog from '../../components/Task/TaskDialog';
 import {
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Typography,
   Box,
-  MenuItem,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { mockEmployees as globalMockEmployees } from '../../data/mockData';
 
 const localizer = momentLocalizer(moment);
@@ -25,6 +17,19 @@ export default function TaskList() {
   const [date, setDate] = useState(new Date());
   const [view, setView] = useState("month");
   const [events, setEvents] = useState([]);
+
+  // Inline event style getter to override default/global rbc styles
+  const eventStyleGetter = (event, start, end, isSelected) => {
+    const style = {
+      backgroundColor: '#60a5fa',
+      color: '#ffffff',
+      border: 'none',
+      boxShadow: 'none',
+      borderRadius: '6px',
+      padding: '2px 6px',
+    };
+    return { style };
+  };
 
   // Dialog control
   const [open, setOpen] = useState(false);
@@ -37,7 +42,7 @@ export default function TaskList() {
     start: "",
     end: "",
     description: "",
-    assignee: "",
+    assignees: [],
   });
 
   // Danh sách nhân viên (lấy từ mockData nếu có)
@@ -68,6 +73,21 @@ export default function TaskList() {
     };
   }, []);
 
+  // Local function to open edit dialog for a given event object
+  const openEditDialogForEvent = (eventObj) => {
+    const assigneesArr = Array.isArray(eventObj.assignees) ? eventObj.assignees : (eventObj.assignees ? eventObj.assignees.toString().split(/,\s*/).filter(Boolean) : []);
+    setCurrentTask({
+      id: eventObj.id,
+      title: eventObj.originalTitle || eventObj.title,
+      start: moment(eventObj.start).format("YYYY-MM-DDTHH:mm"),
+      end: moment(eventObj.end).format("YYYY-MM-DDTHH:mm"),
+      description: eventObj.description,
+      assignees: assigneesArr,
+    });
+    setEditMode(true);
+    setOpen(true);
+  };
+
   // Mở dialog thêm task
   const handleClickOpen = () => {
     setCurrentTask({
@@ -76,30 +96,24 @@ export default function TaskList() {
       start: "",
       end: "",
       description: "",
-      assignee: "",
+      assignees: [],
     });
     setEditMode(false);
     setOpen(true);
   };
 
-  // Mở dialog khi click vào event để chỉnh sửa
+  // Mở dialog khi click vào event (fallback)
   const handleSelectEvent = (event) => {
-    setCurrentTask({
-      id: event.id,
-      title: event.originalTitle || event.title,
-      start: moment(event.start).format("YYYY-MM-DDTHH:mm"),
-      end: moment(event.end).format("YYYY-MM-DDTHH:mm"),
-      description: event.description,
-      assignee: event.assignee,
-    });
-    setEditMode(true);
-    setOpen(true);
+    openEditDialogForEvent(event);
   };
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    // For multiple select, value will be array
     setCurrentTask((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -110,15 +124,17 @@ export default function TaskList() {
       return;
     }
 
+    const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
+
     const newEvent = {
       id: Date.now(),
-      title: `${currentTask.title}${currentTask.assignee ? ` — ${currentTask.assignee}` : ''}`,
-      // keep originalTitle so we can edit title separately from assignee
+      // store originalTitle and assignees separately; title used for quick display in calendar is generated from them
       originalTitle: currentTask.title,
+      title: `${currentTask.title}${assignees && assignees.length ? ` — ${assignees.join(', ')}` : ''}`,
       start: new Date(currentTask.start),
       end: new Date(currentTask.end),
       description: currentTask.description,
-      assignee: currentTask.assignee,
+      assignees,
     };
 
     setEvents((prev) => [...prev, newEvent]);
@@ -127,17 +143,19 @@ export default function TaskList() {
 
   // Cập nhật task
   const handleUpdateTask = () => {
+    const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
+
     setEvents((prev) =>
       prev.map((e) =>
         e.id === currentTask.id
           ? {
               ...e,
-              title: `${currentTask.title}${currentTask.assignee ? ` — ${currentTask.assignee}` : ''}`,
               originalTitle: currentTask.title,
+              title: `${currentTask.title}${assignees && assignees.length ? ` — ${assignees.join(', ')}` : ''}`,
               start: new Date(currentTask.start),
               end: new Date(currentTask.end),
               description: currentTask.description,
-              assignee: currentTask.assignee,
+              assignees,
             }
           : e
       )
@@ -149,6 +167,7 @@ export default function TaskList() {
   const handleDeleteTask = (id) => {
     if (window.confirm("Bạn có chắc muốn xóa nhiệm vụ này?")) {
       setEvents((prev) => prev.filter((e) => e.id !== id));
+      setOpen(false);
     }
   };
 
@@ -163,102 +182,27 @@ export default function TaskList() {
         </Button>
       </Box>
 
-      <Calendar
-        localizer={localizer}
+      <TaskCalendar
         events={events}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: "80vh", borderRadius: 8 }}
-        toolbar={true}
         date={date}
-        onNavigate={(newDate) => setDate(newDate)}
+        setDate={setDate}
         view={view}
-        onView={(newView) => setView(newView)}
-        views={["month", "week", "day", "agenda"]}
+        setView={setView}
         onSelectEvent={handleSelectEvent}
+        eventStyleGetter={eventStyleGetter}
       />
 
       {/* Dialog CRUD Task */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>
-          {editMode ? "Edit Task" : "Add New Task"}
-        </DialogTitle>
-        <DialogContent dividers>
-          <TextField
-            label="Task Title"
-            name="title"
-            fullWidth
-            margin="normal"
-            value={currentTask.title}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Start Date"
-            name="start"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={currentTask.start}
-            onChange={handleChange}
-          />
-          <TextField
-            label="End Date"
-            name="end"
-            type="datetime-local"
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={currentTask.end}
-            onChange={handleChange}
-          />
-          <TextField
-            label="Description"
-            name="description"
-            fullWidth
-            margin="normal"
-            multiline
-            rows={3}
-            value={currentTask.description}
-            onChange={handleChange}
-          />
-          <TextField
-            select
-            label="Assignee"
-            name="assignee"
-            fullWidth
-            margin="normal"
-            value={currentTask.assignee}
-            onChange={handleChange}
-          >
-            {employees.map((emp) => (
-              <MenuItem key={emp} value={emp}>
-                {emp}
-              </MenuItem>
-            ))}
-          </TextField>
-        </DialogContent>
-
-        <DialogActions>
-          {editMode && (
-            <Tooltip title="Delete Task">
-              <IconButton
-                color="error"
-                onClick={() => handleDeleteTask(currentTask.id)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={editMode ? handleUpdateTask : handleAddTask}
-          >
-            {editMode ? "Update" : "Save"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <TaskDialog
+        open={open}
+        onClose={handleClose}
+        currentTask={currentTask}
+        onChange={handleChange}
+        onSave={editMode ? handleUpdateTask : handleAddTask}
+        onDelete={handleDeleteTask}
+        editMode={editMode}
+        employees={employees}
+      />
     </Box>
   );
 }
