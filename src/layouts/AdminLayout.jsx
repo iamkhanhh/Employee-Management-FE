@@ -115,9 +115,9 @@ export default function AdminLayout() {
                 <Divider />
 
                 <List component="nav" sx={{ width: '100%', bgcolor: 'background.paper', pt: 1 }}>
-                    <ListItemButton 
-                        component={NavLink} 
-                        to="/admin/dashboard" 
+                    <ListItemButton
+                        component={NavLink}
+                        to="/admin/dashboard"
                         selected={location.pathname === '/admin/dashboard' || location.pathname === '/admin'}
                         sx={{
                             '&.Mui-selected': {
@@ -142,9 +142,9 @@ export default function AdminLayout() {
                     <Divider sx={{ my: 1 }} />
 
                     {/* Account Management */}
-                    <ListItemButton 
-                        component={NavLink} 
-                        to="/admin/account-management" 
+                    <ListItemButton
+                        component={NavLink}
+                        to="/admin/account-management"
                         selected={location.pathname === '/admin/account-management'}
                         sx={{
                             '&.Mui-selected': {
@@ -169,7 +169,7 @@ export default function AdminLayout() {
                     <Divider sx={{ my: 1 }} />
 
                     {/* HR Management */}
-                    <ListItemButton 
+                    <ListItemButton
                         onClick={() => setOpenHR(!openHR)}
                         sx={{
                             '&:hover': {
@@ -183,45 +183,58 @@ export default function AdminLayout() {
                     </ListItemButton>
                     <Collapse in={openHR} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
-                            <ListItemButton 
-                                sx={{ pl: 4 }} 
-                                component={NavLink} 
-                                to="/admin/employees" 
+                            <ListItemButton
+                                sx={{ pl: 4 }}
+                                component={NavLink}
+                                to="/admin/employees"
                                 selected={location.pathname.startsWith('/admin/employees')}
                                 className={location.pathname.startsWith('/admin/employees') ? 'selected' : ''}
                             >
                                 <ListItemIcon><PeopleIcon /></ListItemIcon>
                                 <ListItemText primary="Employee list" />
                             </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
+
+                            <ListItemButton
+                                sx={{ pl: 4 }}
+                                component={NavLink}
+                                to="/admin/departments"
+                                selected={location.pathname.startsWith('/admin/departments')}
+                            >
                                 <ListItemIcon><AccountTreeIcon /></ListItemIcon>
                                 <ListItemText primary="Department management" />
                             </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><BadgeIcon /></ListItemIcon>
-                                <ListItemText primary="Position management" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><WorkHistoryIcon /></ListItemIcon>
-                                <ListItemText primary="Assign employees to departments" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><ImportExportIcon /></ListItemIcon>
-                                <ListItemText primary="Import/Export employees" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><FolderOpenIcon /></ListItemIcon>
-                                <ListItemText primary="Employee documents" />
-                            </ListItemButton>
-                                    <ListItemButton 
-                                sx={{ pl: 4 }} 
-                                component={NavLink} 
-                                to="/admin/contracts" 
+
+                            <ListItemButton
+                                sx={{ pl: 4 }}
+                                component={NavLink}
+                                to="/admin/contracts"
                                 selected={location.pathname.startsWith('/admin/contracts')}
                             >
                                 <ListItemIcon><SummarizeIcon /></ListItemIcon>
                                 <ListItemText primary="Contract management" />
                             </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} disabled>
+                                <ListItemIcon><BadgeIcon /></ListItemIcon>
+                                <ListItemText primary="Position management" />
+                            </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} disabled>
+                                <ListItemIcon><WorkHistoryIcon /></ListItemIcon>
+                                <ListItemText primary="Assign employees to departments" />
+                            </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} disabled>
+                                <ListItemIcon><ImportExportIcon /></ListItemIcon>
+                                <ListItemText primary="Import/Export employees" />
+                            </ListItemButton>
+
+                            <ListItemButton sx={{ pl: 4 }} disabled>
+                                <ListItemIcon><FolderOpenIcon /></ListItemIcon>
+                                <ListItemText primary="Employee documents" />
+                            </ListItemButton>
+
+
                         </List>
                     </Collapse>
 
@@ -336,8 +349,8 @@ export default function AdminLayout() {
                         </List>
                     </Collapse>
                     <Divider sx={{ my: 1 }} />
-                    <ListItemButton 
-                        component={NavLink} 
+                    <ListItemButton
+                        component={NavLink}
                         to="/login"
                         sx={{
                             mt: 1,
@@ -371,11 +384,11 @@ export default function AdminLayout() {
                     }}
                 >
                     <Toolbar sx={{ minHeight: '70px !important' }}>
-                        <IconButton 
-                            color="inherit" 
-                            edge="start" 
-                            onClick={() => setOpen(!open)} 
-                            sx={{ 
+                        <IconButton
+                            color="inherit"
+                            edge="start"
+                            onClick={() => setOpen(!open)}
+                            sx={{
                                 mr: 2,
                                 '&:hover': {
                                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -398,19 +411,19 @@ export default function AdminLayout() {
 
                 {/* Main content */}
                 <Toolbar />
-                <Box 
-                    component="main" 
-                    sx={{ 
+                <Box
+                    component="main"
+                    sx={{
                         p: 3,
                         background: 'linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%)',
                         minHeight: 'calc(100vh - 70px)',
                     }}
                 >
                     {/* Breadcrumb */}
-                    <Box 
-                        sx={{ 
-                            mb: 3, 
-                            display: "flex", 
+                    <Box
+                        sx={{
+                            mb: 3,
+                            display: "flex",
                             alignItems: "center",
                             p: 2,
                             backgroundColor: 'white',
@@ -420,8 +433,8 @@ export default function AdminLayout() {
                     >
                         <Typography
                             variant="body1"
-                            sx={{ 
-                                cursor: "pointer", 
+                            sx={{
+                                cursor: "pointer",
                                 fontWeight: 600,
                                 color: '#2563eb',
                                 '&:hover': {

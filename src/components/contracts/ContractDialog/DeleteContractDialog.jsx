@@ -4,16 +4,16 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography }
 const DeleteContractDialog = ({ open, onClose, onConfirm, contractName }) => {
     return (
         <Dialog open={open} onClose={onClose}>
-            <DialogTitle>Xóa hợp đồng</DialogTitle>
+            <DialogTitle>Delete Contract</DialogTitle>
             <DialogContent>
                 <Typography>
-                    Bạn có chắc muốn xóa hợp đồng <strong>{contractName}</strong> không?
+                    Are you sure you want to delete the contract <strong>{contractName}</strong>?
                 </Typography>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Hủy</Button>
+                <Button onClick={onClose}>Cancel</Button>
                 <Button color="error" onClick={onConfirm}>
-                    Xóa
+                    Delete
                 </Button>
             </DialogActions>
         </Dialog>

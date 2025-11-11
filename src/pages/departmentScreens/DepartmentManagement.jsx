@@ -8,7 +8,6 @@ import {
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import HomeIcon from '@mui/icons-material/Home';
-import DepartmentStats from '../../components/departments/DepartmentList/DepartmentStats';
 import DepartmentFilters from '../../components/departments/DepartmentList/DepartmentFilters';
 import DepartmentTable from '../../components/departments/DepartmentList/DepartmentTable';
 import AddDepartmentDialog from '../../components/departments/DepartmentDialog/AddDepartmentDialog';
@@ -43,11 +42,11 @@ const DepartmentManagement = () => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    // Thêm state cho ViewDialog
+    // State for ViewDialog
     const [openViewDialog, setOpenViewDialog] = useState(false);
     const [viewDepartment, setViewDepartment] = useState(null);
 
-    // Handler khi click xem chi tiết
+    // Handler when clicking view details
     const handleView = (department) => {
         setViewDepartment(department);
         setOpenViewDialog(true);
@@ -101,11 +100,6 @@ const DepartmentManagement = () => {
 
         setSelectedDepartments(newSelected);
     };
-
-    // const handleView = (department) => {
-    //     console.log('View department:', department);
-    //     // Navigate to detail page or open detail dialog
-    // };
 
     const handleEdit = (department) => {
         setCurrentDepartment(department);
@@ -169,26 +163,21 @@ const DepartmentManagement = () => {
                     color="inherit"
                 >
                     <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-                    Trang chủ
+                    Home
                 </Link>
                 <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
-                    Quản lý phòng ban
+                    Department Management
                 </Typography>
             </Breadcrumbs>
 
             {/* Header */}
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2', mb: 1 }}>
-                    Quản lý Phòng ban
+                    Department Management
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
-                    Quản lý cơ cấu tổ chức và phòng ban trong công ty
+                    Manage company organization structure and departments
                 </Typography>
-            </Box>
-
-            {/* Stats Cards */}
-            <Box sx={{ mb: 3 }}>
-                <DepartmentStats stats={stats} />
             </Box>
 
             {/* Filters */}
@@ -257,7 +246,6 @@ const DepartmentManagement = () => {
                 department={viewDepartment}
                 onEdit={handleEdit}
             />
-
         </Box>
     );
 };

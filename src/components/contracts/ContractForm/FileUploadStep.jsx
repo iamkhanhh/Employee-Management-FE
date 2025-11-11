@@ -1,4 +1,3 @@
-// src/components/contracts/ContractForm/FileUploadStep.jsx
 import React from 'react';
 import {
   Grid,
@@ -25,7 +24,6 @@ const FileUploadStep = ({
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file
       const { ALLOWED_TYPES, MAX_SIZE } = FILE_UPLOAD_CONFIG;
       
       if (!ALLOWED_TYPES.includes(file.type)) {
@@ -71,10 +69,10 @@ const FileUploadStep = ({
           <label htmlFor="contract-file-upload" style={{ cursor: 'pointer' }}>
             <CloudUploadIcon sx={{ fontSize: 48, color: '#1976d2', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
-              {contractData.file ? contractData.file.name : "Nhấn để tải lên file hợp đồng"}
+              {contractData.file ? contractData.file.name : "Click to upload contract file"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Hỗ trợ file PDF, Word (Tối đa 5MB)
+              Supports PDF, Word files (Max 5MB)
             </Typography>
             {errors.file && (
               <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
@@ -91,7 +89,7 @@ const FileUploadStep = ({
                 sx={{ height: 8, borderRadius: 4 }}
               />
               <Typography variant="body2" sx={{ mt: 1 }}>
-                {uploadProgress}% đã tải lên
+                {uploadProgress}% uploaded
               </Typography>
             </Box>
           )}
@@ -112,7 +110,7 @@ const FileUploadStep = ({
                 </IconButton>
               }
             >
-              File đã được tải lên thành công!
+              File uploaded successfully!
             </Alert>
           )}
         </Paper>
@@ -121,7 +119,7 @@ const FileUploadStep = ({
       <Grid item xs={12}>
         <Alert severity="info" icon={<DescriptionIcon />}>
           <Typography variant="body2">
-            <strong>Lưu ý:</strong> File hợp đồng nên được scan rõ ràng và có đầy đủ chữ ký của các bên.
+            <strong>Note:</strong> The contract file should be clearly scanned and include all parties’ signatures.
           </Typography>
         </Alert>
       </Grid>

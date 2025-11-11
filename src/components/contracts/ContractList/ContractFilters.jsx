@@ -1,6 +1,4 @@
 import React from 'react';
-
-// src/components/contracts/ContractList/ContractFilters.jsx
 import { CONTRACT_TYPES, CONTRACT_STATUS } from '../../../constants/contractConstants';
 import { mockDepartments } from '../../../data/mockData';
 
@@ -37,8 +35,8 @@ const ContractFilters = ({
   selectedCount
 }) => {
   return (
-    <Paper sx={{ 
-      p: 3, 
+    <Paper sx={{
+      p: 3,
       mb: 3,
       borderRadius: 2,
       boxShadow: '0 3px 10px rgba(0,0,0,0.1)'
@@ -46,16 +44,17 @@ const ContractFilters = ({
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <FilterListIcon sx={{ mr: 1, color: '#1976d2' }} />
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-          Bộ lọc tìm kiếm
+          Search Filters
         </Typography>
       </Box>
-      
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={3}>
+
+      <Grid container spacing={4}>
+        {/* Row 1: Search, Department, Contract Type, Status */}
+        <Grid item xs={12} md={12}>
           <TextField
             name="search"
-            label="Tìm kiếm"
-            placeholder="Nhập tên, email, SĐT..."
+            label="Search"
+            placeholder="Enter name, email, phone..."
             fullWidth
             value={filters.search}
             onChange={(e) => onFilterChange('search', e.target.value)}
@@ -66,26 +65,19 @@ const ContractFilters = ({
                 </InputAdornment>
               ),
             }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                '&:hover fieldset': {
-                  borderColor: '#1976d2',
-                },
-              }
-            }}
           />
         </Grid>
 
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={3}>
           <TextField
             select
             name="department"
-            label="Phòng ban"
+            label="Department"
             fullWidth
             value={filters.department || 'all'}
             onChange={(e) => onFilterChange('department', e.target.value)}
           >
-            <MenuItem value="all">Tất cả</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             {mockDepartments
               .filter(d => !d.is_deleted)
               .map((dept) => (
@@ -96,43 +88,44 @@ const ContractFilters = ({
           </TextField>
         </Grid>
 
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={3}>
           <TextField
             select
             name="contractType"
-            label="Loại hợp đồng"
+            label="Contract Type"
             fullWidth
             value={filters.contractType}
             onChange={(e) => onFilterChange('contractType', e.target.value)}
           >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Toàn thời gian</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Bán thời gian</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Full-time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Part-time</MenuItem>
           </TextField>
         </Grid>
 
-        <Grid item xs={12} md={2}>
+        <Grid item xs={12} md={3}>
           <TextField
             select
             name="status"
-            label="Trạng thái"
+            label="Status"
             fullWidth
             value={filters.status}
             onChange={(e) => onFilterChange('status', e.target.value)}
           >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Đang hiệu lực</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.EXPIRED}>Hết hạn</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.PENDING}>Chờ duyệt</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.TERMINATED}>Đã chấm dứt</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Active</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.EXPIRED}>Expired</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.PENDING}>Pending</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.TERMINATED}>Terminated</MenuItem>
           </TextField>
         </Grid>
 
-        <Grid item xs={12} md={1.5}>
+        {/* Row 2: From Date, To Date */}
+        <Grid item xs={12} md={6}>
           <TextField
             type="date"
             name="startDate"
-            label="Từ ngày"
+            label="From Date"
             InputLabelProps={{ shrink: true }}
             fullWidth
             value={filters.startDate}
@@ -140,11 +133,11 @@ const ContractFilters = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={1.5}>
+        <Grid item xs={12} md={6}>
           <TextField
             type="date"
             name="endDate"
-            label="Đến ngày"
+            label="To Date"
             InputLabelProps={{ shrink: true }}
             fullWidth
             value={filters.endDate}
@@ -153,22 +146,23 @@ const ContractFilters = ({
         </Grid>
       </Grid>
 
+      {/* Search / Clear Buttons */}
       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
         <Button
           variant="contained"
           startIcon={<SearchIcon />}
           onClick={onSearch}
         >
-          Tìm kiếm
+          Search
         </Button>
-        
+
         <Button
           variant="outlined"
           startIcon={<ClearIcon />}
           onClick={onClearFilters}
           color="error"
         >
-          Xóa lọc
+          Clear Filters
         </Button>
       </Stack>
 
@@ -183,16 +177,16 @@ const ContractFilters = ({
             boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
           }}
         >
-          Thêm hợp đồng
+          Add Contract
         </Button>
-        
+
         <Button
           variant="outlined"
           startIcon={<FileUploadIcon />}
           color="info"
           onClick={onImport}
         >
-          Nhập Excel
+          Import Excel
         </Button>
 
         <Button
@@ -201,7 +195,7 @@ const ContractFilters = ({
           color="success"
           onClick={onExport}
         >
-          Xuất báo cáo
+          Export Report
         </Button>
 
         {selectedCount > 0 && (
@@ -211,7 +205,7 @@ const ContractFilters = ({
             color="error"
             onClick={onDeleteSelected}
           >
-            Xóa ({selectedCount})
+            Delete ({selectedCount})
           </Button>
         )}
       </Box>

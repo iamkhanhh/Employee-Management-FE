@@ -42,7 +42,7 @@ const DepartmentFilters = ({
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <FilterListIcon sx={{ mr: 1, color: '#1976d2' }} />
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-          Bộ lọc tìm kiếm
+          Search Filters
         </Typography>
       </Box>
       
@@ -50,8 +50,8 @@ const DepartmentFilters = ({
         <Grid item xs={12} md={4}>
           <TextField
             name="search"
-            label="Tìm kiếm phòng ban"
-            placeholder="Nhập tên phòng ban..."
+            label="Search Department"
+            placeholder="Enter department name..."
             fullWidth
             value={filters.search}
             onChange={(e) => onFilterChange('search', e.target.value)}
@@ -84,14 +84,14 @@ const DepartmentFilters = ({
           <TextField
             select
             name="status"
-            label="Trạng thái"
+            label="Status"
             fullWidth
             value={filters.status}
             onChange={(e) => onFilterChange('status', e.target.value)}
           >
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value="active">Đang hoạt động</MenuItem>
-            <MenuItem value="inactive">Ngừng hoạt động</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="inactive">Inactive</MenuItem>
           </TextField>
         </Grid>
 
@@ -99,14 +99,14 @@ const DepartmentFilters = ({
           <TextField
             select
             name="sortBy"
-            label="Sắp xếp theo"
+            label="Sort By"
             fullWidth
             value={filters.sortBy}
             onChange={(e) => onFilterChange('sortBy', e.target.value)}
           >
-            <MenuItem value="name">Tên phòng ban</MenuItem>
-            <MenuItem value="employeeCount">Số nhân viên</MenuItem>
-            <MenuItem value="createdDate">Ngày tạo</MenuItem>
+            <MenuItem value="name">Department Name</MenuItem>
+            <MenuItem value="employeeCount">Employee Count</MenuItem>
+            <MenuItem value="createdDate">Created Date</MenuItem>
           </TextField>
         </Grid>
 
@@ -121,10 +121,10 @@ const DepartmentFilters = ({
                 boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
               }}
             >
-              Tìm kiếm
+              Search
             </Button>
             
-            <Tooltip title="Làm mới">
+            <Tooltip title="Refresh">
               <IconButton 
                 onClick={onClearFilters}
                 sx={{ 
@@ -151,7 +151,7 @@ const DepartmentFilters = ({
               boxShadow: '0 3px 5px 2px rgba(76, 175, 80, .3)',
             }}
           >
-            Thêm phòng ban
+            Add Department
           </Button>
 
           {selectedCount > 0 && (
@@ -161,7 +161,7 @@ const DepartmentFilters = ({
               color="error"
               onClick={onDeleteSelected}
             >
-              Xóa ({selectedCount})
+              Delete ({selectedCount})
             </Button>
           )}
         </Box>
@@ -171,7 +171,7 @@ const DepartmentFilters = ({
           startIcon={<FileDownloadIcon />}
           color="success"
         >
-          Xuất Excel
+          Export Excel
         </Button>
       </Box>
     </Paper>

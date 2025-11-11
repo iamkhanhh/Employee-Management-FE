@@ -12,7 +12,6 @@ import {
   Avatar,
   Chip,
   IconButton,
-  Tooltip,
   Stack,
   Button,
   TextField,
@@ -24,9 +23,9 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  AvatarGroup,
   LinearProgress,
-  alpha
+  alpha,
+  Divider
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -38,7 +37,6 @@ import {
   MoreVert as MoreVertIcon,
   SwapHoriz as SwapHorizIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
   WorkHistory as WorkHistoryIcon,
   Assessment as AssessmentIcon,
   Group as GroupIcon
@@ -68,9 +66,9 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
 
   const getRoleChip = (role) => {
     const roleConfig = {
-      HEAD: { label: 'Trưởng phòng', color: 'error', icon: '👑' },
-      DEPUTY: { label: 'Phó phòng', color: 'warning', icon: '⭐' },
-      STAFF: { label: 'Nhân viên', color: 'default', icon: '👤' }
+      HEAD: { label: 'Department Head', color: 'error', icon: '👑' },
+      DEPUTY: { label: 'Deputy Head', color: 'warning', icon: '⭐' },
+      STAFF: { label: 'Staff', color: 'default', icon: '👤' }
     };
     const config = roleConfig[role] || roleConfig.STAFF;
     return (
@@ -85,9 +83,9 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
 
   const getStatusChip = (status) => {
     return status === 'ACTIVE' ? (
-      <Chip label="Đang làm việc" color="success" size="small" variant="outlined" />
+      <Chip label="Active" color="success" size="small" variant="outlined" />
     ) : (
-      <Chip label="Đã nghỉ" color="error" size="small" variant="outlined" />
+      <Chip label="Inactive" color="error" size="small" variant="outlined" />
     );
   };
 
@@ -102,10 +100,10 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
   };
 
   const performanceData = [
-    { name: 'Xuất sắc', value: 5, color: '#4caf50' },
-    { name: 'Tốt', value: 12, color: '#2196f3' },
-    { name: 'Đạt', value: 8, color: '#ff9800' },
-    { name: 'Cần cải thiện', value: 2, color: '#f44336' }
+    { name: 'Excellent', value: 5, color: '#4caf50' },
+    { name: 'Good', value: 12, color: '#2196f3' },
+    { name: 'Satisfactory', value: 8, color: '#ff9800' },
+    { name: 'Needs Improvement', value: 2, color: '#f44336' }
   ];
 
   return (
@@ -115,10 +113,10 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-              Nhân viên {department?.dept_name}
+              {department?.dept_name} Employees
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Quản lý và theo dõi nhân viên trong phòng ban
+              Manage and track employees in this department
             </Typography>
           </Box>
           <Button
@@ -129,7 +127,7 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
               boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
             }}
           >
-            Thêm nhân viên
+            Add Employee
           </Button>
         </Stack>
 
@@ -147,16 +145,16 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
                     {stats.total}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Tổng số nhân viên
+                    Total Employees
                   </Typography>
                   <Stack direction="row" spacing={1}>
                     <Chip
-                      label={`Nam: ${stats.male}`}
+                      label={`Male: ${stats.male}`}
                       size="small"
                       sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                     />
                     <Chip
-                      label={`Nữ: ${stats.female}`}
+                      label={`Female: ${stats.female}`}
                       size="small"
                       sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
                     />
@@ -170,19 +168,19 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
             <Card>
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Cơ cấu chức vụ
+                  Role Distribution
                 </Typography>
                 <Stack spacing={1}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">👑 Trưởng phòng</Typography>
+                    <Typography variant="body2">👑 Department Head</Typography>
                     <Typography variant="body2" fontWeight={600}>{stats.heads}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">⭐ Phó phòng</Typography>
+                    <Typography variant="body2">⭐ Deputy Head</Typography>
                     <Typography variant="body2" fontWeight={600}>{stats.deputies}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">👤 Nhân viên</Typography>
+                    <Typography variant="body2">👤 Staff</Typography>
                     <Typography variant="body2" fontWeight={600}>{stats.staff}</Typography>
                   </Box>
                 </Stack>
@@ -194,7 +192,7 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
             <Card>
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Hiệu suất làm việc
+                  Performance
                 </Typography>
                 <Stack spacing={1}>
                   {performanceData.map((item) => (
@@ -227,20 +225,20 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
             <Card>
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Hoạt động gần đây
+                  Recent Activity
                 </Typography>
                 <Stack spacing={1}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TrendingUpIcon sx={{ color: 'success.main', fontSize: 16 }} />
-                    <Typography variant="caption">2 nhân viên mới tháng này</Typography>
+                    <Typography variant="caption">2 new employees this month</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <WorkHistoryIcon sx={{ color: 'info.main', fontSize: 16 }} />
-                    <Typography variant="caption">5 hợp đồng sắp hết hạn</Typography>
+                    <Typography variant="caption">5 contracts expiring soon</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <AssessmentIcon sx={{ color: 'warning.main', fontSize: 16 }} />
-                    <Typography variant="caption">Đánh giá KPI tháng 3</Typography>
+                    <Typography variant="caption">KPI review for March</Typography>
                   </Box>
                 </Stack>
               </CardContent>
@@ -253,7 +251,7 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
       <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm nhân viên..."
+          placeholder="Search employees..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
@@ -272,13 +270,13 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell>Mã NV</TableCell>
-                <TableCell>Thông tin nhân viên</TableCell>
-                <TableCell>Chức vụ</TableCell>
-                <TableCell>Liên hệ</TableCell>
-                <TableCell>Ngày vào</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell align="center">Thao tác</TableCell>
+                <TableCell>Employee ID</TableCell>
+                <TableCell>Employee Info</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Contact</TableCell>
+                <TableCell>Hire Date</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -370,10 +368,10 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
           <Box sx={{ p: 5, textAlign: 'center' }}>
             <GroupIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
             <Typography variant="h6" color="text.secondary">
-              Không tìm thấy nhân viên
+              No employees found
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {searchTerm ? 'Thử tìm kiếm với từ khóa khác' : 'Phòng ban chưa có nhân viên'}
+              {searchTerm ? 'Try searching with a different keyword' : 'This department has no employees'}
             </Typography>
           </Box>
         )}
@@ -389,26 +387,26 @@ const DepartmentEmployees = ({ department, employees = [] }) => {
           <ListItemIcon>
             <EditIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Chỉnh sửa thông tin</ListItemText>
+          <ListItemText>Edit Info</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleMenuClose}>
           <ListItemIcon>
             <SwapHorizIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Chuyển phòng ban</ListItemText>
+          <ListItemText>Transfer Department</ListItemText>
         </MenuItem>
         <MenuItem onClick={handleMenuClose}>
           <ListItemIcon>
             <WorkHistoryIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Lịch sử làm việc</ListItemText>
+          <ListItemText>Work History</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText>Xóa khỏi phòng ban</ListItemText>
+          <ListItemText>Remove from Department</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

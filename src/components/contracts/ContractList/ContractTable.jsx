@@ -30,7 +30,6 @@ import {
 } from '@mui/icons-material';
 import ContractStatusChip from '../shared/ContractStatusChip';
 import ContractTypeChip from '../shared/ContractTypeChip';
-// src/components/contracts/ContractList/ContractTable.jsx
 import { formatDate, calculateDaysRemaining } from '../../../utils/dateUtils';
 import { generateEmployeeCode } from '../../../data/mockData';
 
@@ -52,9 +51,9 @@ const ContractTable = ({
 
   const getRoleInDeptChip = (role) => {
     const roleConfig = {
-      HEAD: { label: 'Trưởng phòng', color: 'error' },
-      DEPUTY: { label: 'Phó phòng', color: 'warning' },
-      STAFF: { label: 'Nhân viên', color: 'default' }
+      HEAD: { label: 'Head', color: 'error' },
+      DEPUTY: { label: 'Deputy', color: 'warning' },
+      STAFF: { label: 'Staff', color: 'default' }
     };
     const config = roleConfig[role] || roleConfig.STAFF;
     return (
@@ -85,13 +84,13 @@ const ContractTable = ({
                   onChange={onSelectAll}
                 />
               </TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Thông tin nhân viên</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Phòng ban</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Loại hợp đồng</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Thời hạn hợp đồng</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Trạng thái</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>File đính kèm</TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }} align="center">Thao tác</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Employee Info</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Department</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Contract Type</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Contract Duration</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Attachment</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 600 }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -102,7 +101,7 @@ const ContractTable = ({
                 const daysRemaining = calculateDaysRemaining(contract.end_date);
                 const employee = contract.employee;
                 const empCode = generateEmployeeCode(employee?.id);
-                
+
                 return (
                   <TableRow
                     key={contract.id}
@@ -121,12 +120,12 @@ const ContractTable = ({
                         color="primary"
                       />
                     </TableCell>
-                    
+
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar 
-                          sx={{ 
-                            width: 45, 
+                        <Avatar
+                          sx={{
+                            width: 45,
                             height: 45,
                             backgroundColor: employee?.gender === 'Nam' ? '#1976d2' : '#e91e63',
                             fontSize: 16,
@@ -139,16 +138,16 @@ const ContractTable = ({
                           <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
                             {employee?.full_name}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary" component="div">
                             <PersonIcon sx={{ fontSize: 14, mr: 0.5 }} />
                             {empCode} • {employee?.role_in_dept && getRoleInDeptChip(employee.role_in_dept)}
                           </Typography>
                           <Stack direction="row" spacing={2}>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" component="div">
                               <EmailIcon sx={{ fontSize: 12, mr: 0.5 }} />
                               {employee?.user?.email}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" component="div">
                               <PhoneIcon sx={{ fontSize: 12, mr: 0.5 }} />
                               {employee?.phone_number}
                             </Typography>
@@ -156,34 +155,34 @@ const ContractTable = ({
                         </Box>
                       </Box>
                     </TableCell>
-                    
+
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }} component="div">
                           <BusinessIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
                           {employee?.department?.dept_name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary" component="div">
                           {employee?.position?.position_name}
                         </Typography>
                       </Box>
                     </TableCell>
-                    
+
                     <TableCell>
                       <ContractTypeChip type={contract.contract_type} />
                     </TableCell>
-                    
+
                     <TableCell>
                       <Box>
-                        <Typography variant="body2">
+                        <Typography variant="body2" component="div">
                           {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
                         </Typography>
                         {daysRemaining && (
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: daysRemaining.includes('Còn') && parseInt(daysRemaining.match(/\d+/)) <= 30 
-                                ? '#ff9800' 
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: daysRemaining.includes('Remaining') && parseInt(daysRemaining.match(/\d+/)) <= 30
+                                ? '#ff9800'
                                 : '#f44336',
                               fontWeight: 500,
                               display: 'block'
@@ -192,19 +191,19 @@ const ContractTable = ({
                             {daysRemaining}
                           </Typography>
                         )}
-                        <Typography variant="caption" color="text.secondary">
-                          Ngày tạo: {formatDate(contract.created_at)}
+                        <Typography variant="caption" color="text.secondary" component="div">
+                          Created on: {formatDate(contract.created_at)}
                         </Typography>
                       </Box>
                     </TableCell>
-                    
+
                     <TableCell>
                       <ContractStatusChip status={contract.status} />
                     </TableCell>
-                    
+
                     <TableCell>
                       {contract.file_url ? (
-                        <Tooltip title="Tải xuống file hợp đồng">
+                        <Tooltip title="Download contract file">
                           <IconButton
                             size="small"
                             onClick={() => onDownloadFile(contract.file_url)}
@@ -220,14 +219,14 @@ const ContractTable = ({
                         </Tooltip>
                       ) : (
                         <Typography variant="body2" color="text.secondary">
-                          Chưa có file
+                          No file
                         </Typography>
                       )}
                     </TableCell>
-                    
+
                     <TableCell align="center">
                       <Stack direction="row" spacing={1} justifyContent="center">
-                        <Tooltip title="Xem chi tiết">
+                        <Tooltip title="View details">
                           <IconButton
                             size="small"
                             onClick={() => onView(contract.id)}
@@ -241,8 +240,8 @@ const ContractTable = ({
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        
-                        <Tooltip title="Chỉnh sửa">
+
+                        <Tooltip title="Edit">
                           <IconButton
                             size="small"
                             onClick={() => onEdit(contract.id)}
@@ -256,8 +255,8 @@ const ContractTable = ({
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        
-                        <Tooltip title="Xóa">
+
+                        <Tooltip title="Delete">
                           <IconButton
                             size="small"
                             onClick={() => onDelete(contract)}
@@ -279,7 +278,7 @@ const ContractTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"
@@ -288,8 +287,8 @@ const ContractTable = ({
         page={page}
         onPageChange={onPageChange}
         onRowsPerPageChange={onRowsPerPageChange}
-        labelRowsPerPage="Số dòng mỗi trang:"
-        labelDisplayedRows={({ from, to, count }) => `${from}-${to} trong ${count}`}
+        labelRowsPerPage="Rows per page:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
       />
     </Paper>
   );

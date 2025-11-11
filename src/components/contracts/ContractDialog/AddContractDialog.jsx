@@ -30,15 +30,15 @@ import { useContractForm } from '../../../hooks/useContractForm';
 
 const steps = [
   {
-    label: 'Thông tin nhân viên',
+    label: 'Employee Information',
     component: EmployeeStep
   },
   {
-    label: 'Thông tin hợp đồng',
+    label: 'Contract Information',
     component: ContractInfoStep
   },
   {
-    label: 'File đính kèm',
+    label: 'Attached File',
     component: FileUploadStep
   }
 ];
@@ -108,7 +108,7 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
         }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <AssignmentIcon />
-            <Typography variant="h6">Thêm hợp đồng mới</Typography>
+            <Typography variant="h6">Add New Contract</Typography>
           </Stack>
         </DialogTitle>
         
@@ -157,7 +157,7 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
               disabled={activeStep === 0}
               onClick={handleBack}
             >
-              Quay lại
+              Back
             </Button>
             
             {activeStep === steps.length - 1 ? (
@@ -170,10 +170,10 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
                 {isSubmitting ? (
                   <>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Đang lưu...
+                    Saving...
                   </>
                 ) : (
-                  'Lưu hợp đồng'
+                  'Save Contract'
                 )}
               </Button>
             ) : (
@@ -181,7 +181,7 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
                 variant="contained"
                 onClick={handleNext}
               >
-                Tiếp tục
+                Continue
               </Button>
             )}
           </Box>
@@ -191,7 +191,7 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
         
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={onClose} startIcon={<CancelIcon />}>
-            Hủy
+            Cancel
           </Button>
         </DialogActions>
       </Dialog>
@@ -202,7 +202,7 @@ const AddContractDialog = ({ open, onClose, onSubmit, employees }) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="success" sx={{ width: '100%' }}>
-          Thêm hợp đồng thành công!
+          Contract added successfully!
         </Alert>
       </Snackbar>
     </>

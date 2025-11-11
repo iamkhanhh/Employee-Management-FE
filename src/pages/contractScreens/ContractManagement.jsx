@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography } from '@mui/material';
-// Sửa lại đường dẫn import
-import ContractStats from '../../components/contracts/ContractList/ContractStats';
+
 import ContractFilters from '../../components/contracts/ContractList/ContractFilters';
 import ContractTable from '../../components/contracts/ContractList/ContractTable';
 import AddContractDialog from '../../components/contracts/ContractDialog/AddContractDialog';
@@ -159,17 +158,14 @@ const ContractManagement = () => {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 600, color: '#1976d2', mb: 1 }}>
-          Quản lý Hợp đồng Lao động
+          Contract Management
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Quản lý toàn bộ hợp đồng của nhân viên trong công ty
+          Manage all employee contracts within the company
         </Typography>
       </Box>
 
-      {/* Stats Cards */}
-      <Box sx={{ mb: 3 }}>
-        <ContractStats stats={stats} />
-      </Box>
+     
 
       {/* Filters */}
       <ContractFilters

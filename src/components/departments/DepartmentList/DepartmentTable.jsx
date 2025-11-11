@@ -25,8 +25,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Business as BusinessIcon,
-  Group as GroupIcon,
-  Person as PersonIcon
+  Group as GroupIcon
 } from '@mui/icons-material';
 import { formatDate } from '../../../utils/dateUtils';
 
@@ -47,7 +46,7 @@ const DepartmentTable = ({
   const isSelected = (id) => selectedDepartments.indexOf(id) !== -1;
 
   const getHeadInfo = (head) => {
-    if (!head) return { name: 'Chưa có', avatar: null };
+    if (!head) return { name: 'N/A', avatar: null };
     return {
       name: head.full_name,
       avatar: head.full_name?.charAt(0).toUpperCase()
@@ -57,14 +56,14 @@ const DepartmentTable = ({
   const getStatusChip = (status) => {
     return status === 'ACTIVE' ? (
       <Chip 
-        label="Đang hoạt động" 
+        label="Active" 
         color="success" 
         size="small"
         sx={{ fontWeight: 500 }}
       />
     ) : (
       <Chip 
-        label="Ngừng hoạt động" 
+        label="Inactive" 
         color="error" 
         size="small"
         sx={{ fontWeight: 500 }}
@@ -77,7 +76,7 @@ const DepartmentTable = ({
       <Paper sx={{ p: 3, borderRadius: 2 }}>
         <LinearProgress />
         <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
-          Đang tải dữ liệu...
+          Loading data...
         </Typography>
       </Paper>
     );
@@ -108,12 +107,12 @@ const DepartmentTable = ({
                   onChange={onSelectAll}
                 />
               </TableCell>
-              <TableCell>Thông tin phòng ban</TableCell>
-              <TableCell>Trưởng phòng</TableCell>
-              <TableCell align="center">Nhân viên</TableCell>
-              <TableCell>Ngày tạo</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell align="center">Thao tác</TableCell>
+              <TableCell>Department Info</TableCell>
+              <TableCell>Head</TableCell>
+              <TableCell align="center">Employees</TableCell>
+              <TableCell>Created Date</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -185,7 +184,7 @@ const DepartmentTable = ({
                           {department.employeeCount || 0}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          nhân viên
+                          employees
                         </Typography>
                       </Stack>
                       {department.employees && department.employees.length > 0 && (
@@ -208,7 +207,7 @@ const DepartmentTable = ({
                       </Typography>
                       {department.updated_at && (
                         <Typography variant="caption" color="text.secondary">
-                          Cập nhật: {formatDate(department.updated_at)}
+                          Updated: {formatDate(department.updated_at)}
                         </Typography>
                       )}
                     </TableCell>
@@ -219,7 +218,7 @@ const DepartmentTable = ({
                     
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title="Xem chi tiết">
+                        <Tooltip title="View Details">
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -237,7 +236,7 @@ const DepartmentTable = ({
                           </IconButton>
                         </Tooltip>
                         
-                        <Tooltip title="Chỉnh sửa">
+                        <Tooltip title="Edit">
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -255,7 +254,7 @@ const DepartmentTable = ({
                           </IconButton>
                         </Tooltip>
                         
-                        <Tooltip title="Xóa">
+                        <Tooltip title="Delete">
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -289,8 +288,8 @@ const DepartmentTable = ({
         page={page}
         onPageChange={onPageChange}
         onRowsPerPageChange={onRowsPerPageChange}
-        labelRowsPerPage="Số dòng mỗi trang:"
-        labelDisplayedRows={({ from, to, count }) => `${from}-${to} trong ${count}`}
+        labelRowsPerPage="Rows per page:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
       />
     </Paper>
   );

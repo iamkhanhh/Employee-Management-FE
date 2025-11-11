@@ -23,37 +23,38 @@ import {
   CalendarToday as CalendarIcon,
   Cake as CakeIcon
 } from '@mui/icons-material';
-// Sửa đường dẫn: từ ContractForm lên 3 cấp để đến src
+// Correct path: go up 3 levels from ContractForm to src
 import { formatDate } from '../../../utils/dateUtils';
 import { generateEmployeeCode } from '../../../data/mockData';
 
-const EmployeeStep = ({ 
-  contractData, 
-  errors, 
-  employees, 
-  onInputChange, 
-  onEmployeeSelect 
+const EmployeeStep = ({
+  contractData,
+  errors,
+  employees,
+  onInputChange,
+  onEmployeeSelect
 }) => {
   const selectedEmployee = employees?.find(e => e.id === contractData.emp_id);
 
   const getRoleChip = (role) => {
     const roleConfig = {
-      HEAD: { label: 'Trưởng phòng', color: 'error' },
-      DEPUTY: { label: 'Phó phòng', color: 'warning' },
-      STAFF: { label: 'Nhân viên', color: 'default' }
+      HEAD: { label: 'Department Head', color: 'error' },
+      DEPUTY: { label: 'Deputy Head', color: 'warning' },
+      STAFF: { label: 'Staff', color: 'default' }
     };
     const config = roleConfig[role] || roleConfig.STAFF;
     return <Chip label={config.label} color={config.color} size="small" />;
   };
 
   const getStatusChip = (status) => {
-    return status === 'ACTIVE' ? 
-      <Chip label="Đang làm việc" color="success" size="small" /> :
-      <Chip label="Đã nghỉ việc" color="error" size="small" />;
+    return status === 'ACTIVE'
+      ? <Chip label="Active" color="success" size="small" />
+      : <Chip label="Resigned" color="error" size="small" />;
   };
 
   return (
     <Grid container spacing={3}>
+      {/* Employee selection */}
       <Grid item xs={12}>
         <Autocomplete
           options={employees || []}
@@ -62,12 +63,12 @@ const EmployeeStep = ({
           onChange={(event, value) => onEmployeeSelect(value)}
           renderOption={(props, option) => (
             <Box component="li" {...props}>
-              <Avatar 
-                sx={{ 
-                  mr: 2, 
-                  width: 40, 
+              <Avatar
+                sx={{
+                  mr: 2,
+                  width: 40,
                   height: 40,
-                  backgroundColor: option.gender === 'Nam' ? '#1976d2' : '#e91e63'
+                  backgroundColor: option.gender === 'Male' ? '#1976d2' : '#e91e63'
                 }}
               >
                 {option.full_name.charAt(0)}
@@ -85,8 +86,8 @@ const EmployeeStep = ({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Chọn nhân viên"
-              placeholder="Tìm kiếm nhân viên..."
+              label="Select Employee"
+              placeholder="Search employee..."
               error={!!errors.emp_id}
               helperText={errors.emp_id}
               InputProps={{
@@ -101,12 +102,13 @@ const EmployeeStep = ({
           )}
         />
       </Grid>
-      
+
+      {/* Employee info after selection */}
       {selectedEmployee && (
         <>
           <Grid item xs={12} md={6}>
             <TextField
-              label="Phòng ban"
+              label="Department"
               value={selectedEmployee.department?.dept_name || ''}
               disabled
               fullWidth
@@ -119,10 +121,10 @@ const EmployeeStep = ({
               }}
             />
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <TextField
-              label="Vị trí công việc"
+              label="Position"
               value={selectedEmployee.position?.position_name || contractData.position}
               onChange={(e) => onInputChange('position', e.target.value)}
               fullWidth
@@ -137,32 +139,32 @@ const EmployeeStep = ({
           </Grid>
 
           <Grid item xs={12}>
-            <Paper sx={{ 
-              p: 3, 
-              bgcolor: 'background.default', 
+            <Paper sx={{
+              p: 3,
+              bgcolor: 'background.default',
               borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider'
             }}>
               <Typography variant="h6" color="primary" gutterBottom sx={{ mb: 2 }}>
-                Thông tin chi tiết nhân viên
+                Employee Details
               </Typography>
-              
+
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Họ tên:</strong> {selectedEmployee.full_name}
+                      <strong>Full Name:</strong> {selectedEmployee.full_name}
                     </Typography>
                   </Box>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <PersonIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Giới tính:</strong> {selectedEmployee.gender}
+                      <strong>Gender:</strong> {selectedEmployee.gender}
                     </Typography>
                   </Box>
                 </Grid>
@@ -171,7 +173,7 @@ const EmployeeStep = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <CakeIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Ngày sinh:</strong> {formatDate(selectedEmployee.dob)}
+                      <strong>Date of Birth:</strong> {formatDate(selectedEmployee.dob)}
                     </Typography>
                   </Box>
                 </Grid>
@@ -180,7 +182,7 @@ const EmployeeStep = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Số điện thoại:</strong> {selectedEmployee.phone_number}
+                      <strong>Phone Number:</strong> {selectedEmployee.phone_number}
                     </Typography>
                   </Box>
                 </Grid>
@@ -198,7 +200,7 @@ const EmployeeStep = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Ngày vào làm:</strong> {formatDate(selectedEmployee.hire_date)}
+                      <strong>Hire Date:</strong> {formatDate(selectedEmployee.hire_date)}
                     </Typography>
                   </Box>
                 </Grid>
@@ -207,20 +209,20 @@ const EmployeeStep = ({
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                     <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      <strong>Địa chỉ:</strong> {selectedEmployee.address}
+                      <strong>Address:</strong> {selectedEmployee.address}
                     </Typography>
                   </Box>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <Typography variant="body2">
-                    <strong>Chức vụ trong phòng:</strong> {getRoleChip(selectedEmployee.role_in_dept)}
+                    <strong>Role in Department:</strong> {getRoleChip(selectedEmployee.role_in_dept)}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <Typography variant="body2">
-                    <strong>Trạng thái:</strong> {getStatusChip(selectedEmployee.status)}
+                    <strong>Status:</strong> {getStatusChip(selectedEmployee.status)}
                   </Typography>
                 </Grid>
               </Grid>

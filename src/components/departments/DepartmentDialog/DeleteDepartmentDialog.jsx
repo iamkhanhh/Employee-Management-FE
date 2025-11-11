@@ -77,7 +77,7 @@ const DeleteDepartmentDialog = ({
       }}>
         <Stack direction="row" alignItems="center" spacing={1}>
           <DeleteIcon />
-          <Typography variant="h6">Xác nhận xóa phòng ban</Typography>
+          <Typography variant="h6">Confirm Department Deletion</Typography>
         </Stack>
       </DialogTitle>
 
@@ -109,11 +109,11 @@ const DeleteDepartmentDialog = ({
             <>
               <Alert severity="error" icon={<WarningIcon />}>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Không thể xóa phòng ban này!
+                  Cannot delete this department!
                 </Typography>
                 <Typography variant="body2">
-                  Phòng ban đang có {departmentEmployees.length} nhân viên đang làm việc.
-                  Vui lòng chuyển nhân viên sang phòng ban khác trước khi xóa.
+                  There are {departmentEmployees.length} employees in this department.
+                  Please transfer them to another department before deletion.
                 </Typography>
               </Alert>
 
@@ -121,7 +121,7 @@ const DeleteDepartmentDialog = ({
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
                   <GroupIcon sx={{ mr: 1 }} />
-                  Danh sách nhân viên trong phòng ban:
+                  Employees in this department:
                 </Typography>
                 <Paper variant="outlined" sx={{ maxHeight: 200, overflow: 'auto' }}>
                   <List dense>
@@ -141,10 +141,10 @@ const DeleteDepartmentDialog = ({
                                   {emp.position?.position_name}
                                 </Typography>
                                 {emp.role_in_dept === 'HEAD' && (
-                                  <Chip label="Trưởng phòng" size="small" color="error" />
+                                  <Chip label="Head" size="small" color="error" />
                                 )}
                                 {emp.role_in_dept === 'DEPUTY' && (
-                                  <Chip label="Phó phòng" size="small" color="warning" />
+                                  <Chip label="Deputy" size="small" color="warning" />
                                 )}
                               </Stack>
                             }
@@ -161,16 +161,16 @@ const DeleteDepartmentDialog = ({
             <>
               <Alert severity="warning" icon={<WarningIcon />}>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Bạn có chắc chắn muốn xóa phòng ban này?
+                  Are you sure you want to delete this department?
                 </Typography>
                 <Typography variant="body2">
-                  Hành động này không thể hoàn tác. Tất cả dữ liệu liên quan đến phòng ban sẽ bị xóa vĩnh viễn.
+                  This action cannot be undone. All data related to the department will be permanently deleted.
                 </Typography>
               </Alert>
 
               <Alert severity="info" icon={<InfoIcon />}>
                 <Typography variant="body2">
-                  Để xác nhận xóa, vui lòng nhập <strong>DELETE</strong> vào ô bên dưới:
+                  To confirm deletion, please type <strong>DELETE</strong> in the box below:
                 </Typography>
               </Alert>
 
@@ -178,11 +178,11 @@ const DeleteDepartmentDialog = ({
                 fullWidth
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder="Nhập DELETE để xác nhận"
+                placeholder="Type DELETE to confirm"
                 error={confirmText !== '' && confirmText !== 'DELETE'}
                 helperText={
                   confirmText !== '' && confirmText !== 'DELETE'
-                    ? 'Vui lòng nhập chính xác "DELETE"'
+                    ? 'Please type exactly "DELETE"'
                     : ''
                 }
                 sx={{
@@ -196,17 +196,17 @@ const DeleteDepartmentDialog = ({
               {/* Additional Info */}
               <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  Thông tin phòng ban:
+                  Department Info:
                 </Typography>
                 <Stack spacing={0.5}>
                   <Typography variant="body2" color="text.secondary">
-                    • Ngày tạo: {department?.created_at ? new Date(department.created_at).toLocaleDateString('vi-VN') : 'N/A'}
+                    • Created Date: {department?.created_at ? new Date(department.created_at).toLocaleDateString('en-US') : 'N/A'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    • Số nhân viên: {departmentEmployees.length}
+                    • Number of Employees: {departmentEmployees.length}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    • Trạng thái: {department?.is_deleted ? 'Đã xóa' : 'Đang hoạt động'}
+                    • Status: {department?.is_deleted ? 'Deleted' : 'Active'}
                   </Typography>
                 </Stack>
               </Paper>
@@ -223,7 +223,7 @@ const DeleteDepartmentDialog = ({
           variant="outlined"
           startIcon={<CancelIcon />}
         >
-          Hủy
+          Cancel
         </Button>
 
         {!hasEmployees && (
@@ -239,7 +239,7 @@ const DeleteDepartmentDialog = ({
               }
             }}
           >
-            {isDeleting ? 'Đang xóa...' : 'Xóa phòng ban'}
+            {isDeleting ? 'Deleting...' : 'Delete Department'}
           </Button>
         )}
       </DialogActions>
