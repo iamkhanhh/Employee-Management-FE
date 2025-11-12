@@ -53,10 +53,13 @@ import {
 } from '@mui/icons-material';
 import ProfileHeader from '../../components/profile/ProfileHeader';
 import ProfileInfo from '../../components/profile/ProfileInfo';
-import ProfileTabs from '../../components/profile/ProfileTabs';
 import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
 import EditProfileDialog from '../../components/profile/EditProfileDialog';
 import { formatDate } from '../../utils/dateUtils';
+import WorkTab from '../../components/profile/WorkTab';
+import ContractsTab from '../../components/profile/ContractsTab';
+import AttendanceTab from '../../components/profile/AttendanceTab';
+import LeaveRequestsTab from '../../components/profile/LeaveRequestsTab';
 
 // Mock current user data
 const currentUser = {
@@ -133,7 +136,7 @@ const MyProfile = () => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       background: 'linear-gradient(180deg, #f5f7fa 0%, #c3cfe2 100%)',
       pb: 4
@@ -147,7 +150,7 @@ const MyProfile = () => {
           <Grid item xs={12} md={4}>
             {/* Profile Card */}
             <Card sx={{ mb: 3, position: 'relative', overflow: 'visible' }}>
-              <Box sx={{ 
+              <Box sx={{
                 position: 'absolute',
                 top: -50,
                 left: '50%',
@@ -159,7 +162,7 @@ const MyProfile = () => {
                   badgeContent={
                     <IconButton
                       component="label"
-                      sx={{ 
+                      sx={{
                         bgcolor: 'primary.main',
                         color: 'white',
                         width: 40,
@@ -179,8 +182,8 @@ const MyProfile = () => {
                 >
                   <Avatar
                     src={user.avatar}
-                    sx={{ 
-                      width: 120, 
+                    sx={{
+                      width: 120,
                       height: 120,
                       border: '4px solid white',
                       boxShadow: 3
@@ -199,15 +202,15 @@ const MyProfile = () => {
                   {user.position.position_name}
                 </Typography>
                 <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 2 }}>
-                  <Chip 
-                    label={user.employee_code} 
-                    color="primary" 
+                  <Chip
+                    label={user.employee_code}
+                    color="primary"
                     size="small"
                     icon={<BadgeIcon />}
                   />
-                  <Chip 
-                    label={user.department.dept_name} 
-                    color="secondary" 
+                  <Chip
+                    label={user.department.dept_name}
+                    color="secondary"
                     size="small"
                     variant="outlined"
                   />
@@ -232,7 +235,7 @@ const MyProfile = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <CalendarIcon sx={{ mr: 2, color: 'text.secondary' }} />
                     <Typography variant="body2">
-                      Ngày vào: {formatDate(user.hire_date)}
+                      Hire Date: {formatDate(user.hire_date)}
                     </Typography>
                   </Box>
                 </Stack>
@@ -242,19 +245,24 @@ const MyProfile = () => {
                     fullWidth
                     variant="contained"
                     startIcon={<EditIcon />}
+                    size="small"
+                    sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                     onClick={() => setOpenEditDialog(true)}
                   >
-                    Chỉnh sửa
+                    Edit Profile
                   </Button>
                   <Button
                     fullWidth
                     variant="outlined"
                     startIcon={<SecurityIcon />}
+                    size="small"
+                    sx={{ textTransform: 'none', fontSize: '0.75rem' }}
                     onClick={() => setOpenPasswordDialog(true)}
                   >
-                    Đổi mật khẩu
+                    Change Password
                   </Button>
                 </Stack>
+
               </CardContent>
             </Card>
 
@@ -263,7 +271,7 @@ const MyProfile = () => {
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                   <SchoolIcon sx={{ mr: 1 }} />
-                  Kỹ năng
+                  Skills
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   {user.skills.map((skill, index) => (
@@ -271,7 +279,7 @@ const MyProfile = () => {
                       key={index}
                       label={skill}
                       size="small"
-                      sx={{ 
+                      sx={{
                         background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
                         color: 'white'
                       }}
@@ -286,7 +294,7 @@ const MyProfile = () => {
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                   <TrendingUpIcon sx={{ mr: 1 }} />
-                  Thống kê
+                  Statistics
                 </Typography>
                 <Stack spacing={2}>
                   <Box>
@@ -296,30 +304,30 @@ const MyProfile = () => {
                         {user.kpi_score}%
                       </Typography>
                     </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={user.kpi_score} 
+                    <LinearProgress
+                      variant="determinate"
+                      value={user.kpi_score}
                       sx={{ height: 8, borderRadius: 4 }}
                       color={user.kpi_score >= 80 ? 'success' : 'warning'}
                     />
                   </Box>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Ngày công</Typography>
+                    <Typography variant="body2">Working Days</Typography>
                     <Typography variant="body2" fontWeight={600}>
                       {user.total_working_days}
                     </Typography>
                   </Box>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Task hoàn thành</Typography>
+                    <Typography variant="body2">Completed Tasks</Typography>
                     <Typography variant="body2" fontWeight={600}>
                       {user.completed_tasks}
                     </Typography>
                   </Box>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2">Dự án hiện tại</Typography>
+                    <Typography variant="body2">Current Projects</Typography>
                     <Typography variant="body2" fontWeight={600}>
                       {user.current_projects}
                     </Typography>
@@ -332,18 +340,18 @@ const MyProfile = () => {
           {/* Right Content */}
           <Grid item xs={12} md={8}>
             <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-              <Tabs 
-                value={tabValue} 
+              <Tabs
+                value={tabValue}
                 onChange={handleTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
                 sx={{ borderBottom: 1, borderColor: 'divider' }}
               >
-                <Tab label="Thông tin cá nhân" icon={<PersonIcon />} iconPosition="start" />
-                <Tab label="Công việc" icon={<WorkIcon />} iconPosition="start" />
-                <Tab label="Hợp đồng" icon={<DescriptionIcon />} iconPosition="start" />
-                <Tab label="Chấm công" icon={<AccessTimeIcon />} iconPosition="start" />
-                <Tab label="Nghỉ phép" icon={<EventNoteIcon />} iconPosition="start" />
+                <Tab label="Personal Info" icon={<PersonIcon />} iconPosition="start" />
+                <Tab label="Work" icon={<WorkIcon />} iconPosition="start" />
+                <Tab label="Contracts" icon={<DescriptionIcon />} iconPosition="start" />
+                <Tab label="Attendance" icon={<AccessTimeIcon />} iconPosition="start" />
+                <Tab label="Leave Requests" icon={<EventNoteIcon />} iconPosition="start" />
               </Tabs>
 
               <Box sx={{ p: 3 }}>
@@ -353,363 +361,16 @@ const MyProfile = () => {
                 )}
 
                 {/* Tab 2: Work Info */}
-                {tabValue === 1 && (
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                      <Stack spacing={2}>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Mã nhân viên
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {user.employee_code}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Phòng ban
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {user.department.dept_name}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Vị trí
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {user.position.position_name}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Vai trò trong phòng
-                          </Typography>
-                          <Chip 
-                            label={
-                              user.role_in_dept === 'HEAD' ? 'Trưởng phòng' :
-                              user.role_in_dept === 'DEPUTY' ? 'Phó phòng' : 'Nhân viên'
-                            }
-                            color={
-                              user.role_in_dept === 'HEAD' ? 'error' :
-                              user.role_in_dept === 'DEPUTY' ? 'warning' : 'default'
-                            }
-                            size="small"
-                          />
-                        </Box>
-                      </Stack>
-                    </Grid>
-                    
-                    <Grid item xs={12} md={6}>
-                      <Stack spacing={2}>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Ngày vào làm
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {formatDate(user.hire_date)}
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Thâm niên
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {Math.floor((new Date() - new Date(user.hire_date)) / (365 * 24 * 60 * 60 * 1000))} năm
-                          </Typography>
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Trạng thái
-                          </Typography>
-                          <Chip 
-                            label="Đang làm việc" 
-                            color="success" 
-                            size="small"
-                            icon={<CheckCircleIcon />}
-                          />
-                        </Box>
-                        <Box>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Email công ty
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {user.email}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Grid>
-
-                    {/* Recent Projects */}
-                    <Grid item xs={12}>
-                      <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                        Dự án gần đây
-                      </Typography>
-                      <Stack spacing={2}>
-                        {[
-                          { name: 'Website E-commerce', status: 'In Progress', progress: 75 },
-                          { name: 'Mobile App Banking', status: 'Completed', progress: 100 },
-                          { name: 'ERP System', status: 'Planning', progress: 20 }
-                        ].map((project, index) => (
-                          <Paper key={index} sx={{ p: 2 }} variant="outlined">
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="body1" fontWeight={500}>
-                                {project.name}
-                              </Typography>
-                              <Chip 
-                                label={project.status} 
-                                size="small"
-                                color={
-                                  project.status === 'Completed' ? 'success' :
-                                  project.status === 'In Progress' ? 'warning' : 'default'
-                                }
-                              />
-                            </Box>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={project.progress} 
-                              sx={{ height: 6, borderRadius: 3 }}
-                            />
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Grid>
-                  </Grid>
-                )}
+                {tabValue === 1 && <WorkTab user={user} />}
 
                 {/* Tab 3: Contracts */}
-                {tabValue === 2 && (
-                  <Stack spacing={2}>
-                    <Alert severity="info">
-                      Hợp đồng hiện tại còn hiệu lực đến ngày 01/01/2025
-                    </Alert>
-                    {[
-                      {
-                        type: 'Hợp đồng lao động',
-                        startDate: '2024-01-01',
-                        endDate: '2025-01-01',
-                        status: 'ACTIVE',
-                        file: 'HD_2024.pdf'
-                      },
-                      {
-                        type: 'Hợp đồng thử việc',
-                        startDate: '2023-01-15',
-                        endDate: '2023-03-15',
-                        status: 'COMPLETED',
-                        file: 'HD_TV_2023.pdf'
-                      }
-                    ].map((contract, index) => (
-                      <Paper key={index} sx={{ p: 2 }} variant="outlined">
-                        <Grid container alignItems="center">
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body1" fontWeight={500}>
-                              {contract.type}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body2" color="text.secondary">
-                              {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Chip 
-                              label={contract.status === 'ACTIVE' ? 'Đang hiệu lực' : 'Đã hoàn thành'}
-                              color={contract.status === 'ACTIVE' ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={3} textAlign="right">
-                            <Button size="small" startIcon={<DescriptionIcon />}>
-                              {contract.file}
-                            </Button>
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    ))}
-                  </Stack>
-                )}
+                {tabValue === 2 && <ContractsTab />}
 
                 {/* Tab 4: Attendance */}
-                {tabValue === 3 && (
-                  <Stack spacing={3}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6} md={3}>
-                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light' }}>
-                          <Typography variant="h4" color="white">
-                            {user.total_working_days}
-                          </Typography>
-                          <Typography variant="body2" color="white">
-                            Tổng ngày công
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light' }}>
-                          <Typography variant="h4" color="white">
-                            5
-                          </Typography>
-                          <Typography variant="body2" color="white">
-                            Đi muộn
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light' }}>
-                          <Typography variant="h4" color="white">
-                            12
-                          </Typography>
-                          <Typography variant="body2" color="white">
-                            Làm thêm giờ
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={6} md={3}>
-                        <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'error.light' }}>
-                          <Typography variant="h4" color="white">
-                            2
-                          </Typography>
-                          <Typography variant="body2" color="white">
-                            Vắng mặt
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-
-                    <Typography variant="h6">Lịch sử chấm công gần đây</Typography>
-                    {[...Array(5)].map((_, index) => {
-                      const date = new Date();
-                      date.setDate(date.getDate() - index);
-                      return (
-                        <Paper key={index} sx={{ p: 2 }} variant="outlined">
-                          <Grid container alignItems="center">
-                            <Grid item xs={12} md={3}>
-                              <Typography variant="body1">
-                                {date.toLocaleDateString('vi-VN')}
-                              </Typography>
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <CheckCircleIcon color="success" fontSize="small" />
-                                <Typography variant="body2">
-                                  Check in: 08:30
-                                </Typography>
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={6} md={3}>
-                              <Stack direction="row" spacing={1} alignItems="center">
-                                <CheckCircleIcon color="error" fontSize="small" />
-                                <Typography variant="body2">
-                                  Check out: 18:00
-                                </Typography>
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} md={3}>
-                              <Chip 
-                                label="Đúng giờ" 
-                                color="success" 
-                                size="small"
-                              />
-                            </Grid>
-                          </Grid>
-                        </Paper>
-                      );
-                    })}
-                  </Stack>
-                )}
+                {tabValue === 3 && <AttendanceTab user={user} />}
 
                 {/* Tab 5: Leave Requests */}
-                {tabValue === 4 && (
-                  <Stack spacing={3}>
-                    <Alert severity="info">
-                      Bạn còn {user.remaining_leave_days} ngày phép trong năm
-                    </Alert>
-                    
-                    <Grid container spacing={2}>
-                      <Grid item xs={4}>
-                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h4" color="primary">
-                            {user.total_leave_days}
-                          </Typography>
-                          <Typography variant="body2">
-                            Tổng ngày phép/năm
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h4" color="error">
-                            {user.total_leave_days - user.remaining_leave_days}
-                          </Typography>
-                          <Typography variant="body2">
-                            Đã sử dụng
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                      <Grid item xs={4}>
-                        <Paper sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography variant="h4" color="success">
-                            {user.remaining_leave_days}
-                          </Typography>
-                          <Typography variant="body2">
-                            Còn lại
-                          </Typography>
-                        </Paper>
-                      </Grid>
-                    </Grid>
-
-                    <Button 
-                      variant="contained" 
-                      startIcon={<AddIcon />}
-                      sx={{ alignSelf: 'flex-start' }}
-                    >
-                      Tạo đơn xin nghỉ
-                    </Button>
-
-                    <Typography variant="h6">Lịch sử xin nghỉ</Typography>
-                    {[
-                      {
-                        date: '15/03/2024 - 17/03/2024',
-                        type: 'Nghỉ phép năm',
-                        reason: 'Về quê',
-                        status: 'Approved'
-                      },
-                      {
-                        date: '01/02/2024',
-                        type: 'Nghỉ ốm',
-                        reason: 'Bệnh',
-                        status: 'Approved'
-                      }
-                    ].map((leave, index) => (
-                      <Paper key={index} sx={{ p: 2 }} variant="outlined">
-                        <Grid container alignItems="center">
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body1" fontWeight={500}>
-                              {leave.date}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body2">
-                              {leave.type}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Typography variant="body2" color="text.secondary">
-                              {leave.reason}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12} md={3} textAlign="right">
-                            <Chip 
-                              label="Đã duyệt" 
-                              color="success" 
-                              size="small"
-                              icon={<CheckCircleIcon />}
-                            />
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    ))}
-                  </Stack>
-                )}
+                {tabValue === 4 && <LeaveRequestsTab user={user} />}
               </Box>
             </Paper>
           </Grid>

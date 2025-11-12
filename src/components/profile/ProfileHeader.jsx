@@ -11,6 +11,10 @@ import {
 } from '@mui/icons-material';
 
 const ProfileHeader = ({ user }) => {
+  const yearsOfExperience = Math.floor(
+    (new Date() - new Date(user.hire_date)) / (365 * 24 * 60 * 60 * 1000)
+  );
+
   return (
     <Box sx={{
       height: 280,
@@ -35,7 +39,7 @@ const ProfileHeader = ({ user }) => {
 
       <Stack alignItems="center" spacing={2} sx={{ position: 'relative', zIndex: 1 }}>
         <Typography variant="h3" fontWeight="bold">
-          Hồ Sơ Cá Nhân
+          Personal Profile
         </Typography>
         <Stack direction="row" spacing={1}>
           <Chip 
@@ -47,7 +51,7 @@ const ProfileHeader = ({ user }) => {
             }}
           />
           <Chip 
-            label={`${Math.floor((new Date() - new Date(user.hire_date)) / (365 * 24 * 60 * 60 * 1000))} năm kinh nghiệm`}
+            label={`${yearsOfExperience} years of experience`}
             icon={<WorkIcon />}
             sx={{ 
               bgcolor: 'rgba(255,255,255,0.2)',

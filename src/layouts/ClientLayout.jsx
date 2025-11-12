@@ -1,147 +1,87 @@
-import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
+import { Outlet, Link } from "react-router-dom";
 import {
   AppBar,
   Box,
   CssBaseline,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Toolbar,
   Typography,
   Avatar,
-  Divider,
   Tooltip,
   Menu,
   MenuItem,
-} from '@mui/material';
+  IconButton,
+  Divider,
+} from "@mui/material";
 import {
-  Menu as MenuIcon,
-  Home as HomeIcon,
   Person as PersonIcon,
-  Settings as SettingsIcon,
   Logout as LogoutIcon,
-  Dashboard as DashboardIcon,
-} from '@mui/icons-material';
-
-const drawerWidth = 240;
+} from "@mui/icons-material";
 
 const ClientLayout = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
-  const location = useLocation();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
-  const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap>
-          Công ty ABC
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton
-            component={Link}
-            to="/dashboard"
-            selected={location.pathname === '/dashboard'}
-          >
-            <ListItemIcon>
-              <DashboardIcon />
-            </ListItemIcon>
-            <ListItemText primary="Bảng điều khiển" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton
-            component={Link}
-            to="/profile"
-            selected={location.pathname === '/profile'}
-          >
-            <ListItemIcon>
-              <PersonIcon />
-            </ListItemIcon>
-            <ListItemText primary="Hồ sơ cá nhân" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton
-            component={Link}
-            to="/settings"
-            selected={location.pathname === '/settings'}
-          >
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary="Cài đặt" />
-          </ListItemButton>
-        </ListItem>
-      </List>
-    </div>
-  );
+  const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
+  const handleCloseUserMenu = () => setAnchorElUser(null);
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <CssBaseline />
 
       {/* AppBar */}
       <AppBar
         position="fixed"
+        elevation={3}
         sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: "linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
         }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+          <Typography
+            variant="h6"
+            noWrap
+            sx={{
+              flexGrow: 1,
+              fontWeight: 600,
+              letterSpacing: "0.5px",
+            }}
           >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
             Hệ thống quản lý nhân sự
           </Typography>
 
-          {/* User Avatar Menu */}
+          {/* Avatar Menu */}
           <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Tài khoản">
+            <Tooltip title="Tài khoản người dùng">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="User Avatar" src="/static/images/avatar/1.jpg" />
+                <Avatar
+                  alt="User Avatar"
+                  src=""
+                  sx={{
+                    border: "2px solid white",
+                    transition: "0.2s",
+                    "&:hover": { transform: "scale(1.05)" },
+                  }}
+                />
               </IconButton>
             </Tooltip>
             <Menu
-              sx={{ mt: '45px' }}
+              sx={{ mt: "45px" }}
               anchorEl={anchorElUser}
-              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
               open={Boolean(anchorElUser)}
               onClose={handleCloseUserMenu}
             >
-              <MenuItem onClick={handleCloseUserMenu} component={Link} to="/profile">
+              <MenuItem
+                onClick={handleCloseUserMenu}
+                component={Link}
+                to="/profile"
+              >
                 <PersonIcon fontSize="small" sx={{ mr: 1 }} />
                 Hồ sơ cá nhân
               </MenuItem>
+              <Divider />
               <MenuItem onClick={handleCloseUserMenu}>
                 <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
                 Đăng xuất
@@ -151,46 +91,32 @@ const ClientLayout = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Drawer Sidebar */}
-      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-        {/* Drawer for mobile */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-
-        {/* Drawer for desktop */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-
-      {/* Main Content */}
+      {/* Nội dung chính */}
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          p: 4,
           mt: 8,
+          backgroundColor: "#f9fafb",
+          minHeight: "100vh",
         }}
       >
-        <Outlet /> {/* 👉 nơi hiển thị các trang như MyProfile */}
+        <Outlet />
+      </Box>
+
+      {/* Footer */}
+      <Box
+        component="footer"
+        sx={{
+          textAlign: "center",
+          py: 2,
+          backgroundColor: "#f1f3f5",
+          color: "text.secondary",
+          borderTop: "1px solid #ddd",
+        }}
+      >
+        <Typography variant="body2">© 2025 Công ty TechNo.</Typography>
       </Box>
     </Box>
   );

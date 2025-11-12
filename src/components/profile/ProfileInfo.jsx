@@ -4,13 +4,7 @@ import {
   Box,
   Typography,
   Stack,
-  Chip,
-  Divider,
-  Paper,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
+  Chip
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -27,21 +21,16 @@ import { formatDate } from '../../utils/dateUtils';
 const ProfileInfo = ({ user }) => {
   return (
     <Grid container spacing={3}>
-      {/* Basic Information */}
-      <Grid item xs={12}>
-        <Typography variant="h6" gutterBottom>
-          Thông tin cơ bản
-        </Typography>
-        <Divider sx={{ mb: 2 }} />
-      </Grid>
 
+      {/* Left Column */}
       <Grid item xs={12} md={6}>
         <Stack spacing={3}>
+          {/* Full Name */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <PersonIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Họ và tên
+                Full Name
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {user.full_name}
@@ -49,11 +38,12 @@ const ProfileInfo = ({ user }) => {
             </Box>
           </Box>
 
+          {/* Gender */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <GenderIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Giới tính
+                Gender
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {user.gender}
@@ -61,11 +51,12 @@ const ProfileInfo = ({ user }) => {
             </Box>
           </Box>
 
+          {/* Date of Birth */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <CakeIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Ngày sinh
+                Date of Birth
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {formatDate(user.dob)}
@@ -73,11 +64,12 @@ const ProfileInfo = ({ user }) => {
             </Box>
           </Box>
 
+          {/* Address */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <HomeIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Địa chỉ
+                Address
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {user.address}
@@ -87,13 +79,15 @@ const ProfileInfo = ({ user }) => {
         </Stack>
       </Grid>
 
+      {/* Right Column */}
       <Grid item xs={12} md={6}>
         <Stack spacing={3}>
+          {/* Phone */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <PhoneIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Số điện thoại
+                Phone Number
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {user.phone_number}
@@ -101,11 +95,12 @@ const ProfileInfo = ({ user }) => {
             </Box>
           </Box>
 
+          {/* Emergency Contact */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <ContactPhoneIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Liên hệ khẩn cấp
+                Emergency Contact
               </Typography>
               <Typography variant="body1" fontWeight={500}>
                 {user.emergency_name} ({user.emergency_relation})
@@ -116,29 +111,33 @@ const ProfileInfo = ({ user }) => {
             </Box>
           </Box>
 
+          {/* Education */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <SchoolIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Học vấn
+                Education
               </Typography>
               <Typography variant="body1" fontWeight={500}>
-                {user.education}
+                {user.education || 'N/A'}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Chuyên ngành: {user.major}
-              </Typography>
+              {user.major && (
+                <Typography variant="body2" color="text.secondary">
+                  Major: {user.major}
+                </Typography>
+              )}
             </Box>
           </Box>
 
+          {/* Languages */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
             <LanguageIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Ngôn ngữ
+                Languages
               </Typography>
               <Stack direction="row" spacing={1}>
-                {user.languages.map((lang, index) => (
+                {user.languages?.map((lang, index) => (
                   <Chip key={index} label={lang} size="small" variant="outlined" />
                 ))}
               </Stack>
@@ -146,6 +145,7 @@ const ProfileInfo = ({ user }) => {
           </Box>
         </Stack>
       </Grid>
+
     </Grid>
   );
 };

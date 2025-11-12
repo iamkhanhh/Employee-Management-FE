@@ -290,7 +290,7 @@ const ProfileTabs = ({ user }) => {
   ];
 
   const getDocumentIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'contract': return <DescriptionIcon />;
       case 'certificate': return <SchoolIcon />;
       case 'health': return <HealthIcon />;
@@ -308,8 +308,8 @@ const ProfileTabs = ({ user }) => {
   return (
     <Paper sx={{ width: '100%', borderRadius: 2 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs 
-          value={tabValue} 
+        <Tabs
+          value={tabValue}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
@@ -339,7 +339,7 @@ const ProfileTabs = ({ user }) => {
             <Grid item xs={12}>
               <Grid container spacing={2}>
                 <Grid item xs={6} md={3}>
-                  <Card sx={{ 
+                  <Card sx={{
                     textAlign: 'center',
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     color: 'white'
@@ -351,7 +351,7 @@ const ProfileTabs = ({ user }) => {
                   </Card>
                 </Grid>
                 <Grid item xs={6} md={3}>
-                  <Card sx={{ 
+                  <Card sx={{
                     textAlign: 'center',
                     background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
                     color: 'white'
@@ -363,7 +363,7 @@ const ProfileTabs = ({ user }) => {
                   </Card>
                 </Grid>
                 <Grid item xs={6} md={3}>
-                  <Card sx={{ 
+                  <Card sx={{
                     textAlign: 'center',
                     background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                     color: 'white'
@@ -375,7 +375,7 @@ const ProfileTabs = ({ user }) => {
                   </Card>
                 </Grid>
                 <Grid item xs={6} md={3}>
-                  <Card sx={{ 
+                  <Card sx={{
                     textAlign: 'center',
                     background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
                     color: 'white'
@@ -401,7 +401,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <PersonIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Họ và tên"
                         secondary={user.full_name}
                       />
@@ -410,7 +410,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <GenderIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Giới tính"
                         secondary={user.gender}
                       />
@@ -419,7 +419,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <CakeIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Ngày sinh"
                         secondary={formatDate(user.dob)}
                       />
@@ -428,7 +428,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <HomeIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Địa chỉ"
                         secondary={user.address}
                       />
@@ -450,7 +450,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <EmailIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Email"
                         secondary={user.email}
                       />
@@ -459,7 +459,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <PhoneIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Điện thoại"
                         secondary={user.phone_number}
                       />
@@ -468,7 +468,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <ContactPhoneIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Liên hệ khẩn cấp"
                         secondary={`${user.emergency_name} (${user.emergency_relation}) - ${user.emergency_contact}`}
                       />
@@ -477,7 +477,7 @@ const ProfileTabs = ({ user }) => {
                       <ListItemIcon>
                         <LanguageIcon />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary="Ngôn ngữ"
                         secondary={
                           <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
@@ -661,9 +661,9 @@ const ProfileTabs = ({ user }) => {
                             <TableCell>{project.role}</TableCell>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={project.progress} 
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={project.progress}
                                   sx={{ width: 100, height: 6, borderRadius: 3 }}
                                 />
                                 <Typography variant="body2">{project.progress}%</Typography>
@@ -671,7 +671,7 @@ const ProfileTabs = ({ user }) => {
                             </TableCell>
                             <TableCell>{formatDate(project.deadline)}</TableCell>
                             <TableCell>
-                              <Chip 
+                              <Chip
                                 label={project.status === 'on-track' ? 'Đúng tiến độ' : 'Gần deadline'}
                                 color={project.status === 'on-track' ? 'success' : 'warning'}
                                 size="small"
@@ -688,389 +688,6 @@ const ProfileTabs = ({ user }) => {
           </Grid>
         </TabPanel>
 
-        {/* Tab 3: Tài liệu */}
-        <TabPanel value={tabValue} index={2}>
-          <Grid container spacing={3}>
-            {/* Upload Section */}
-            <Grid item xs={12}>
-              <Alert severity="info">
-                Vui lòng upload các tài liệu quan trọng như: Bằng cấp, chứng chỉ, giấy khám sức khỏe...
-              </Alert>
-            </Grid>
-
-            {/* Documents List */}
-            {mockDocuments.map((doc) => (
-              <Grid item xs={12} md={6} key={doc.id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ bgcolor: 'primary.light', mr: 2 }}>
-                          {getDocumentIcon(doc.type)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight={500}>
-                            {doc.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {doc.size} • {formatDate(doc.uploadDate)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {doc.status === 'verified' && (
-                        <Chip 
-                          label="Đã xác thực" 
-                          color="success" 
-                          size="small"
-                          icon={<CheckCircleIcon />}
-                        />
-                      )}
-                    </Box>
-                  </CardContent>
-                  <CardActions>
-                    <Button size="small" startIcon={<DownloadIcon />}>
-                      Tải xuống
-                    </Button>
-                    <Button size="small" startIcon={<PrintIcon />}>
-                      In
-                    </Button>
-                    <Button size="small" startIcon={<ShareIcon />}>
-                      Chia sẻ
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-
-            {/* Upload Button */}
-            <Grid item xs={12}>
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<UploadIcon />}
-                  sx={{ borderStyle: 'dashed' }}
-                >
-                  Tải lên tài liệu mới
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </TabPanel>
-
-        {/* Tab 4: Đào tạo */}
-        <TabPanel value={tabValue} index={3}>
-          <Grid container spacing={3}>
-            {mockTrainings.map((training) => (
-              <Grid item xs={12} key={training.id}>
-                <Card>
-                  <CardContent>
-                    <Grid container alignItems="center">
-                      <Grid item xs={12} md={4}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                            <SchoolIcon />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="subtitle1" fontWeight={500}>
-                              {training.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {training.provider}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={3}>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(training.startDate)} - {formatDate(training.endDate)}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={3}>
-                        {training.status === 'completed' ? (
-                          <Box>
-                            <Chip 
-                              label="Hoàn thành" 
-                              color="success" 
-                              size="small"
-                              icon={<CheckCircleIcon />}
-                            />
-                            {training.score && (
-                              <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                Điểm: {training.score}/100
-                              </Typography>
-                            )}
-                          </Box>
-                        ) : training.status === 'in-progress' ? (
-                          <Box>
-                            <Chip 
-                              label="Đang học" 
-                              color="warning" 
-                              size="small"
-                            />
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={training.progress} 
-                              sx={{ mt: 1, height: 6, borderRadius: 3 }}
-                            />
-                          </Box>
-                        ) : (
-                          <Chip 
-                            label="Sắp tới" 
-                            color="info" 
-                            size="small"
-                          />
-                        )}
-                      </Grid>
-                      <Grid item xs={12} md={2} textAlign="right">
-                        {training.certificate && training.status === 'completed' ? (
-                          <Button size="small" variant="outlined" startIcon={<DownloadIcon />}>
-                            Chứng chỉ
-                          </Button>
-                        ) : training.certificate ? (
-                          <Chip label="Có chứng chỉ" size="small" />
-                        ) : null}
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </TabPanel>
-
-        {/* Tab 5: Lương & Phúc lợi */}
-        <TabPanel value={tabValue} index={4}>
-          <Grid container spacing={3}>
-            {/* Benefits */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
-                Phúc lợi
-              </Typography>
-              <Grid container spacing={2}>
-                {mockBenefits.map((benefit) => (
-                  <Grid item xs={12} md={6} key={benefit.id}>
-                    <Card>
-                      <CardContent>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ bgcolor: 'primary.light', mr: 2 }}>
-                            {benefit.icon}
-                          </Avatar>
-                          <Box flex={1}>
-                            <Typography variant="subtitle1">
-                              {benefit.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {benefit.amount || benefit.coverage || benefit.provider}
-                            </Typography>
-                          </Box>
-                          <Chip 
-                            label="Active" 
-                            color="success" 
-                            size="small"
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </Grid>
-
-            {/* Salary History */}
-            <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                Lịch sử lương
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.100' }}>
-                      <TableCell>Tháng</TableCell>
-                      <TableCell align="right">Lương cơ bản</TableCell>
-                      <TableCell align="right">Phụ cấp</TableCell>
-                      <TableCell align="right">Thưởng</TableCell>
-                      <TableCell align="right">Khấu trừ</TableCell>
-                      <TableCell align="right">Thực nhận</TableCell>
-                      <TableCell>Trạng thái</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {mockSalaryHistory.map((salary, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{salary.period}</TableCell>
-                        <TableCell align="right">{formatCurrency(salary.basic)}</TableCell>
-                        <TableCell align="right">{formatCurrency(salary.allowance)}</TableCell>
-                        <TableCell align="right">{formatCurrency(salary.bonus)}</TableCell>
-                        <TableCell align="right" sx={{ color: 'error.main' }}>
-                          -{formatCurrency(salary.deduction)}
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>
-                          {formatCurrency(salary.net)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip 
-                            label="Đã thanh toán" 
-                            color="success" 
-                            size="small"
-                            icon={<CheckCircleIcon />}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
-          </Grid>
-        </TabPanel>
-
-        {/* Tab 6: Đánh giá */}
-        <TabPanel value={tabValue} index={5}>
-          <Grid container spacing={3}>
-            {/* KPI Score */}
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    KPI Tổng quan
-                  </Typography>
-                  <Box sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography variant="h2" color="primary">
-                      {user.kpi_score}%
-                    </Typography>
-                    <Rating value={user.kpi_score / 20} readOnly size="large" sx={{ mt: 1 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Xuất sắc
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Performance Chart */}
-            <Grid item xs={12} md={8}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Chi tiết đánh giá
-                  </Typography>
-                  <Stack spacing={2}>
-                    {[
-                      { name: 'Chất lượng công việc', score: 95 },
-                      { name: 'Hiệu suất làm việc', score: 88 },
-                      { name: 'Kỹ năng teamwork', score: 92 },
-                      { name: 'Sáng tạo & Đổi mới', score: 85 },
-                      { name: 'Tuân thủ deadline', score: 90 }
-                    ].map((item, index) => (
-                      <Box key={index}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="body2">{item.name}</Typography>
-                          <Typography variant="body2" fontWeight={600}>{item.score}%</Typography>
-                        </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={item.score} 
-                          sx={{ height: 8, borderRadius: 4 }}
-                          color={item.score >= 90 ? 'success' : item.score >= 70 ? 'primary' : 'warning'}
-                        />
-                      </Box>
-                    ))}
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Recent Reviews */}
-            <Grid item xs={12}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Lịch sử đánh giá
-                  </Typography>
-                  <List>
-                    {[
-                      {
-                        period: 'Q1/2024',
-                        score: 92,
-                        reviewer: 'Nguyễn Văn A',
-                        comment: 'Hoàn thành xuất sắc các mục tiêu đề ra'
-                      },
-                      {
-                        period: 'Q4/2023',
-                        score: 88,
-                        reviewer: 'Nguyễn Văn A',
-                        comment: 'Cần cải thiện kỹ năng quản lý thời gian'
-                      },
-                      {
-                        period: 'Q3/2023',
-                        score: 85,
-                        reviewer: 'Nguyễn Văn A',
-                        comment: 'Làm việc tốt, có tiến bộ rõ rệt'
-                      }
-                    ].map((review, index) => (
-                      <ListItem key={index} divider>
-                        <ListItemAvatar>
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            {review.score}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="subtitle1">{review.period}</Typography>
-                              <Rating value={review.score / 20} readOnly size="small" />
-                            </Box>
-                          }
-                          secondary={
-                            <>
-                              <Typography variant="body2">{review.comment}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Người đánh giá: {review.reviewer}
-                              </Typography>
-                            </>
-                          }
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </TabPanel>
-
-        {/* Tab 7: Hoạt động */}
-        <TabPanel value={tabValue} index={6}>
-          <Timeline position="alternate">
-            {mockActivities.map((activity, index) => (
-              <TimelineItem key={activity.id}>
-                <TimelineOppositeContent color="text.secondary">
-                  <Typography variant="body2">
-                    {formatDate(activity.date)}
-                  </Typography>
-                </TimelineOppositeContent>
-                <TimelineSeparator>
-                  <TimelineDot color={activity.color}>
-                    {activity.icon}
-                  </TimelineDot>
-                  {index < mockActivities.length - 1 && <TimelineConnector />}
-                </TimelineSeparator>
-                <TimelineContent>
-                  <Card>
-                    <CardContent>
-                      <Typography variant="subtitle1" fontWeight={500}>
-                        {activity.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {activity.description}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </TimelineContent>
-              </TimelineItem>
-            ))}
-          </Timeline>
-        </TabPanel>
       </Box>
     </Paper>
   );

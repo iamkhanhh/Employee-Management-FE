@@ -47,19 +47,19 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
         const newErrors = {};
 
         if (!formData.currentPassword) {
-            newErrors.currentPassword = 'Vui lòng nhập mật khẩu hiện tại';
+            newErrors.currentPassword = 'Please enter your current password';
         }
 
         if (!formData.newPassword) {
-            newErrors.newPassword = 'Vui lòng nhập mật khẩu mới';
+            newErrors.newPassword = 'Please enter a new password';
         } else if (formData.newPassword.length < 6) {
-            newErrors.newPassword = 'Mật khẩu phải có ít nhất 6 ký tự';
+            newErrors.newPassword = 'Password must be at least 6 characters';
         }
 
         if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu mới';
+            newErrors.confirmPassword = 'Please confirm your new password';
         } else if (formData.newPassword !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+            newErrors.confirmPassword = 'Confirmation password does not match';
         }
 
         setErrors(newErrors);
@@ -94,7 +94,7 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <LockIcon sx={{ mr: 1 }} />
-                        <Typography variant="h6">Đổi mật khẩu</Typography>
+                        <Typography variant="h6">Change Password</Typography>
                     </Box>
                     <IconButton onClick={handleClose}>
                         <CloseIcon />
@@ -104,14 +104,14 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
 
             <DialogContent>
                 <Alert severity="info" sx={{ mb: 3 }}>
-                    Mật khẩu mới phải có ít nhất 6 ký tự, bao gồm chữ hoa, chữ thường và số.
+                    The new password must be at least 6 characters long and include uppercase letters, lowercase letters, and numbers.
                 </Alert>
 
                 <Stack spacing={3}>
                     <TextField
                         fullWidth
                         type={showPassword.current ? 'text' : 'password'}
-                        label="Mật khẩu hiện tại"
+                        label="Current Password"
                         value={formData.currentPassword}
                         onChange={(e) => handleChange('currentPassword', e.target.value)}
                         error={!!errors.currentPassword}
@@ -132,7 +132,7 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
                     <TextField
                         fullWidth
                         type={showPassword.new ? 'text' : 'password'}
-                        label="Mật khẩu mới"
+                        label="New Password"
                         value={formData.newPassword}
                         onChange={(e) => handleChange('newPassword', e.target.value)}
                         error={!!errors.newPassword}
@@ -153,7 +153,7 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
                     <TextField
                         fullWidth
                         type={showPassword.confirm ? 'text' : 'password'}
-                        label="Xác nhận mật khẩu mới"
+                        label="Confirm New Password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleChange('confirmPassword', e.target.value)}
                         error={!!errors.confirmPassword}
@@ -174,9 +174,9 @@ const ChangePasswordDialog = ({ open, onClose, onSubmit }) => {
             </DialogContent>
 
             <DialogActions sx={{ p: 2.5 }}>
-                <Button onClick={handleClose}>Hủy</Button>
+                <Button onClick={handleClose}>Cancel</Button>
                 <Button onClick={handleSubmit} variant="contained">
-                    Đổi mật khẩu
+                    Change Password
                 </Button>
             </DialogActions>
         </Dialog>
