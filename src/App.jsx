@@ -13,6 +13,9 @@ import ClientLayout from "./layouts/ClientLayout";
 import MyProfile from "./pages/profile/MyProfile";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import Login from "./pages/auth/LoginPage"
+import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
+import AttendanceManager from "./components/Attendance/AttendanceManager";
+import MyAttendance from "./components/Attendance/MyAttendance";
 
 function App() {
   return (
@@ -32,7 +35,7 @@ function App() {
           <Route path="employees/:id" element={<EmployeeDetail />} />
           <Route path="departments" element={<DepartmentManagement />} />
           <Route path="contracts" element={<ContractManagement />} />
-          <Route path="attendance" element={<AttendanceList />} />
+          <Route path="attendance" element={<AttendanceManager />} />
 
           <Route path="tasks" element={<TaskList />} />
           <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
@@ -44,7 +47,6 @@ function App() {
         {/* --- Khu vực CLIENT --- */}
         <Route element={<ClientLayout />}>
           <Route path="/profile" element={<MyProfile />} />
-          <Route path="/attendance" element={<AttendanceManager />} />
           <Route path="/my-attendance" element={<MyAttendance />} />
         </Route>
       </Routes>

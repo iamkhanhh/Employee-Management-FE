@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import {
   AppBar,
   Box,
@@ -12,17 +12,24 @@ import {
   MenuItem,
   IconButton,
   Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Person as PersonIcon,
   Logout as LogoutIcon,
   Dashboard as DashboardIcon,
 } from '@mui/icons-material';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const drawerWidth = 240;
 
 const ClientLayout = () => {
   const [anchorElUser, setAnchorElUser] = useState(null);
+  const location = useLocation();
 
   const handleOpenUserMenu = (event) => {
     setAnchorElUser(event.currentTarget);

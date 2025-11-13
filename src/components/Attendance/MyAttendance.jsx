@@ -23,8 +23,10 @@ function saveRecords(records) {
 
 export default function MyAttendance() {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
-  const userName = user?.full_name || user?.name || mockEmployees.find(e => e.id === userId)?.full_name || 'You';
+  // In development allow falling back to first mock employee when auth is not available
+  const fallbackUser = mockEmployees[0];
+  const userId = user?.id ?? fallbackUser?.id ?? null;
+  const userName = user?.full_name || user?.name || mockEmployees.find(e => e.id === userId)?.full_name || fallbackUser?.full_name || 'You';
 
   const [records, setRecords] = useState(() => loadRecords());
   const [todayRecord, setTodayRecord] = useState(null);
@@ -54,7 +56,11 @@ export default function MyAttendance() {
   };
 
   const handleCheckIn = () => {
-    if (!userId) return alert('Không có user');
+    if (!userId) {
+      // graceful fallback: notify in console in dev
+      console.warn('No user available for check-in');
+      return alert('Không có user — không thể chấm công');
+    }
     const now = moment();
     const date = now.format('YYYY-MM-DD');
     const time = now.format('HH:mm:ss');
@@ -82,7 +88,10 @@ export default function MyAttendance() {
   };
 
   const handleCheckOut = () => {
-    if (!userId) return alert('Không có user');
+    if (!userId) {
+      console.warn('No user available for check-out');
+      return alert('Không có user — không thể chấm công');
+    }
     const now = moment();
     const date = now.format('YYYY-MM-DD');
     const time = now.format('HH:mm:ss');

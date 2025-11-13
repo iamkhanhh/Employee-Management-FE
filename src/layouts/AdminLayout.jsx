@@ -257,6 +257,16 @@ export default function AdminLayout() {
                                 <ListItemText primary="Task list" />
                             </ListItemButton>
 
+                            <ListItemButton
+                                sx={{ pl: 4 }}
+                                component={NavLink}
+                                to="/admin/attendance"
+                                selected={location.pathname.startsWith('/admin/attendance')}
+                            >
+                                <ListItemIcon><AccessTimeIcon /></ListItemIcon>
+                                <ListItemText primary="Attendance" />
+                            </ListItemButton>
+
                             <ListItemButton sx={{ pl: 4 }} component={NavLink} to="/admin/leave-requests">
                                 <ListItemIcon><EventBusyIcon /></ListItemIcon>
                                 <ListItemText primary="Leave requests" />
