@@ -583,3 +583,59 @@ export const deleteDepartmentFromMockData = (id) => {
   }
   return false;
 };
+
+// Mock data for leave requests
+export const mockLeaveRequests = [
+  {
+    id: 1,
+    emp_id: 1,
+    leave_type: "Annual Leave",
+    start_date: "2024-12-20",
+    end_date: "2024-12-25",
+    reason: "Family vacation",
+    status: "Approved",
+    approved_by: 2,
+    approved_date: "2024-12-18",
+    created_at: "2024-12-10T09:00:00",
+    updated_at: "2024-12-18T09:00:00",
+    is_deleted: false,
+  },
+  {
+    id: 2,
+    emp_id: 1,
+    leave_type: "Sick Leave",
+    start_date: "2025-01-05",
+    end_date: "2025-01-06",
+    reason: "Fever and rest needed",
+    status: "Pending",
+    approved_by: null,
+    approved_date: null,
+    created_at: "2025-01-04T08:30:00",
+    updated_at: "2025-01-04T08:30:00",
+    is_deleted: false,
+  },
+];
+
+// Helper functions
+export const getNextLeaveRequestId = () => {
+  return Math.max(...mockLeaveRequests.map((r) => r.id), 0) + 1;
+};
+
+export const addLeaveRequestToMockData = (requestData) => {
+  const newRequest = {
+    id: getNextLeaveRequestId(),
+    emp_id: requestData.emp_id,
+    leave_type: requestData.leave_type,
+    start_date: requestData.start_date,
+    end_date: requestData.end_date,
+    reason: requestData.reason,
+    status: "Pending",
+    approved_by: null,
+    approved_date: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    is_deleted: false,
+  };
+  mockLeaveRequests.push(newRequest);
+  return newRequest;
+};

@@ -83,6 +83,8 @@ export default function AdminLayout() {
                 return "Task Management";
             case "/admin/departments":
                 return "Department Management";
+            case "/admin/leave-requests":
+                return "leave-requests";
             default:
                 return "Home";
         }
@@ -246,18 +248,20 @@ export default function AdminLayout() {
                     </ListItemButton>
                     <Collapse in={openTimekeeping} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
-                            <ListItemButton                          
-                                sx={{ pl: 4 }} 
-                                component={NavLink} 
-                                to="/admin/tasks" 
-                            > 
+                            <ListItemButton
+                                sx={{ pl: 4 }}
+                                component={NavLink}
+                                to="/admin/tasks"
+                            >
                                 <ListItemIcon><ListAltIcon /></ListItemIcon>
                                 <ListItemText primary="Task list" />
                             </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
+
+                            <ListItemButton sx={{ pl: 4 }} component={NavLink} to="/admin/leave-requests">
                                 <ListItemIcon><EventBusyIcon /></ListItemIcon>
                                 <ListItemText primary="Leave requests" />
                             </ListItemButton>
+
                             <ListItemButton sx={{ pl: 4 }} disabled>
                                 <ListItemIcon><CheckCircleIcon /></ListItemIcon>
                                 <ListItemText primary="Approve leaves" />

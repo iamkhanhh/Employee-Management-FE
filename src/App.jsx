@@ -13,6 +13,7 @@ import ClientLayout from "./layouts/ClientLayout";
 import MyProfile from "./pages/profile/MyProfile";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import Login from "./pages/auth/LoginPage"
+import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
 
 function App() {
   return (
@@ -33,7 +34,10 @@ function App() {
           <Route path="departments" element={<DepartmentManagement />} />
           <Route path="contracts" element={<ContractManagement />} />
           <Route path="attendance" element={<AttendanceList />} />
+
           <Route path="tasks" element={<TaskList />} />
+          <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
+
           <Route path="payroll" element={<PayrollList />} />
           <Route path="kpi" element={<KPIList />} />
         </Route>

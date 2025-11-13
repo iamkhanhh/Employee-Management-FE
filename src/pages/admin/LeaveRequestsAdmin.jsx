@@ -2,13 +2,6 @@ import React, { useState, useMemo } from "react";
 import {
   Box,
   Typography,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -16,94 +9,69 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Button,
   Chip,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
   Grid,
   Card,
   CardContent,
   InputAdornment,
+  MenuItem,
+  Select,
   FormControl,
   InputLabel,
-  Select,
   Tooltip,
   IconButton,
+  Badge,
   TablePagination,
   Divider,
-  Alert,
-  LinearProgress,
+  Avatar,
 } from "@mui/material";
 import {
-  Add as AddIcon,
   Search as SearchIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Pending as PendingIcon,
+  FilterList as FilterListIcon,
   Visibility as VisibilityIcon,
   EventNote as EventNoteIcon,
+  Person as PersonIcon,
   CalendarMonth as CalendarIcon,
-  FilterList as FilterListIcon,
-  Info as InfoIcon,
 } from "@mui/icons-material";
-import { mockLeaveRequests, addLeaveRequestToMockData } from "../../data/mockData";
+import { mockLeaveRequests, mockEmployees } from "../../data/mockData";
 
-const LeaveRequestTab = () => {
-  const [open, setOpen] = useState(false);
-  const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
+const LeaveRequestsAdmin = () => {
   const [requests, setRequests] = useState(mockLeaveRequests);
-  const [form, setForm] = useState({
-    emp_id: 1,
-    leave_type: "",
-    start_date: "",
-    end_date: "",
-    reason: "",
-  });
-  const [errors, setErrors] = useState({});
-
-  // Filters & Search
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [leaveTypeFilter, setLeaveTypeFilter] = useState("All");
-
+  
   // Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const leaveTypes = ["Annual Leave", "Sick Leave", "Personal Leave", "Maternity Leave"];
+  const currentAdminId = 2;
 
-  const currentUserId = 1; // Employee đang đăng nhập
+  const getEmployeeName = (emp_id) => {
+    const emp = mockEmployees.find((e) => e.id === emp_id);
+    return emp ? emp.full_name : "Unknown";
+  };
 
-  // Statistics for current user
-  const userStats = useMemo(() => {
-    const userRequests = requests.filter((r) => r.emp_id === currentUserId);
-    const total = userRequests.length;
-    const pending = userRequests.filter((r) => r.status === "Pending").length;
-    const approved = userRequests.filter((r) => r.status === "Approved").length;
-    const rejected = userRequests.filter((r) => r.status === "Rejected").length;
-    return { total, pending, approved, rejected };
-  }, [requests, currentUserId]);
-
-  // Filtered requests (only current user's requests)
-  const filteredRequests = useMemo(() => {
-    return requests
-      .filter((req) => req.emp_id === currentUserId)
-      .filter((req) => {
-        const matchesSearch =
-          req.leave_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          req.reason.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-        const matchesLeaveType = leaveTypeFilter === "All" || req.leave_type === leaveTypeFilter;
-
-        return matchesSearch && matchesStatus && matchesLeaveType;
-      });
-  }, [requests, currentUserId, searchTerm, statusFilter, leaveTypeFilter]);
-
-  // Paginated requests
-  const paginatedRequests = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredRequests.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredRequests, page, rowsPerPage]);
+  const getEmployeeAvatar = (emp_id) => {
+    const emp = mockEmployees.find((e) => e.id === emp_id);
+    return emp ? emp.full_name.charAt(0).toUpperCase() : "?";
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -127,71 +95,73 @@ const LeaveRequestTab = () => {
     }
   };
 
-  const calculateDuration = (startDate, endDate) => {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
-  };
+  // Statistics
+  const stats = useMemo(() => {
+    const total = requests.length;
+    const pending = requests.filter((r) => r.status === "Pending").length;
+    const approved = requests.filter((r) => r.status === "Approved").length;
+    const rejected = requests.filter((r) => r.status === "Rejected").length;
+    return { total, pending, approved, rejected };
+  }, [requests]);
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!form.leave_type) {
-      newErrors.leave_type = "Please select a leave type";
-    }
-
-    if (!form.start_date) {
-      newErrors.start_date = "Please select start date";
-    }
-
-    if (!form.end_date) {
-      newErrors.end_date = "Please select end date";
-    }
-
-    if (form.start_date && form.end_date) {
-      const start = new Date(form.start_date);
-      const end = new Date(form.end_date);
-      if (end < start) {
-        newErrors.end_date = "End date must be after start date";
-      }
-    }
-
-    if (!form.reason || form.reason.trim().length < 10) {
-      newErrors.reason = "Please provide a detailed reason (at least 10 characters)";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
-    }
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    const newReq = addLeaveRequestToMockData(form);
-    setRequests([...requests, newReq]);
-    setOpen(false);
-    setForm({
-      emp_id: 1,
-      leave_type: "",
-      start_date: "",
-      end_date: "",
-      reason: "",
+  // Filtered and searched requests
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      const matchesSearch = getEmployeeName(req.emp_id)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+        req.reason.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === "All" || req.status === statusFilter;
+      const matchesLeaveType = leaveTypeFilter === "All" || req.leave_type === leaveTypeFilter;
+      
+      return matchesSearch && matchesStatus && matchesLeaveType;
     });
-    setErrors({});
+  }, [requests, searchTerm, statusFilter, leaveTypeFilter]);
+
+  // Paginated requests
+  const paginatedRequests = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return filteredRequests.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredRequests, page, rowsPerPage]);
+
+  const handleApprove = (reqId) => {
+    const updated = requests.map((r) =>
+      r.id === reqId
+        ? {
+            ...r,
+            status: "Approved",
+            approved_by: currentAdminId,
+            approved_date: new Date().toISOString().split("T")[0],
+            updated_at: new Date().toISOString(),
+          }
+        : r
+    );
+    setRequests(updated);
+  };
+
+  const handleRejectClick = (req) => {
+    setSelectedRequest(req);
+    setRejectReason("");
+    setOpenDialog(true);
+  };
+
+  const handleRejectConfirm = () => {
+    const updated = requests.map((r) =>
+      r.id === selectedRequest.id
+        ? {
+            ...r,
+            status: "Rejected",
+            reason: `${r.reason} (Rejected: ${rejectReason})`,
+            approved_by: currentAdminId,
+            approved_date: new Date().toISOString().split("T")[0],
+            updated_at: new Date().toISOString(),
+          }
+        : r
+    );
+    setRequests(updated);
+    setOpenDialog(false);
+    setSelectedRequest(null);
   };
 
   const handleViewDetails = (req) => {
@@ -208,48 +178,25 @@ const LeaveRequestTab = () => {
     setPage(0);
   };
 
-  const handleOpenDialog = () => {
-    setForm({
-      emp_id: 1,
-      leave_type: "",
-      start_date: "",
-      end_date: "",
-      reason: "",
-    });
-    setErrors({});
-    setOpen(true);
+  const calculateDuration = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
   return (
     <Box>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-            My Leave Requests
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage your leave requests and track their status
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-          sx={{
-            px: 3,
-            py: 1.5,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            boxShadow: 3,
-          }}
-        >
-          Request Leave
-        </Button>
-      </Stack>
+      <Box mb={3}>
+        <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+          Leave Requests Management
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Manage and review employee leave requests
+        </Typography>
+      </Box>
 
       {/* Statistics Cards */}
       <Grid container spacing={3} mb={3}>
@@ -262,7 +209,7 @@ const LeaveRequestTab = () => {
                     Total Requests
                   </Typography>
                   <Typography variant="h4" fontWeight={700}>
-                    {userStats.total}
+                    {stats.total}
                   </Typography>
                 </Box>
                 <EventNoteIcon sx={{ fontSize: 48, color: "#1976d2", opacity: 0.3 }} />
@@ -280,7 +227,7 @@ const LeaveRequestTab = () => {
                     Pending
                   </Typography>
                   <Typography variant="h4" fontWeight={700} color="warning.main">
-                    {userStats.pending}
+                    {stats.pending}
                   </Typography>
                 </Box>
                 <PendingIcon sx={{ fontSize: 48, color: "#ed6c02", opacity: 0.3 }} />
@@ -298,7 +245,7 @@ const LeaveRequestTab = () => {
                     Approved
                   </Typography>
                   <Typography variant="h4" fontWeight={700} color="success.main">
-                    {userStats.approved}
+                    {stats.approved}
                   </Typography>
                 </Box>
                 <CheckCircleIcon sx={{ fontSize: 48, color: "#2e7d32", opacity: 0.3 }} />
@@ -316,7 +263,7 @@ const LeaveRequestTab = () => {
                     Rejected
                   </Typography>
                   <Typography variant="h4" fontWeight={700} color="error.main">
-                    {userStats.rejected}
+                    {stats.rejected}
                   </Typography>
                 </Box>
                 <CancelIcon sx={{ fontSize: 48, color: "#d32f2f", opacity: 0.3 }} />
@@ -340,7 +287,7 @@ const LeaveRequestTab = () => {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Search by leave type or reason..."
+                placeholder="Search by employee or reason..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -376,11 +323,10 @@ const LeaveRequestTab = () => {
                   onChange={(e) => setLeaveTypeFilter(e.target.value)}
                 >
                   <MenuItem value="All">All Types</MenuItem>
-                  {leaveTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="Annual Leave">Annual Leave</MenuItem>
+                  <MenuItem value="Sick Leave">Sick Leave</MenuItem>
+                  <MenuItem value="Personal Leave">Personal Leave</MenuItem>
+                  <MenuItem value="Maternity Leave">Maternity Leave</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -391,34 +337,55 @@ const LeaveRequestTab = () => {
       {/* Table */}
       <Card elevation={3}>
         <TableContainer>
-          <Table sx={{ minWidth: 800 }}>
+          <Table sx={{ minWidth: 1000 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
                 <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Leave Type</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Duration</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">
-                  Actions
-                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedRequests.length > 0 ? (
                 paginatedRequests.map((req, index) => (
-                  <TableRow
-                    key={req.id}
+                  <TableRow 
+                    key={req.id} 
                     hover
-                    sx={{
-                      "&:hover": { backgroundColor: "#f9f9f9" },
-                      transition: "background-color 0.2s",
+                    sx={{ 
+                      '&:hover': { backgroundColor: '#f9f9f9' },
+                      transition: 'background-color 0.2s'
                     }}
                   >
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>
-                      <Chip label={req.leave_type} size="small" variant="outlined" color="primary" />
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar 
+                          sx={{ 
+                            width: 36, 
+                            height: 36, 
+                            bgcolor: 'primary.main',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          {getEmployeeAvatar(req.emp_id)}
+                        </Avatar>
+                        <Typography variant="body2" fontWeight={500}>
+                          {getEmployeeName(req.emp_id)}
+                        </Typography>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={req.leave_type} 
+                        size="small" 
+                        variant="outlined"
+                        color="primary"
+                      />
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5} alignItems="center">
@@ -433,7 +400,7 @@ const LeaveRequestTab = () => {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Chip
+                      <Chip 
                         label={`${calculateDuration(req.start_date, req.end_date)} days`}
                         size="small"
                         sx={{ fontWeight: 600 }}
@@ -448,183 +415,130 @@ const LeaveRequestTab = () => {
                         sx={{ fontWeight: 600 }}
                       />
                     </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="View Details">
-                        <IconButton size="small" color="info" onClick={() => handleViewDetails(req)}>
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                    <TableCell>
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        <Tooltip title="View Details">
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => handleViewDetails(req)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {req.status === "Pending" && (
+                          <>
+                            <Tooltip title="Approve">
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleApprove(req.id)}
+                              >
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Reject">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleRejectClick(req)}
+                              >
+                                <CancelIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    <EventNoteIcon sx={{ fontSize: 64, color: "text.disabled", mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                  <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                    <Typography variant="body1" color="text.secondary">
                       No leave requests found
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                      You haven't submitted any leave requests yet
-                    </Typography>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenDialog}>
-                      Create Your First Request
-                    </Button>
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
-        {paginatedRequests.length > 0 && (
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={filteredRequests.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        )}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredRequests.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </Card>
 
-      {/* Create Request Dialog */}
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
+      {/* Reject Dialog */}
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)} 
+        maxWidth="sm" 
         fullWidth
-        maxWidth="md"
         PaperProps={{
           elevation: 5,
         }}
       >
-        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
+        <DialogTitle sx={{ backgroundColor: '#f5f5f5', fontWeight: 700 }}>
           <Stack direction="row" spacing={1} alignItems="center">
-            <AddIcon color="primary" />
+            <CancelIcon color="error" />
             <Typography variant="h6" fontWeight={700}>
-              Request Leave
+              Reject Leave Request
             </Typography>
           </Stack>
         </DialogTitle>
         <Divider />
         <DialogContent sx={{ mt: 2 }}>
-          <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-            Please fill in all required fields. Your request will be reviewed by HR.
-          </Alert>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                select
-                fullWidth
-                label="Leave Type"
-                name="leave_type"
-                value={form.leave_type}
-                onChange={handleChange}
-                error={!!errors.leave_type}
-                helperText={errors.leave_type}
-                required
-              >
-                {leaveTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Start Date"
-                name="start_date"
-                value={form.start_date}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                error={!!errors.start_date}
-                helperText={errors.start_date}
-                required
-                inputProps={{ min: new Date().toISOString().split("T")[0] }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="date"
-                label="End Date"
-                name="end_date"
-                value={form.end_date}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                error={!!errors.end_date}
-                helperText={errors.end_date}
-                required
-                inputProps={{ min: form.start_date || new Date().toISOString().split("T")[0] }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Paper
-                sx={{
-                  p: 2,
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #90caf9",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  Duration
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="primary">
-                  {calculateDuration(form.start_date, form.end_date)} days
-                </Typography>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Reason"
-                name="reason"
-                value={form.reason}
-                onChange={handleChange}
-                multiline
-                rows={4}
-                error={!!errors.reason}
-                helperText={errors.reason || "Provide a detailed reason for your leave request"}
-                required
-                placeholder="Please explain the reason for your leave request in detail..."
-              />
-            </Grid>
-          </Grid>
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Please provide a reason for rejecting this leave request:
+          </Typography>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Enter detailed reason for rejection..."
+            variant="outlined"
+            autoFocus
+          />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)} variant="outlined">
+          <Button 
+            onClick={() => setOpenDialog(false)}
+            variant="outlined"
+          >
             Cancel
           </Button>
-          <Button variant="contained" color="primary" onClick={handleSubmit} startIcon={<AddIcon />}>
-            Submit Request
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleRejectConfirm}
+            disabled={!rejectReason.trim()}
+            startIcon={<CancelIcon />}
+          >
+            Confirm Reject
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Detail Dialog */}
-      <Dialog
-        open={openDetailDialog}
-        onClose={() => setOpenDetailDialog(false)}
-        maxWidth="md"
+      <Dialog 
+        open={openDetailDialog} 
+        onClose={() => setOpenDetailDialog(false)} 
+        maxWidth="md" 
         fullWidth
         PaperProps={{
           elevation: 5,
         }}
       >
-        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
+        <DialogTitle sx={{ backgroundColor: '#f5f5f5', fontWeight: 700 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <VisibilityIcon color="primary" />
             <Typography variant="h6" fontWeight={700}>
@@ -638,25 +552,25 @@ const LeaveRequestTab = () => {
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Typography variant="caption" color="text.secondary">
+                  Employee
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                    {getEmployeeAvatar(selectedRequest.emp_id)}
+                  </Avatar>
+                  <Typography variant="body1" fontWeight={600}>
+                    {getEmployeeName(selectedRequest.emp_id)}
+                  </Typography>
+                </Stack>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" color="text.secondary">
                   Leave Type
                 </Typography>
                 <Typography variant="body1" fontWeight={600} mt={0.5}>
                   {selectedRequest.leave_type}
                 </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Status
-                </Typography>
-                <Box mt={0.5}>
-                  <Chip
-                    icon={getStatusIcon(selectedRequest.status)}
-                    label={selectedRequest.status}
-                    color={getStatusColor(selectedRequest.status)}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </Box>
               </Grid>
 
               <Grid item xs={12} md={6}>
@@ -688,19 +602,26 @@ const LeaveRequestTab = () => {
 
               <Grid item xs={12} md={6}>
                 <Typography variant="caption" color="text.secondary">
-                  Submitted Date
+                  Status
                 </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.created_at?.split("T")[0] || "N/A"}
-                </Typography>
+                <Box mt={0.5}>
+                  <Chip
+                    icon={getStatusIcon(selectedRequest.status)}
+                    label={selectedRequest.status}
+                    color={getStatusColor(selectedRequest.status)}
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
               </Grid>
 
               <Grid item xs={12}>
                 <Typography variant="caption" color="text.secondary">
                   Reason
                 </Typography>
-                <Paper sx={{ p: 2, mt: 0.5, backgroundColor: "#f9f9f9" }}>
-                  <Typography variant="body2">{selectedRequest.reason}</Typography>
+                <Paper sx={{ p: 2, mt: 0.5, backgroundColor: '#f9f9f9' }}>
+                  <Typography variant="body2">
+                    {selectedRequest.reason}
+                  </Typography>
                 </Paper>
               </Grid>
 
@@ -718,7 +639,10 @@ const LeaveRequestTab = () => {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDetailDialog(false)} variant="contained">
+          <Button 
+            onClick={() => setOpenDetailDialog(false)}
+            variant="contained"
+          >
             Close
           </Button>
         </DialogActions>
@@ -727,4 +651,4 @@ const LeaveRequestTab = () => {
   );
 };
 
-export default LeaveRequestTab;
+export default LeaveRequestsAdmin;

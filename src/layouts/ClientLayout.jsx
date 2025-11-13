@@ -47,12 +47,12 @@ const ClientLayout = () => {
               letterSpacing: "0.5px",
             }}
           >
-            Hệ thống quản lý nhân sự
+            Human Resource Management System
           </Typography>
 
           {/* Avatar Menu */}
           <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Tài khoản người dùng">
+            <Tooltip title="User Account">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar
                   alt="User Avatar"
@@ -79,19 +79,19 @@ const ClientLayout = () => {
                 to="/profile"
               >
                 <PersonIcon fontSize="small" sx={{ mr: 1 }} />
-                Hồ sơ cá nhân
+                Profile
               </MenuItem>
               <Divider />
               <MenuItem onClick={handleCloseUserMenu}>
                 <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
-                Đăng xuất
+                Logout
               </MenuItem>
             </Menu>
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Nội dung chính */}
+      {/* Main Content */}
       <Box
         component="main"
         sx={{
@@ -116,7 +116,7 @@ const ClientLayout = () => {
           borderTop: "1px solid #ddd",
         }}
       >
-        <Typography variant="body2">© 2025 Công ty TechNo.</Typography>
+        <Typography variant="body2">© 2025 TechNo Company.</Typography>
       </Box>
     </Box>
   );
