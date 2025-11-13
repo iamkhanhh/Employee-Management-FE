@@ -16,13 +16,72 @@ import {
 import {
   Person as PersonIcon,
   Logout as LogoutIcon,
-} from "@mui/icons-material";
+  Dashboard as DashboardIcon,
+} from '@mui/icons-material';
+
+const drawerWidth = 240;
 
 const ClientLayout = () => {
   const [anchorElUser, setAnchorElUser] = useState(null);
 
-  const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
-  const handleCloseUserMenu = () => setAnchorElUser(null);
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
+  };
+
+  const handleCloseUserMenu = () => {
+    setAnchorElUser(null);
+  };
+
+  const drawer = (
+    <div>
+      <Toolbar>
+        <Typography variant="h6" noWrap>
+          Công ty ABC
+        </Typography>
+      </Toolbar>
+      <Divider />
+      <List>
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            to="/dashboard"
+            selected={location.pathname === '/dashboard'}
+          >
+            <ListItemIcon>
+              <DashboardIcon />
+            </ListItemIcon>
+            <ListItemText primary="Bảng điều khiển" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            to="/profile"
+            selected={location.pathname === '/profile'}
+          >
+            <ListItemIcon>
+              <PersonIcon />
+            </ListItemIcon>
+            <ListItemText primary="Hồ sơ cá nhân" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            to="/settings"
+            selected={location.pathname === '/settings'}
+          >
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Cài đặt" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+    </div>
+  );
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>

@@ -13,7 +13,6 @@ import ClientLayout from "./layouts/ClientLayout";
 import MyProfile from "./pages/profile/MyProfile";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import Login from "./pages/auth/LoginPage"
-import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
 
 function App() {
   return (
@@ -45,6 +44,8 @@ function App() {
         {/* --- Khu vực CLIENT --- */}
         <Route element={<ClientLayout />}>
           <Route path="/profile" element={<MyProfile />} />
+          <Route path="/attendance" element={<AttendanceManager />} />
+          <Route path="/my-attendance" element={<MyAttendance />} />
         </Route>
       </Routes>
   );

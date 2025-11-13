@@ -1,4 +1,4 @@
-import apiClient from './api'
+import { apiClient } from './api'
 import { storage } from '../utils/storage'
 import { STORAGE_KEYS } from '../constants'
 
