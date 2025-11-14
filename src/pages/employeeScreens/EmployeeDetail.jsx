@@ -21,41 +21,37 @@ import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import WorkIcon from "@mui/icons-material/Work";
 
+// Import service để gọi API
+import { employeeService } from "../../services/employeeService";
+
 export default function EmployeeDetail() {
     const navigate = useNavigate();
     const { id } = useParams();
 
     const [employee, setEmployee] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock data (replace with real API later)
+    // Lấy dữ liệu nhân viên từ API khi component được mount
     useEffect(() => {
-        const mockData = [
-            {
-                id: 1,
-                empCode: "00000001",
-                full_name: "Nguyễn Văn A",
-                dob: "1990-01-01",
-                gender: "Male",
-                email: "nguyenvana@tinviet.com",
-                phone_number: "0123456789",
-                department: "HR-Admin",
-                work_group: "Administrative",
-                hire_date: "2025-06-18",
-                position: "Staff",
-                status: "Active",
-                nationality: "Vietnam",
-                religion: "None",
-                education: "University",
-                marital_status: "Single",
-                tax_code: "123456789",
-                bank_name: "Vietcombank",
-                bank_account: "1234567890",
-            },
-        ];
+        const fetchEmployee = async () => {
+            try {
+                setLoading(true);
+                const response = await employeeService.getEmployeeById(id);
+                response.data.dob = response.data.dob ? new Date(response.data.dob).toISOString().split('T')[0] : '';
+                response.data.hireDate = response.data.hireDate ? new Date(response.data.hireDate).toISOString().split('T')[0] : '';
+                setEmployee(response.data);
+                setError(null);
+            } catch (err) {
+                console.error("Failed to fetch employee:", err);
+                setError("Không thể tải thông tin nhân viên. Vui lòng thử lại.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        const found = mockData.find((e) => e.id === parseInt(id));
-        setEmployee(found);
+        fetchEmployee();
     }, [id]);
 
     const handleChange = (e) => {
@@ -63,17 +59,22 @@ export default function EmployeeDetail() {
         setEmployee({ ...employee, [name]: value });
     };
 
-    const handleSave = () => {
-        console.log("Save employee information:", employee);
-        setIsEditing(false);
-        // TODO: Call API PUT /api/employees/:id
+    const handleSave = async () => {
+        // TODO: Xử lý việc gửi dữ liệu dưới dạng FormData nếu có upload file
+        try {
+            await employeeService.updateEmployee(id, employee);
+        } catch (error) {
+            console.error("Failed to update employee:", error);
+        }
+        console.log("Đã lưu thông tin nhân viên:", employee);
+        setIsEditing(false); // Tắt chế độ chỉnh sửa sau khi lưu
     };
 
     const handleBack = () => {
         navigate("/admin/employees");
     };
 
-    if (!employee) {
+    if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
                 <Typography sx={{ color: '#6b7280' }}>
@@ -82,6 +83,16 @@ export default function EmployeeDetail() {
             </Box>
         );
     }
+
+    if (error) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
+    }
+
+    if (!employee) return null; // Hoặc hiển thị thông báo "Không tìm thấy nhân viên"
 
     return (
         <Box>
@@ -108,11 +119,11 @@ export default function EmployeeDetail() {
                                 fontWeight: 600,
                             }}
                         >
-                            {employee.full_name?.charAt(0)?.toUpperCase() || '?'}
+                            {employee.fullName?.charAt(0)?.toUpperCase() || '?'}
                         </Avatar>
                         <Box>
                             <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937', mb: 0.5 }}>
-                                {employee.full_name}
+                                {employee.fullName}
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#6b7280', mb: 1 }}>
                                 Employee Code: <strong>{employee.empCode}</strong>
@@ -128,7 +139,7 @@ export default function EmployeeDetail() {
                                     }}
                                 />
                                 <Chip
-                                    label={employee.position}
+                                    label={employee.roleInDept}
                                     size="small"
                                     variant="outlined"
                                     sx={{
@@ -229,10 +240,10 @@ export default function EmployeeDetail() {
                                 <Grid item xs={12}>
                                     <TextField
                                         label="Full Name"
-                                        name="full_name"
+                                        name="fullName"
                                         fullWidth
                                         required
-                                        value={employee.full_name}
+                                        value={employee.fullName}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -286,9 +297,9 @@ export default function EmployeeDetail() {
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         label="Phone Number"
-                                        name="phone_number"
+                                        name="phoneNumber"
                                         fullWidth
-                                        value={employee.phone_number}
+                                        value={employee.phoneNumber}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -315,9 +326,9 @@ export default function EmployeeDetail() {
                                     <TextField
                                         select
                                         label="Marital Status"
-                                        name="marital_status"
+                                        name="maritalStatus"
                                         fullWidth
-                                        value={employee.marital_status}
+                                        value={employee.maritalStatus}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -407,11 +418,11 @@ export default function EmployeeDetail() {
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         label="Hire Date"
-                                        name="hire_date"
+                                        name="hireDate"
                                         type="date"
                                         fullWidth
                                         InputLabelProps={{ shrink: true }}
-                                        value={employee.hire_date}
+                                        value={employee.hireDate}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -440,9 +451,9 @@ export default function EmployeeDetail() {
                                     <TextField
                                         select
                                         label="Work Group"
-                                        name="work_group"
+                                        name="workGroup"
                                         fullWidth
-                                        value={employee.work_group}
+                                        value={employee.workGroup}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -456,9 +467,9 @@ export default function EmployeeDetail() {
                                     <TextField
                                         select
                                         label="Position"
-                                        name="position"
+                                        name="roleInDept"
                                         fullWidth
-                                        value={employee.position}
+                                        value={employee.roleInDept}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -472,9 +483,9 @@ export default function EmployeeDetail() {
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         label="Tax Code"
-                                        name="tax_code"
+                                        name="taxCode"
                                         fullWidth
-                                        value={employee.tax_code}
+                                        value={employee.taxCode}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -485,9 +496,9 @@ export default function EmployeeDetail() {
                                     <TextField
                                         select
                                         label="Bank"
-                                        name="bank_name"
+                                        name="bankName"
                                         fullWidth
-                                        value={employee.bank_name}
+                                        value={employee.bankName}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}
@@ -501,9 +512,9 @@ export default function EmployeeDetail() {
                                 <Grid item xs={12} sm={6}>
                                     <TextField
                                         label="Bank Account"
-                                        name="bank_account"
+                                        name="bankAccount"
                                         fullWidth
-                                        value={employee.bank_account}
+                                        value={employee.bankAccount}
                                         onChange={handleChange}
                                         disabled={!isEditing}
                                         variant={isEditing ? 'outlined' : 'filled'}

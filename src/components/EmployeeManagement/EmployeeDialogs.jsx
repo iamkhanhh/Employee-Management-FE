@@ -8,12 +8,12 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
       <form onSubmit={onSubmit}>
         <DialogContent dividers>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextField label="Full name" value={formState.full_name} onChange={(e) => setFormState({ ...formState, full_name: e.target.value })} required />
-            <TextField label="User ID" type="number" value={formState.user_id} onChange={(e) => setFormState({ ...formState, user_id: e.target.value })} required helperText="ID của tài khoản (user account)" />
+            <TextField label="Full name" value={formState.full_name} onChange={(e) => setFormState({ ...formState, fullName: e.target.value })} required />
+            <TextField label="User ID" type="number" value={formState.userId} onChange={(e) => setFormState({ ...formState, userId: e.target.value })} required helperText="ID của tài khoản (user account)" />
 
             <FormControl required>
               <InputLabel>Department</InputLabel>
-              <Select label="Department" value={formState.dept_id} onChange={(e) => setFormState({ ...formState, dept_id: e.target.value })}>
+              <Select label="Department" value={formState.deptId} onChange={(e) => setFormState({ ...formState, deptId: e.target.value })}>
                 {departments.map((dept) => (
                   <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
                 ))}
@@ -30,8 +30,8 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
               </Select>
             </FormControl>
             <TextField label="Date of birth" type="date" value={formState.dob} onChange={(e) => setFormState({ ...formState, dob: e.target.value })} InputLabelProps={{ shrink: true }} />
-            <TextField label="Phone number" value={formState.phone_number} onChange={(e) => setFormState({ ...formState, phone_number: e.target.value })} />
-            <TextField label="Hire date" type="date" value={formState.hire_date} onChange={(e) => setFormState({ ...formState, hire_date: e.target.value })} InputLabelProps={{ shrink: true }} />
+            <TextField label="Phone number" value={formState.phoneNumber} onChange={(e) => setFormState({ ...formState, phoneNumber: e.target.value })} />
+            <TextField label="Hire date" type="date" value={formState.hireDate} onChange={(e) => setFormState({ ...formState, hireDate: e.target.value })} InputLabelProps={{ shrink: true }} />
             <FormControl>
               <InputLabel>Status</InputLabel>
               <Select label="Status" value={formState.status} onChange={(e) => setFormState({ ...formState, status: e.target.value })}>
@@ -40,8 +40,7 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
                 <MenuItem value="pending">Pending</MenuItem>
               </Select>
             </FormControl>
-            <TextField label="Role in dept" value={formState.role_in_dept} onChange={(e) => setFormState({ ...formState, role_in_dept: e.target.value })} placeholder="e.g. Staff, Manager" />
-            <TextField label="Address" value={formState.address} onChange={(e) => setFormState({ ...formState, address: e.target.value })} className="md:col-span-2" />
+            <TextField label="Role in dept" value={formState.roleInDept} onChange={(e) => setFormState({ ...formState, roleInDept: e.target.value })} placeholder="e.g. Staff, Manager" />
           </div>
         </DialogContent>
         <DialogActions>
