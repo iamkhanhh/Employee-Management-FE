@@ -10,6 +10,8 @@ import {
   TextField,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import toast, { Toaster } from 'react-hot-toast';
+import { axiosInstance } from "../../lib/axios";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,9 +21,21 @@ export default function Login() {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Username:", username, "Password:", password);
+    let data = {
+      email: username,
+      password: password
+    }
+    const res = await axiosInstance.post("/auth/login", data);
+    console.log(res);
+    if (res.data.status == "success") {
+      toast.success(res.data.message);
+      navigate("/admin")
+    }
+    else {
+      toast.error(res.data.message);
+    }
   };
 
   const handleContinue = () => {

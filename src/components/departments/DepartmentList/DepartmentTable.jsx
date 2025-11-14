@@ -46,30 +46,12 @@ const DepartmentTable = ({
   const isSelected = (id) => selectedDepartments.indexOf(id) !== -1;
 
   const getHeadInfo = (head) => {
-    if (!head) return { name: 'N/A', avatar: null };
+    if (!head) return { name: 'N/A' };
     return {
       name: head.full_name,
-      avatar: head.full_name?.charAt(0).toUpperCase()
     };
   };
 
-  const getStatusChip = (status) => {
-    return status === 'ACTIVE' ? (
-      <Chip 
-        label="Active" 
-        color="success" 
-        size="small"
-        sx={{ fontWeight: 500 }}
-      />
-    ) : (
-      <Chip 
-        label="Inactive" 
-        color="error" 
-        size="small"
-        sx={{ fontWeight: 500 }}
-      />
-    );
-  };
 
   if (loading) {
     return (
@@ -83,7 +65,7 @@ const DepartmentTable = ({
   }
 
   return (
-    <Paper sx={{ 
+    <Paper sx={{
       borderRadius: 2,
       overflow: 'hidden',
       boxShadow: '0 3px 10px rgba(0,0,0,0.1)'
@@ -91,7 +73,7 @@ const DepartmentTable = ({
       <TableContainer>
         <Table>
           <TableHead>
-            <TableRow sx={{ 
+            <TableRow sx={{
               backgroundColor: '#1976d2',
               '& .MuiTableCell-head': {
                 color: 'white',
@@ -111,7 +93,6 @@ const DepartmentTable = ({
               <TableCell>Head</TableCell>
               <TableCell align="center">Employees</TableCell>
               <TableCell>Created Date</TableCell>
-              <TableCell>Status</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -121,7 +102,7 @@ const DepartmentTable = ({
               .map((department) => {
                 const selected = isSelected(department.id);
                 const headInfo = getHeadInfo(department.head);
-                
+
                 return (
                   <TableRow
                     key={department.id}
@@ -141,12 +122,12 @@ const DepartmentTable = ({
                         color="primary"
                       />
                     </TableCell>
-                    
+
                     <TableCell>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar 
-                          sx={{ 
-                            width: 48, 
+                        <Avatar
+                          sx={{
+                            width: 48,
                             height: 48,
                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             fontSize: 20,
@@ -157,26 +138,20 @@ const DepartmentTable = ({
                         </Avatar>
                         <Box>
                           <Typography sx={{ fontWeight: 600, fontSize: '1rem' }}>
-                            {department.dept_name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            ID: DEPT{String(department.id).padStart(3, '0')}
+                            {department.deptName}
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
-                    
+
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
-                          {headInfo.avatar}
-                        </Avatar>
                         <Typography variant="body2">
                           {headInfo.name}
                         </Typography>
                       </Box>
                     </TableCell>
-                    
+
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center">
                         <GroupIcon fontSize="small" color="action" />
@@ -187,35 +162,16 @@ const DepartmentTable = ({
                           employees
                         </Typography>
                       </Stack>
-                      {department.employees && department.employees.length > 0 && (
-                        <AvatarGroup max={3} sx={{ mt: 1, justifyContent: 'center' }}>
-                          {department.employees.slice(0, 3).map((emp, index) => (
-                            <Avatar 
-                              key={index} 
-                              sx={{ width: 24, height: 24, fontSize: 10 }}
-                            >
-                              {emp.full_name?.charAt(0)}
-                            </Avatar>
-                          ))}
-                        </AvatarGroup>
-                      )}
+
                     </TableCell>
-                    
+
                     <TableCell>
                       <Typography variant="body2">
-                        {formatDate(department.created_at)}
+                        {formatDate(department.createdAt)}
                       </Typography>
-                      {department.updated_at && (
-                        <Typography variant="caption" color="text.secondary">
-                          Updated: {formatDate(department.updated_at)}
-                        </Typography>
-                      )}
                     </TableCell>
-                    
-                    <TableCell>
-                      {getStatusChip(department.status || 'ACTIVE')}
-                    </TableCell>
-                    
+
+
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
                         <Tooltip title="View Details">
@@ -235,7 +191,7 @@ const DepartmentTable = ({
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        
+
                         <Tooltip title="Edit">
                           <IconButton
                             size="small"
@@ -253,7 +209,7 @@ const DepartmentTable = ({
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        
+
                         <Tooltip title="Delete">
                           <IconButton
                             size="small"
@@ -279,7 +235,7 @@ const DepartmentTable = ({
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"

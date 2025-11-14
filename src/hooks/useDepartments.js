@@ -6,7 +6,8 @@ import {
   updateDepartmentInMockData,
   deleteDepartmentFromMockData
 } from '../data/mockData';
-
+import { axiosInstance } from '../lib/axios';
+import toast, { Toaster } from 'react-hot-toast';
 export const useDepartments = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,62 +46,31 @@ export const useDepartments = () => {
   const fetchDepartments = useCallback(async (filters = {}) => {
     setLoading(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    let filteredDepartments = [...mockDepartments].filter(d => !d.is_deleted);
-    
-    // Add employee count and head info for each department
-    filteredDepartments = filteredDepartments.map(dept => {
-      const deptEmployees = mockEmployees.filter(
-        emp => emp.dept_id === dept.id && emp.status === 'ACTIVE' && !emp.is_deleted
-      );
-      const head = deptEmployees.find(emp => emp.role_in_dept === 'HEAD');
-      
-      return {
-        ...dept,
-        employeeCount: deptEmployees.length,
-        employees: deptEmployees,
-        head: head,
-        status: dept.is_deleted ? 'INACTIVE' : 'ACTIVE'
-      };
-    });
+    let data;
+    const res = await axiosInstance.get("/departments");
+    console.log(res);
+    if (res.data.status == "success") {
+      toast.success(res.data.message);
+      data = res.data.data;
+    }
+    else {
+      toast.error(res.data.message);
+    }
     
     // Apply filters
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filteredDepartments = filteredDepartments.filter(d => 
-        d.dept_name.toLowerCase().includes(searchLower)
+      data = data.filter(d => 
+        d.deptName.toLowerCase().includes(searchLower)
       );
     }
     
-    if (filters.status && filters.status !== 'all') {
-      filteredDepartments = filteredDepartments.filter(d => {
-        const deptStatus = d.status || 'ACTIVE';
-        return filters.status === 'active' ? deptStatus === 'ACTIVE' : deptStatus === 'INACTIVE';
-      });
-    }
     
-    // Apply sorting
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case 'name':
-          filteredDepartments.sort((a, b) => a.dept_name.localeCompare(b.dept_name));
-          break;
-        case 'employeeCount':
-          filteredDepartments.sort((a, b) => b.employeeCount - a.employeeCount);
-          break;
-        case 'createdDate':
-          filteredDepartments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-          break;
-      }
-    }
-    
-    setDepartments(filteredDepartments);
-    setStats(calculateStats(filteredDepartments));
+    setDepartments(data);
+    setStats(calculateStats(data));
     setLoading(false);
     
-    return filteredDepartments;
+    return data;
   }, [calculateStats]);
 
   // Create new department

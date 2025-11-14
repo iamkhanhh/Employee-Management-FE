@@ -12,22 +12,19 @@ import {
   Stack,
   Alert,
   Autocomplete,
-  Avatar,
   InputAdornment
 } from '@mui/material';
 import {
   Business as BusinessIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
-  Person as PersonIcon,
-  Description as DescriptionIcon
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { mockEmployees } from '../../../data/mockData';
 
 const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
   const [departmentData, setDepartmentData] = useState({
     dept_name: '',
-    description: '',
     head: null,
   });
 
@@ -61,42 +58,27 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-
     setIsSubmitting(true);
-    const result = await onSubmit(departmentData); 
-
-    if (result.success) {
-      handleClose();
-    }
-
+    const result = await onSubmit(departmentData);
+    if (result.success) handleClose();
     setIsSubmitting(false);
   };
 
   const handleClose = () => {
-    setDepartmentData({
-      dept_name: '',
-      description: '',
-      head: null,
-    });
+    setDepartmentData({ dept_name: '', head: null });
     setErrors({});
     onClose();
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
-      fullWidth
-      scroll="paper"
-    >
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth scroll="paper">
       {/* Header */}
       <DialogTitle
         sx={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          py: 2,   // padding top-bottom
-          px: 3,   // padding left-right
+          py: 2,
+          px: 3,
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -106,70 +88,86 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
       </DialogTitle>
 
       {/* Content */}
-      <DialogContent sx={{ mt: 2, px: 3, pb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
+      <DialogContent sx={{ mt: 2, px: 3, pb: 2 }}>
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* Department Name */}
+          <Grid item xs={12} >
             <TextField
               label="Department Name"
-              value={departmentData.dept_name}
-              onChange={(e) => handleInputChange('dept_name', e.target.value)}
+              variant="outlined"
               fullWidth
               required
+              value={departmentData.dept_name}
+              onChange={(e) => handleInputChange('dept_name', e.target.value)}
               error={!!errors.dept_name}
               helperText={errors.dept_name}
-              placeholder="e.g., Engineering Department"
+              InputLabelProps={{ shrink: true }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <BusinessIcon />
+                    <BusinessIcon color="action" />
                   </InputAdornment>
                 ),
               }}
             />
           </Grid>
 
-          <Grid item xs={12}>
-            <TextField
-              label="Description"
-              value={departmentData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              fullWidth
-              multiline
-              rows={3}
-              placeholder="Describe the department's functions and responsibilities..."
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <DescriptionIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
+          {/* Department Head */}
+          <Grid item xs={12} md={12}>
             <Autocomplete
+              fullWidth
               options={availableEmployees}
               getOptionLabel={(option) => option.full_name || ''}
               value={departmentData.head}
               onChange={(event, value) => handleInputChange('head', value)}
+
+              // Thêm các props này để mở rộng dropdown
+              ListboxProps={{
+                style: {
+                  maxHeight: '400px', // Tăng chiều cao nếu cần
+                }
+              }}
+              componentsProps={{
+                paper: {
+                  sx: {
+                    width: 'auto',
+                    minWidth: '400px', // Hoặc bất kỳ width nào bạn muốn
+                    maxWidth: '600px',
+                  }
+                }
+              }}
+
               renderOption={(props, option) => (
-                <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ width: 32, height: 32 }}>{option.full_name.charAt(0)}</Avatar>
-                  <Typography variant="body2">{option.full_name}</Typography>
+                <Box
+                  component="li"
+                  {...props}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    whiteSpace: 'nowrap', // Ngăn text xuống dòng
+                    overflow: 'visible',   // Hiển thị đầy đủ text
+                  }}
+                >
+                  <Typography variant="body2" noWrap={false}>
+                    {option.full_name}
+                  </Typography>
                 </Box>
               )}
+
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Department Head"
-                  placeholder="Select Head"
+                  variant="outlined"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
                   InputProps={{
                     ...params.InputProps,
                     startAdornment: (
                       <>
                         <InputAdornment position="start">
-                          <PersonIcon />
+                          <PersonIcon color="action" />
                         </InputAdornment>
                         {params.InputProps.startAdornment}
                       </>
@@ -180,6 +178,8 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
             />
           </Grid>
 
+
+          {/* Note */}
           <Grid item xs={12}>
             <Alert severity="info" icon={<BusinessIcon />}>
               <Typography variant="body2">

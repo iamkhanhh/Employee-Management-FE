@@ -32,8 +32,8 @@ const DepartmentFilters = ({
   selectedCount
 }) => {
   return (
-    <Paper sx={{ 
-      p: 3, 
+    <Paper sx={{
+      p: 3,
       mb: 3,
       borderRadius: 2,
       boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
@@ -45,7 +45,7 @@ const DepartmentFilters = ({
           Search Filters
         </Typography>
       </Box>
-      
+
       <Grid container spacing={2} alignItems="center">
         <Grid item xs={12} md={4}>
           <TextField
@@ -80,36 +80,6 @@ const DepartmentFilters = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={2}>
-          <TextField
-            select
-            name="status"
-            label="Status"
-            fullWidth
-            value={filters.status}
-            onChange={(e) => onFilterChange('status', e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12} md={2}>
-          <TextField
-            select
-            name="sortBy"
-            label="Sort By"
-            fullWidth
-            value={filters.sortBy}
-            onChange={(e) => onFilterChange('sortBy', e.target.value)}
-          >
-            <MenuItem value="name">Department Name</MenuItem>
-            <MenuItem value="employeeCount">Employee Count</MenuItem>
-            <MenuItem value="createdDate">Created Date</MenuItem>
-          </TextField>
-        </Grid>
-
         <Grid item xs={12} md={4}>
           <Stack direction="row" spacing={1}>
             <Button
@@ -123,11 +93,11 @@ const DepartmentFilters = ({
             >
               Search
             </Button>
-            
+
             <Tooltip title="Refresh">
-              <IconButton 
+              <IconButton
                 onClick={onClearFilters}
-                sx={{ 
+                sx={{
                   bgcolor: '#f5f5f5',
                   '&:hover': { bgcolor: '#e0e0e0' }
                 }}
