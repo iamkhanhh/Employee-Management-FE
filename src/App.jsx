@@ -16,6 +16,7 @@ import Login from "./pages/auth/LoginPage"
 import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
 import AttendanceManager from "./components/Attendance/AttendanceManager";
 import MyAttendance from "./components/Attendance/MyAttendance";
+import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
         <Route element={<ClientLayout />}>
           <Route path="/profile" element={<MyProfile />} />
           <Route path="/my-attendance" element={<MyAttendance />} />
+          <Route path="/leave-requests" element={<LeaveRequestPage />} />
         </Route>
       </Routes>
   );

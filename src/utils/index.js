@@ -1,12 +1,12 @@
 // Format date
-export const formatDate = (date, format = 'DD/MM/YYYY') => {
-  if (!date) return ''
-  const d = new Date(date)
-  if (format === 'DD/MM/YYYY') {
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-  }
-  return d.toLocaleDateString()
-}
+// export const formatDate = (date, format = 'DD/MM/YYYY') => {
+//   if (!date) return ''
+//   const d = new Date(date)
+//   if (format === 'DD/MM/YYYY') {
+//     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+//   }
+//   return d.toLocaleDateString()
+// }
 
 // Debounce function
 export const debounce = (func, wait) => {

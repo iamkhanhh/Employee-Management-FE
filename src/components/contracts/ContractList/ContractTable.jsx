@@ -11,27 +11,23 @@ import {
   Checkbox,
   Box,
   Typography,
-  Avatar,
   Stack,
   IconButton,
   Tooltip,
   alpha,
-  Chip
 } from '@mui/material';
+
 import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   CloudDownload as CloudDownloadIcon,
-  Person as PersonIcon,
   Business as BusinessIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon
 } from '@mui/icons-material';
+
 import ContractStatusChip from '../shared/ContractStatusChip';
 import ContractTypeChip from '../shared/ContractTypeChip';
 import { formatDate, calculateDaysRemaining } from '../../../utils/dateUtils';
-import { generateEmployeeCode } from '../../../data/mockData';
 
 const ContractTable = ({
   contracts,
@@ -47,31 +43,11 @@ const ContractTable = ({
   onPageChange,
   onRowsPerPageChange
 }) => {
+
   const isSelected = (id) => selectedContracts.indexOf(id) !== -1;
 
-  const getRoleInDeptChip = (role) => {
-    const roleConfig = {
-      HEAD: { label: 'Head', color: 'error' },
-      DEPUTY: { label: 'Deputy', color: 'warning' },
-      STAFF: { label: 'Staff', color: 'default' }
-    };
-    const config = roleConfig[role] || roleConfig.STAFF;
-    return (
-      <Chip
-        label={config.label}
-        color={config.color}
-        size="small"
-        variant="outlined"
-      />
-    );
-  };
-
   return (
-    <Paper sx={{
-      borderRadius: 2,
-      overflow: 'hidden',
-      boxShadow: '0 3px 10px rgba(0,0,0,0.1)'
-    }}>
+    <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 3px 10px rgba(0,0,0,0.1)' }}>
       <TableContainer>
         <Table>
           <TableHead>
@@ -84,7 +60,8 @@ const ContractTable = ({
                   onChange={onSelectAll}
                 />
               </TableCell>
-              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Employee Info</TableCell>
+
+              <TableCell sx={{ color: 'white', fontWeight: 600 }}>Employee</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 600 }}>Department</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 600 }}>Contract Type</TableCell>
               <TableCell sx={{ color: 'white', fontWeight: 600 }}>Contract Duration</TableCell>
@@ -93,26 +70,23 @@ const ContractTable = ({
               <TableCell sx={{ color: 'white', fontWeight: 600 }} align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
+
           <TableBody>
             {contracts
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((contract) => {
+
                 const selected = isSelected(contract.id);
-                const daysRemaining = calculateDaysRemaining(contract.end_date);
-                const employee = contract.employee;
-                const empCode = generateEmployeeCode(employee?.id);
+                const daysRemaining = calculateDaysRemaining(contract.endDate);
 
                 return (
                   <TableRow
                     key={contract.id}
                     hover
                     selected={selected}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: alpha('#1976d2', 0.04)
-                      }
-                    }}
+                    sx={{ '&:hover': { backgroundColor: alpha('#1976d2', 0.04) } }}
                   >
+                    {/* Checkbox */}
                     <TableCell padding="checkbox">
                       <Checkbox
                         checked={selected}
@@ -121,98 +95,72 @@ const ContractTable = ({
                       />
                     </TableCell>
 
+                    {/* Employee Name */}
                     <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar
-                          sx={{
-                            width: 45,
-                            height: 45,
-                            backgroundColor: employee?.gender === 'Nam' ? '#1976d2' : '#e91e63',
-                            fontSize: 16,
-                            fontWeight: 600
-                          }}
-                        >
-                          {employee?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </Avatar>
-                        <Box>
-                          <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
-                            {employee?.full_name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" component="div">
-                            <PersonIcon sx={{ fontSize: 14, mr: 0.5 }} />
-                            {empCode} • {employee?.role_in_dept && getRoleInDeptChip(employee.role_in_dept)}
-                          </Typography>
-                          <Stack direction="row" spacing={2}>
-                            <Typography variant="caption" color="text.secondary" component="div">
-                              <EmailIcon sx={{ fontSize: 12, mr: 0.5 }} />
-                              {employee?.user?.email}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" component="div">
-                              <PhoneIcon sx={{ fontSize: 12, mr: 0.5 }} />
-                              {employee?.phone_number}
-                            </Typography>
-                          </Stack>
-                        </Box>
-                      </Box>
+                      <Typography sx={{ fontWeight: 600, fontSize: 15 }}>
+                        {contract.employeeName ?? 'N/A'}
+                      </Typography>
                     </TableCell>
 
+                    {/* Department – hiện API chưa có */}
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }} component="div">
-                          <BusinessIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'middle' }} />
-                          {employee?.department?.dept_name}
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          <BusinessIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                          N/A
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" component="div">
-                          {employee?.position?.position_name}
+                        <Typography variant="caption" color="text.secondary">
+                          Position: N/A
                         </Typography>
                       </Box>
                     </TableCell>
 
+                    {/* Contract Type */}
                     <TableCell>
-                      <ContractTypeChip type={contract.contract_type} />
+                      <ContractTypeChip type={contract.contractType} />
                     </TableCell>
 
+                    {/* Dates */}
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" component="div">
-                          {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
+                        <Typography variant="body2">
+                          {formatDate(contract.startDate)} - {formatDate(contract.endDate)}
                         </Typography>
+
                         {daysRemaining && (
                           <Typography
                             variant="caption"
                             sx={{
-                              color: daysRemaining.includes('Remaining') && parseInt(daysRemaining.match(/\d+/)) <= 30
+                              color: daysRemaining.includes('Remaining') &&
+                                parseInt(daysRemaining.match(/\d+/)) <= 30
                                 ? '#ff9800'
                                 : '#f44336',
                               fontWeight: 500,
-                              display: 'block'
                             }}
                           >
                             {daysRemaining}
                           </Typography>
                         )}
-                        <Typography variant="caption" color="text.secondary" component="div">
-                          Created on: {formatDate(contract.created_at)}
+
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Created on: {formatDate(contract.createdAt)}
                         </Typography>
                       </Box>
                     </TableCell>
 
+                    {/* Status */}
                     <TableCell>
                       <ContractStatusChip status={contract.status} />
                     </TableCell>
 
+                    {/* Attachment */}
                     <TableCell>
-                      {contract.file_url ? (
+                      {contract.fileUrl ? (
                         <Tooltip title="Download contract file">
                           <IconButton
                             size="small"
-                            onClick={() => onDownloadFile(contract.file_url)}
-                            sx={{
-                              color: '#1976d2',
-                              '&:hover': {
-                                backgroundColor: alpha('#1976d2', 0.1)
-                              }
-                            }}
+                            onClick={() => onDownloadFile(contract.fileUrl)}
+                            sx={{ color: '#1976d2' }}
                           >
                             <CloudDownloadIcon />
                           </IconButton>
@@ -224,54 +172,29 @@ const ContractTable = ({
                       )}
                     </TableCell>
 
+                    {/* Actions */}
                     <TableCell align="center">
                       <Stack direction="row" spacing={1} justifyContent="center">
                         <Tooltip title="View details">
-                          <IconButton
-                            size="small"
-                            onClick={() => onView(contract.id)}
-                            sx={{
-                              color: '#4caf50',
-                              '&:hover': {
-                                backgroundColor: alpha('#4caf50', 0.1)
-                              }
-                            }}
-                          >
+                          <IconButton size="small" onClick={() => onView(contract.id)} sx={{ color: '#4caf50', '&:hover': { backgroundColor: alpha('#4caf50', 0.1) } }} >
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
 
                         <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() => onEdit(contract.id)}
-                            sx={{
-                              color: '#ff9800',
-                              '&:hover': {
-                                backgroundColor: alpha('#ff9800', 0.1)
-                              }
-                            }}
-                          >
+                          <IconButton size="small" onClick={() => onEdit(contract.id)} sx={{ color: '#ff9800' }}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
 
                         <Tooltip title="Delete">
-                          <IconButton
-                            size="small"
-                            onClick={() => onDelete(contract)}
-                            sx={{
-                              color: '#f44336',
-                              '&:hover': {
-                                backgroundColor: alpha('#f44336', 0.1)
-                              }
-                            }}
-                          >
+                          <IconButton size="small" onClick={() => onDelete(contract)} sx={{ color: '#f44336' }}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Stack>
                     </TableCell>
+
                   </TableRow>
                 );
               })}
@@ -279,6 +202,7 @@ const ContractTable = ({
         </Table>
       </TableContainer>
 
+      {/* Pagination */}
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"
@@ -288,7 +212,6 @@ const ContractTable = ({
         onPageChange={onPageChange}
         onRowsPerPageChange={onRowsPerPageChange}
         labelRowsPerPage="Rows per page:"
-        labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
       />
     </Paper>
   );

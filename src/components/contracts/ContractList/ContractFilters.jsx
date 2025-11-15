@@ -1,6 +1,6 @@
 import React from 'react';
 import { CONTRACT_TYPES, CONTRACT_STATUS } from '../../../constants/contractConstants';
-import { mockDepartments } from '../../../data/mockData';
+
 
 import {
   Paper,
@@ -25,6 +25,8 @@ import {
 
 const ContractFilters = ({
   filters,
+  departments,
+  contractTypes,
   onFilterChange,
   onSearch,
   onClearFilters,
@@ -68,27 +70,7 @@ const ContractFilters = ({
           />
         </Grid>
 
-        <Grid item xs={12} md={3}>
-          <TextField
-            select
-            name="department"
-            label="Department"
-            fullWidth
-            value={filters.department || 'all'}
-            onChange={(e) => onFilterChange('department', e.target.value)}
-          >
-            <MenuItem value="all">All</MenuItem>
-            {mockDepartments
-              .filter(d => !d.is_deleted)
-              .map((dept) => (
-                <MenuItem key={dept.id} value={dept.id}>
-                  {dept.dept_name}
-                </MenuItem>
-              ))}
-          </TextField>
-        </Grid>
-
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={3} >
           <TextField
             select
             name="contractType"
@@ -98,10 +80,12 @@ const ContractFilters = ({
             onChange={(e) => onFilterChange('contractType', e.target.value)}
           >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Full-time</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Part-time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Part_time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Full_time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.INTERNSHIP}>Intership</MenuItem>
           </TextField>
         </Grid>
+
 
         <Grid item xs={12} md={3}>
           <TextField
@@ -113,7 +97,7 @@ const ContractFilters = ({
             onChange={(e) => onFilterChange('status', e.target.value)}
           >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Active</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Actives</MenuItem>
             <MenuItem value={CONTRACT_STATUS.EXPIRED}>Expired</MenuItem>
             <MenuItem value={CONTRACT_STATUS.PENDING}>Pending</MenuItem>
             <MenuItem value={CONTRACT_STATUS.TERMINATED}>Terminated</MenuItem>

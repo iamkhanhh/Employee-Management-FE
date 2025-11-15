@@ -1,8 +1,9 @@
 // src/constants/contractConstants.js
 
 export const CONTRACT_TYPES = {
-  FULL_TIME: 'Full-time',
-  PART_TIME: 'Part-time'
+  FULL_TIME: 'FULL_TIME',
+  PART_TIME: 'PART_TIME',
+  INTERNSHIP: 'INTERNSHIP'
 };
 
 export const CONTRACT_STATUS = {
@@ -13,34 +14,39 @@ export const CONTRACT_STATUS = {
 };
 
 export const STATUS_CONFIG = {
-  [CONTRACT_STATUS.ACTIVE]: { 
-    label: "Đang hiệu lực", 
-    color: "success" 
+  [CONTRACT_STATUS.ACTIVE]: {
+    label: "ACTIVE",
+    color: "success"
   },
-  [CONTRACT_STATUS.EXPIRED]: { 
-    label: "Hết hạn", 
-    color: "error" 
+  [CONTRACT_STATUS.EXPIRED]: {
+    label: "EXPIRED",
+    color: "error"
   },
-  [CONTRACT_STATUS.PENDING]: { 
-    label: "Chờ duyệt", 
-    color: "warning" 
+  [CONTRACT_STATUS.PENDING]: {
+    label: "PENDING",
+    color: "warning"
   },
-  [CONTRACT_STATUS.TERMINATED]: { 
-    label: "Đã chấm dứt", 
-    color: "default" 
+  [CONTRACT_STATUS.TERMINATED]: {
+    label: "TERMINATED",
+    color: "default"
   }
 };
 
 export const CONTRACT_TYPE_CONFIG = {
-  [CONTRACT_TYPES.FULL_TIME]: { 
-    label: "Toàn thời gian", 
-    color: "primary", 
-    variant: "filled" 
+  [CONTRACT_TYPES.FULL_TIME]: {
+    label: "Full_time",
+    color: "primary",
+    variant: "filled"
   },
-  [CONTRACT_TYPES.PART_TIME]: { 
-    label: "Bán thời gian", 
-    color: "secondary", 
-    variant: "outlined" 
+  [CONTRACT_TYPES.PART_TIME]: {
+    label: "Part_time",
+    color: "secondary",
+    variant: "outlined"
+  },
+  [CONTRACT_TYPES.INTERNSHIP]: {
+    label: "Intership",
+    color: "secondary",
+    variant: "outlined"
   }
 };
 

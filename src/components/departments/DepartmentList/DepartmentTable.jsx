@@ -44,11 +44,13 @@ const DepartmentTable = ({
   loading
 }) => {
   const isSelected = (id) => selectedDepartments.indexOf(id) !== -1;
+  
+
 
   const getHeadInfo = (head) => {
     if (!head) return { name: 'N/A' };
     return {
-      name: head.full_name,
+      name: head.fullName,
     };
   };
 

@@ -1,17 +1,25 @@
 export const formatDate = (date, formatString = 'dd/MM/yyyy') => {
   if (!date) return '';
-  
+
   const dateObj = new Date(date);
+  if (isNaN(dateObj)) return '';
+
   const day = String(dateObj.getDate()).padStart(2, '0');
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
   const year = dateObj.getFullYear();
-  
-  if (formatString === 'dd/MM/yyyy') {
-    return `${day}/${month}/${year}`;
+
+  switch (formatString) {
+    case 'dd/MM/yyyy':
+      return `${day}/${month}/${year}`;
+    
+    case 'yyyy-MM-dd':
+      return `${year}-${month}-${day}`;
+
+    default:
+      return dateObj.toLocaleDateString('vi-VN');
   }
-  
-  return dateObj.toLocaleDateString('vi-VN');
 };
+
 
 export const calculateDaysRemaining = (endDate) => {
   if (!endDate) return null;

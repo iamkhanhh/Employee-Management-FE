@@ -25,15 +25,10 @@ import { mockEmployees } from '../../../data/mockData';
 const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
   const [departmentData, setDepartmentData] = useState({
     dept_name: '',
-    head: null,
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const availableEmployees = mockEmployees.filter(
-    emp => emp.status === 'ACTIVE' && !emp.is_deleted
-  );
 
   const handleInputChange = (field, value) => {
     setDepartmentData(prev => ({
@@ -59,13 +54,20 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
-    const result = await onSubmit(departmentData);
+
+    // 💥 Gửi đúng format API backend yêu cầu
+    const payload = {
+      deptName: departmentData.dept_name
+    };
+
+    const result = await onSubmit(payload);
+
     if (result.success) handleClose();
     setIsSubmitting(false);
   };
 
   const handleClose = () => {
-    setDepartmentData({ dept_name: '', head: null });
+    setDepartmentData({ dept_name: '' });
     setErrors({});
     onClose();
   };
@@ -91,7 +93,7 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
       <DialogContent sx={{ mt: 2, px: 3, pb: 2 }}>
         <Grid container spacing={3} sx={{ mt: 1 }}>
           {/* Department Name */}
-          <Grid item xs={12} >
+          <Grid item xs={12}>
             <TextField
               label="Department Name"
               variant="outlined"
@@ -111,73 +113,6 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
               }}
             />
           </Grid>
-
-          {/* Department Head */}
-          <Grid item xs={12} md={12}>
-            <Autocomplete
-              fullWidth
-              options={availableEmployees}
-              getOptionLabel={(option) => option.full_name || ''}
-              value={departmentData.head}
-              onChange={(event, value) => handleInputChange('head', value)}
-
-              // Thêm các props này để mở rộng dropdown
-              ListboxProps={{
-                style: {
-                  maxHeight: '400px', // Tăng chiều cao nếu cần
-                }
-              }}
-              componentsProps={{
-                paper: {
-                  sx: {
-                    width: 'auto',
-                    minWidth: '400px', // Hoặc bất kỳ width nào bạn muốn
-                    maxWidth: '600px',
-                  }
-                }
-              }}
-
-              renderOption={(props, option) => (
-                <Box
-                  component="li"
-                  {...props}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    whiteSpace: 'nowrap', // Ngăn text xuống dòng
-                    overflow: 'visible',   // Hiển thị đầy đủ text
-                  }}
-                >
-                  <Typography variant="body2" noWrap={false}>
-                    {option.full_name}
-                  </Typography>
-                </Box>
-              )}
-
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Department Head"
-                  variant="outlined"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <>
-                        <InputAdornment position="start">
-                          <PersonIcon color="action" />
-                        </InputAdornment>
-                        {params.InputProps.startAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
-          </Grid>
-
 
           {/* Note */}
           <Grid item xs={12}>
@@ -217,5 +152,6 @@ const AddDepartmentDialog = ({ open, onClose, onSubmit }) => {
     </Dialog>
   );
 };
+
 
 export default AddDepartmentDialog;
