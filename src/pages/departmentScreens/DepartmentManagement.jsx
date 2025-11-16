@@ -3,8 +3,7 @@ import {
     Box,
     Typography,
     Breadcrumbs,
-    Link,
-    Chip
+    Link
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import HomeIcon from '@mui/icons-material/Home';
@@ -13,16 +12,17 @@ import DepartmentTable from '../../components/departments/DepartmentList/Departm
 import AddDepartmentDialog from '../../components/departments/DepartmentDialog/AddDepartmentDialog';
 import EditDepartmentDialog from '../../components/departments/DepartmentDialog/EditDepartmentDialog';
 import DeleteDepartmentDialog from '../../components/departments/DepartmentDialog/DeleteDepartmentDialog';
-import { useDepartments } from '../../hooks/useDepartments';
 import ViewDepartmentDialog from '../../components/departments/DepartmentDialog/ViewDepartmentDialog';
 import toast from 'react-hot-toast';
+
+import { useDepartments } from '../../hooks/useDepartments';
 
 const DepartmentManagement = () => {
     const {
         departments,
-        stats,
         loading,
         fetchDepartments,
+        fetchDepartmentDetail,
         createDepartment,
         updateDepartment,
         deleteDepartment,
@@ -39,25 +39,32 @@ const DepartmentManagement = () => {
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [openViewDialog, setOpenViewDialog] = useState(false);
+
+    const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
     const [currentDepartment, setCurrentDepartment] = useState(null);
+
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
-    // State for ViewDialog
-    const [openViewDialog, setOpenViewDialog] = useState(false);
-    const [viewDepartment, setViewDepartment] = useState(null);
-
-    // Handler when clicking view details
+    // -----------------------
+    // View Department
+    // -----------------------
     const handleView = (department) => {
-        setViewDepartment(department);
+        setSelectedDepartmentId(department.id);
         setOpenViewDialog(true);
     };
 
+    const handleCloseDetail = () => {
+        setOpenViewDialog(false);
+        setSelectedDepartmentId(null);
+    };
+
+    // -----------------------
+    // Filters
+    // -----------------------
     const handleFilterChange = (name, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFilters(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSearch = () => {
@@ -65,15 +72,18 @@ const DepartmentManagement = () => {
     };
 
     const handleClearFilters = () => {
-        const clearedFilters = {
+        const cleared = {
             search: "",
             status: "all",
             sortBy: "name"
         };
-        setFilters(clearedFilters);
-        fetchDepartments(clearedFilters);
+        setFilters(cleared);
+        fetchDepartments(cleared);
     };
 
+    // -----------------------
+    // Table Selection
+    // -----------------------
     const handleSelectAll = (event) => {
         if (event.target.checked) {
             setSelectedDepartments(departments.map(d => d.id));
@@ -82,12 +92,12 @@ const DepartmentManagement = () => {
         }
     };
 
-    const handleSelectOne = (deptId) => {
-        const selectedIndex = selectedDepartments.indexOf(deptId);
+    const handleSelectOne = (departmentId) => {
+        const selectedIndex = selectedDepartments.indexOf(departmentId);
         let newSelected = [];
 
         if (selectedIndex === -1) {
-            newSelected = newSelected.concat(selectedDepartments, deptId);
+            newSelected = newSelected.concat(selectedDepartments, departmentId);
         } else if (selectedIndex === 0) {
             newSelected = newSelected.concat(selectedDepartments.slice(1));
         } else if (selectedIndex === selectedDepartments.length - 1) {
@@ -99,9 +109,14 @@ const DepartmentManagement = () => {
             );
         }
 
+        // SỬA LỖI TẠI ĐÂY: Sửa tên hàm từ "setSelectedDselectedDepartments" thành "setSelectedDepartments"
         setSelectedDepartments(newSelected);
     };
 
+
+    // -----------------------
+    // CRUD
+    // -----------------------
     const handleEdit = (department) => {
         setCurrentDepartment(department);
         setOpenEditDialog(true);
@@ -114,52 +129,43 @@ const DepartmentManagement = () => {
 
     const handleDeleteSelected = async () => {
         if (selectedDepartments.length > 0) {
-            const loadingToast = toast.loading(`Đang xóa ${selectedDepartments.length} phòng ban...`);
+            const loadingToast = toast.loading(`Deleting ${selectedDepartments.length} departments...`);
             const result = await deleteMultipleDepartments(selectedDepartments);
             toast.dismiss(loadingToast);
             if (result.success) {
-                toast.success(`Đã xóa ${selectedDepartments.length} phòng ban thành công!`);
+                toast.success(`Successfully deleted ${selectedDepartments.length} departments!`);
                 setSelectedDepartments([]);
                 fetchDepartments(filters);
             } else {
-                toast.error(result.error || "Không thể xóa phòng ban. Vui lòng thử lại!");
+                toast.error(result.error || "Unable to delete departments. Please try again!");
             }
         }
     };
 
     const confirmDelete = async () => {
         if (currentDepartment) {
-            const loadingToast = toast.loading("Đang xóa phòng ban...");
+            const loadingToast = toast.loading("Deleting department...");
             const result = await deleteDepartment(currentDepartment.id);
             toast.dismiss(loadingToast);
             if (result.success) {
-                toast.success(`Đã xóa phòng ban "${currentDepartment.deptName || currentDepartment.dept_name}" thành công!`);
                 setOpenDeleteDialog(false);
                 setCurrentDepartment(null);
                 fetchDepartments(filters);
             } else {
-                toast.error(result.error || "Không thể xóa phòng ban. Vui lòng thử lại!");
+                toast.error(result.error || "Unable to delete department. Please try again!");
             }
         }
     };
 
-    const handleAddDepartment = async (departmentData) => {
-        const loadingToast = toast.loading("Đang thêm phòng ban...");
-        const result = await createDepartment(departmentData);
-        toast.dismiss(loadingToast);
-        if (result.success) {
-            toast.success(`Đã thêm phòng ban "${departmentData.deptName}" thành công!`);
-            fetchDepartments(filters);
-        } else {
-            toast.error(result.error || "Không thể thêm phòng ban. Vui lòng thử lại!");
-        }
+
+    const handleAddDepartment = async (data) => {
+        const result = await createDepartment(data);
+        if (result.success) fetchDepartments(filters);
         return result;
     };
 
-    const handleUpdateDepartment = async (departmentData) => {
-        const loadingToast = toast.loading("Đang cập nhật phòng ban...");
-        const result = await updateDepartment(currentDepartment.id, departmentData);
-        toast.dismiss(loadingToast);
+    const handleUpdateDepartment = async (data) => {
+        const result = await updateDepartment(currentDepartment.id, data);
         if (result.success) {
             toast.success(`Đã cập nhật phòng ban "${departmentData.deptName || currentDepartment.deptName || currentDepartment.dept_name}" thành công!`);
             setOpenEditDialog(false);
@@ -173,20 +179,14 @@ const DepartmentManagement = () => {
 
     return (
         <Box sx={{ p: 3, backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+
             {/* Breadcrumb */}
-            <Breadcrumbs
-                separator={<NavigateNextIcon fontSize="small" />}
-                sx={{ mb: 2 }}
-            >
-                <Link
-                    underline="hover"
-                    sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-                    color="inherit"
-                >
+            <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2 }}>
+                <Link underline="hover" sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} color="inherit">
                     <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
                     Home
                 </Link>
-                <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography color="text.primary">
                     Department Management
                 </Typography>
             </Breadcrumbs>
@@ -221,6 +221,7 @@ const DepartmentManagement = () => {
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                loading={loading}
                 page={page}
                 rowsPerPage={rowsPerPage}
                 onPageChange={(e, newPage) => setPage(newPage)}
@@ -228,16 +229,16 @@ const DepartmentManagement = () => {
                     setRowsPerPage(parseInt(e.target.value, 10));
                     setPage(0);
                 }}
-                loading={loading}
             />
 
-            {/* Dialogs */}
+            {/* Add */}
             <AddDepartmentDialog
                 open={openAddDialog}
                 onClose={() => setOpenAddDialog(false)}
                 onSubmit={handleAddDepartment}
             />
 
+            {/* Edit */}
             <EditDepartmentDialog
                 open={openEditDialog}
                 onClose={() => {
@@ -248,23 +249,25 @@ const DepartmentManagement = () => {
                 department={currentDepartment}
             />
 
+            {/* Delete */}
             <DeleteDepartmentDialog
                 open={openDeleteDialog}
                 onClose={() => {
+                    console.log('🗑️ Closing delete dialog');
                     setOpenDeleteDialog(false);
                     setCurrentDepartment(null);
                 }}
                 onConfirm={confirmDelete}
-                departmentName={currentDepartment?.dept_name}
+                departmentName={currentDepartment?.deptName}
+                department={currentDepartment}
             />
 
+            {/* View Detail */}
             <ViewDepartmentDialog
                 open={openViewDialog}
-                onClose={() => {
-                    setOpenViewDialog(false);
-                    setViewDepartment(null);
-                }}
-                department={viewDepartment}
+                onClose={handleCloseDetail}
+                departmentId={selectedDepartmentId}
+                fetchDepartmentDetail={fetchDepartmentDetail}
                 onEdit={handleEdit}
             />
         </Box>

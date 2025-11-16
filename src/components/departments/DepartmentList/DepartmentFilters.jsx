@@ -136,13 +136,7 @@ const DepartmentFilters = ({
           )}
         </Box>
 
-        <Button
-          variant="outlined"
-          startIcon={<FileDownloadIcon />}
-          color="success"
-        >
-          Export Excel
-        </Button>
+
       </Box>
     </Paper>
   );

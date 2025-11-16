@@ -42,37 +42,23 @@ export const useContracts = () => {
     return stats;
   }, []);
 
+  // Fetch contractDetail
+  const fetchContractDetail = useCallback(async (id) => {
+    if (!id) return null;
 
-  // Fetch departments with employee count
-  const fetchDepartments = useCallback(async (filters = {}) => {
     setLoading(true);
+    try {
+      const res = await axiosInstance.get(`/contracts/${id}`);
+      const detail = res.data?.data;  // <-- LẤY ĐÚNG DATA
 
-    let data;
-    const res = await axiosInstance.get("/departments");
-    console.log(res);
-    if (res.data.status == "success") {
-      toast.success(res.data.message);
-      data = res.data.data;
+      return detail || null;
+    } catch (err) {
+      console.error("Error fetching contract detail:", err);
+      return null;
+    } finally {
+      setLoading(false);
     }
-    else {
-      toast.error(res.data.message);
-    }
-
-    // Apply filters
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      data = data.filter(d =>
-        d.deptName.toLowerCase().includes(searchLower)
-      );
-    }
-
-
-    setDepartments(data);
-    setStats(calculateStats(data));
-    setLoading(false);
-
-    return data;
-  }, [calculateStats]);
+  }, []);
 
 
 
@@ -96,28 +82,6 @@ export const useContracts = () => {
 
       let content = data.content || [];
 
-      // ------------------------
-      // Apply FE filters (search, status, type…)
-      // ------------------------
-      // if (filters.search) {
-      //   const s = filters.search.toLowerCase();
-      //   content = content.filter(c =>
-      //     c.employeeName?.toLowerCase().includes(s) ||
-      //     c.empId?.toString().includes(s)
-      //   );
-      // }
-
-      // if (filters.contractType && filters.contractType !== "all") {
-      //   content = content.filter(c => c.contractType === filters.contractType);
-      // }
-
-      // if (filters.status && filters.status !== "all") {
-      //   content = content.filter(c => c.status === filters.status);
-      // }
-
-      // ------------------------
-      // Set FE state
-      // ------------------------
       setContracts(content);
       setPagination({
         page: data.currentPage,
@@ -298,6 +262,7 @@ export const useContracts = () => {
     employees,
     stats,
     loading,
+    fetchContractDetail,
     fetchContracts,
     createContract,
     updateContract,

@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  mockDepartments,
-  mockEmployees,
-  addDepartmentToMockData,
-  updateDepartmentInMockData,
-  deleteDepartmentFromMockData
-} from '../data/mockData';
 import { axiosInstance } from '../lib/axios';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+
 export const useDepartments = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,11 +18,10 @@ export const useDepartments = () => {
     const activeDepts = departmentList.filter(d => !d.is_deleted);
     const totalEmps = activeDepts.reduce((sum, d) => sum + (d.employeeCount || 0), 0);
 
-    // Calculate new departments this month
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const newThisMonth = activeDepts.filter(d => {
-      const createdDate = new Date(d.created_at);
+      const createdDate = new Date(d.createdAt);
       return createdDate.getMonth() === currentMonth &&
         createdDate.getFullYear() === currentYear;
     }).length;
@@ -38,40 +31,56 @@ export const useDepartments = () => {
       totalEmployees: totalEmps,
       avgEmployeesPerDept: activeDepts.length > 0 ? Math.round(totalEmps / activeDepts.length) : 0,
       newThisMonth: newThisMonth,
-      growthRate: 15 // Mock growth rate
+      growthRate: 15
     };
   }, []);
 
-  // Fetch departments with employee count
+  // Fetch departments
   const fetchDepartments = useCallback(async (filters = {}) => {
     setLoading(true);
 
-    let data;
-    const res = await axiosInstance.get("/departments");
-    console.log(res);
-    if (res.data.status == "success") {
-      toast.success(res.data.message);
-      data = res.data.data;
+    try {
+      const res = await axiosInstance.get("/departments");
+      
+      if (res.data.status === "success") {
+        let data = res.data.data;
+
+        // Apply filters
+        if (filters.search) {
+          const searchLower = filters.search.toLowerCase();
+          data = data.filter(d =>
+            d.deptName.toLowerCase().includes(searchLower)
+          );
+        }
+
+        setDepartments(data);
+        setStats(calculateStats(data));
+        return data;
+      } else {
+        toast.error(res.data.message);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      toast.error("Failed to fetch departments");
+      return [];
+    } finally {
+      setLoading(false);
     }
-    else {
-      toast.error(res.data.message);
-    }
-
-    // Apply filters
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      data = data.filter(d =>
-        d.deptName.toLowerCase().includes(searchLower)
-      );
-    }
-
-
-    setDepartments(data);
-    setStats(calculateStats(data));
-    setLoading(false);
-
-    return data;
   }, [calculateStats]);
+
+  // Fetch department detail
+  const fetchDepartmentDetail = useCallback(async (id) => {
+    if (!id) return null;
+
+    try {
+      const res = await axiosInstance.get(`/departments/${id}`);
+      return res.data;
+    } catch (err) {
+      console.error("Error fetching department detail:", err);
+      return null;
+    }
+  }, []);
 
   // Create new department
   const createDepartment = useCallback(async (departmentData) => {
@@ -82,111 +91,154 @@ export const useDepartments = () => {
       };
 
       const res = await axiosInstance.post("/departments", payload);
-      if (res.data.code === 0) {
+      
+      if (res.data.code === 0 && res.data.status === "success") {
         const newDepartment = res.data.data;
         setDepartments(prev => [...prev, newDepartment]);
-        // Cập nhật thống kê
         setStats(calculateStats([...departments, newDepartment]));
-
+        toast.success(res.data.message);
         return { success: true, data: newDepartment };
       }
 
+      toast.error(res.data.message);
       return { success: false, error: res.data.message };
 
     } catch (error) {
       console.error("Error creating department:", error);
-      return { success: false, error: error.message };
-
+      const errorMsg = error.response?.data?.message || "Failed to create department";
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
     } finally {
       setLoading(false);
     }
   }, [departments, calculateStats]);
 
-  // Update department
+  // ✅ SỬA LẠI UPDATE DEPARTMENT - CALL API THẬT
   const updateDepartment = useCallback(async (id, updates) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Chuẩn bị payload theo đúng format API
+      const payload = {
+        deptName: updates.deptName
+      };
 
-      const updatedDepartment = updateDepartmentInMockData(id, updates);
+      // Call API PUT
+      const res = await axiosInstance.put(`/departments/${id}`, payload);
 
-      if (updatedDepartment) {
+      // Kiểm tra response
+      if (res.data.code === 0 && res.data.status === "success") {
+        const updatedDepartment = res.data.data;
+        
+        // Update local state
         setDepartments(prev =>
-          prev.map(d => d.id === id ? { ...updatedDepartment, ...updates } : d)
+          prev.map(d => d.id === id ? updatedDepartment : d)
         );
+        
+        // Recalculate stats với data mới
+        const newDepartments = departments.map(d => d.id === id ? updatedDepartment : d);
+        setStats(calculateStats(newDepartments));
+        
+        toast.success(res.data.message);
         return { success: true, data: updatedDepartment };
       }
 
-      throw new Error('Department not found');
+      // Nếu API trả về lỗi
+      toast.error(res.data.message);
+      return { success: false, error: res.data.message };
+
     } catch (error) {
       console.error('Error updating department:', error);
-      return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Delete department (soft delete)
-  const deleteDepartment = useCallback(async (id) => {
-    setLoading(true);
-
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Check if department has employees
-      const hasEmployees = mockEmployees.some(
-        emp => emp.dept_id === id && emp.status === 'ACTIVE' && !emp.is_deleted
-      );
-
-      if (hasEmployees) {
-        throw new Error('Không thể xóa phòng ban đang có nhân viên');
-      }
-
-      const success = deleteDepartmentFromMockData(id);
-
-      if (success) {
-        setDepartments(prev => prev.filter(d => d.id !== id));
-        setStats(calculateStats(departments.filter(d => d.id !== id)));
-        return { success: true };
-      }
-
-      throw new Error('Department not found');
-    } catch (error) {
-      console.error('Error deleting department:', error);
-      return { success: false, error: error.message };
+      const errorMsg = error.response?.data?.message || 'Failed to update department';
+      toast.error(errorMsg);
+      return { success: false, error: errorMsg };
     } finally {
       setLoading(false);
     }
   }, [departments, calculateStats]);
 
-  // Delete multiple departments
+  const deleteDepartment = useCallback(async (id) => {
+    setLoading(true);
+
+    try {
+      // Call API DELETE
+      const res = await axiosInstance.delete(`/departments/${id}`);
+
+      // Kiểm tra response
+      if (res.data.code === 0 && res.data.status === "success") {
+        // Remove department from local state
+        setDepartments(prev => prev.filter(d => d.id !== id));
+        
+        // Recalculate stats
+        const newDepartments = departments.filter(d => d.id !== id);
+        setStats(calculateStats(newDepartments));
+        
+        toast.success(res.data.message || 'Department deleted successfully');
+        return { success: true };
+      }
+
+      // Nếu API trả về lỗi (ví dụ: department có employees)
+      toast.error(res.data.message);
+      return { success: false, error: res.data.message };
+
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      
+      // Xử lý error từ API
+      const errorMsg = error.response?.data?.message || 'Failed to delete department';
+      toast.error(errorMsg);
+      
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  }, [departments, calculateStats]);
+
+  // ✅ DELETE MULTIPLE DEPARTMENTS
   const deleteMultipleDepartments = useCallback(async (ids) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Check if any department has employees
-      const hasEmployees = ids.some(id =>
-        mockEmployees.some(emp => emp.dept_id === id && emp.status === 'ACTIVE' && !emp.is_deleted)
+      // Call API DELETE cho từng department
+      // Hoặc nếu backend hỗ trợ bulk delete: DELETE /departments với body là array of ids
+      const deletePromises = ids.map(id => 
+        axiosInstance.delete(`/departments/${id}`)
       );
 
-      if (hasEmployees) {
-        throw new Error('Một số phòng ban đang có nhân viên, không thể xóa');
+      const results = await Promise.allSettled(deletePromises);
+
+      // Kiểm tra kết quả
+      const successCount = results.filter(r => 
+        r.status === 'fulfilled' && 
+        r.value.data.code === 0 && 
+        r.value.data.status === 'success'
+      ).length;
+
+      const failCount = ids.length - successCount;
+
+      if (successCount > 0) {
+        // Remove deleted departments from state
+        setDepartments(prev => prev.filter(d => !ids.includes(d.id)));
+        
+        // Recalculate stats
+        const newDepartments = departments.filter(d => !ids.includes(d.id));
+        setStats(calculateStats(newDepartments));
+        
+        if (failCount === 0) {
+          toast.success(`Successfully deleted ${successCount} department(s)`);
+        } else {
+          toast.warning(`Deleted ${successCount} department(s), failed ${failCount}`);
+        }
+        
+        return { success: true, successCount, failCount };
       }
 
-      ids.forEach(id => deleteDepartmentFromMockData(id));
+      toast.error('Failed to delete departments');
+      return { success: false, error: 'All deletions failed' };
 
-      setDepartments(prev => prev.filter(d => !ids.includes(d.id)));
-      setStats(calculateStats(departments.filter(d => !ids.includes(d.id))));
-
-      return { success: true };
     } catch (error) {
       console.error('Error deleting departments:', error);
+      toast.error('Failed to delete departments');
       return { success: false, error: error.message };
     } finally {
       setLoading(false);
@@ -203,6 +255,7 @@ export const useDepartments = () => {
     stats,
     loading,
     fetchDepartments,
+    fetchDepartmentDetail,
     createDepartment,
     updateDepartment,
     deleteDepartment,

@@ -5,6 +5,7 @@ import ContractFilters from '../../components/contracts/ContractList/ContractFil
 import ContractTable from '../../components/contracts/ContractList/ContractTable';
 import AddContractDialog from '../../components/contracts/ContractDialog/AddContractDialog';
 import DeleteContractDialog from '../../components/contracts/ContractDialog/DeleteContractDialog';
+import ContractDetailDialog from '../../components/contracts/ContractDialog/ContractDetailDialog';
 import { useContracts } from '../../hooks/useContracts';
 // src/pages/contractScreens/ContractManagement.jsx
 import { generateEmployeeCode } from '../../data/mockData';
@@ -17,6 +18,7 @@ const ContractManagement = () => {
     stats,
     loading,
     fetchContracts,
+    fetchContractDetail,
     createContract,
     updateContract,
     deleteContract,
@@ -37,6 +39,8 @@ const ContractManagement = () => {
   const [selectedContracts, setSelectedContracts] = useState([]);
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openContractDetail, setOpenContractDetail] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState(null);
   const [contractToDelete, setContractToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -93,61 +97,79 @@ const ContractManagement = () => {
     setSelectedContracts(newSelected);
   };
 
+  // ============================================
+  // VIEW CONTRACT DETAIL
+  // ============================================
   const handleView = (contractId) => {
-    const contract = contracts.find(c => c.id === contractId);
-    console.log('View contract:', contract);
-    // Implement view dialog
+    setSelectedContractId(contractId);
+    setOpenContractDetail(true);
   };
 
+  const handleCloseDetail = () => {
+    setOpenContractDetail(false);
+    setSelectedContractId(null);
+  };
+
+  // ============================================
+  // EDIT CONTRACT
+  // ============================================
   const handleEdit = (contractId) => {
     const contract = contracts.find(c => c.id === contractId);
     console.log('Edit contract:', contract);
-    // Implement edit dialog
+    // TODO: Implement edit dialog
+    // setSelectedContract(contract);
+    // setOpenEditDialog(true);
   };
 
+  // ============================================
+  // DELETE CONTRACT
+  // ============================================
   const handleDelete = (contract) => {
     setContractToDelete(contract);
     setOpenDeleteDialog(true);
   };
 
-  const handleDeleteSelected = () => {
-    if (selectedContracts.length > 0) {
-      const loadingToast = toast.loading(`Đang xóa ${selectedContracts.length} hợp đồng...`);
-      deleteMultipleContracts(selectedContracts).then(result => {
-        toast.dismiss(loadingToast);
-        if (result.success) {
-          toast.success(`Đã xóa ${selectedContracts.length} hợp đồng thành công!`);
-          setSelectedContracts([]);
-          fetchContracts(filters);
-        } else {
-          toast.error(result.error || "Không thể xóa hợp đồng. Vui lòng thử lại!");
-        }
-      });
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (contractToDelete) {
-      const loadingToast = toast.loading("Đang xóa hợp đồng...");
-      const result = await deleteContract(contractToDelete.id);
+  const handleDeleteSelected = async () => {
+    if (selectedDepartments.length > 0) {
+      const loadingToast = toast.loading(`Deleting ${selectedDepartments.length} departments...`);
+      const result = await deleteMultipleDepartments(selectedDepartments);
       toast.dismiss(loadingToast);
       if (result.success) {
-        toast.success(`Đã xóa hợp đồng của "${contractToDelete.employee?.full_name || contractToDelete.employeeName}" thành công!`);
-        setOpenDeleteDialog(false);
-        setContractToDelete(null);
-        fetchContracts(filters);
+        toast.success(`Successfully deleted ${selectedDepartments.length} departments!`);
+        setSelectedDepartments([]);
+        fetchDepartments(filters);
       } else {
-        toast.error(result.error || "Không thể xóa hợp đồng. Vui lòng thử lại!");
+        toast.error(result.error || "Unable to delete departments. Please try again!");
       }
     }
   };
 
+  const confirmDelete = async () => {
+    if (currentDepartment) {
+      const loadingToast = toast.loading("Deleting department...");
+      const result = await deleteDepartment(currentDepartment.id);
+      toast.dismiss(loadingToast);
+      if (result.success) {
+        toast.success(`Department "${currentDepartment.deptName || currentDepartment.dept_name}" has been deleted successfully!`);
+        setOpenDeleteDialog(false);
+        setCurrentDepartment(null);
+        fetchDepartments(filters);
+      } else {
+        toast.error(result.error || "Unable to delete department. Please try again!");
+      }
+    }
+  };
+
+  // ============================================
+  // ADD CONTRACT
+  // ============================================
   const handleAddContract = async (contractData) => {
     const loadingToast = toast.loading("Đang tạo hợp đồng...");
     const result = await createContract(contractData);
     toast.dismiss(loadingToast);
     if (result.success) {
       toast.success(`Đã tạo hợp đồng thành công!`);
+      setOpenAddDialog(false);
       fetchContracts(filters);
     } else {
       toast.error(result.error || "Không thể tạo hợp đồng. Vui lòng thử lại!");
@@ -155,17 +177,35 @@ const ContractManagement = () => {
     return result;
   };
 
+  // ============================================
+  // IMPORT/EXPORT
+  // ============================================
   const handleImport = () => {
     console.log('Import Excel functionality');
-    // Implement import functionality
+    // TODO: Implement import functionality
   };
 
   const handleExport = () => {
     exportContracts(filters);
   };
 
-  const handleDownloadFile = (fileUrl) => {
-    downloadFile(fileUrl);
+  // ============================================
+  // DOWNLOAD FILE
+  // ============================================
+  const handleDownloadFile = (fileUrl, fileName) => {
+    downloadFile(fileUrl, fileName);
+  };
+
+  // ============================================
+  // PAGINATION
+  // ============================================
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleRowsPerPageChange = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -179,8 +219,6 @@ const ContractManagement = () => {
           Manage all employee contracts within the company
         </Typography>
       </Box>
-
-     
 
       {/* Filters */}
       <ContractFilters
@@ -207,14 +245,22 @@ const ContractManagement = () => {
         onDownloadFile={handleDownloadFile}
         page={page}
         rowsPerPage={rowsPerPage}
-        onPageChange={(e, newPage) => setPage(newPage)}
-        onRowsPerPageChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+        loading={loading}
       />
 
       {/* Dialogs */}
+      <ContractDetailDialog
+        open={openContractDetail}
+        onClose={handleCloseDetail}
+        contractId={selectedContractId}
+        fetchContractDetail={fetchContractDetail}
+        onDownloadFile={handleDownloadFile}
+      />
+
+
+
       <AddContractDialog
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
@@ -226,7 +272,7 @@ const ContractManagement = () => {
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
         onConfirm={confirmDelete}
-        contractName={contractToDelete?.employee?.full_name}
+        contractName={contractToDelete?.employeeName || contractToDelete?.employee?.full_name}
       />
     </Box>
   );

@@ -44,16 +44,6 @@ const DepartmentTable = ({
   loading
 }) => {
   const isSelected = (id) => selectedDepartments.indexOf(id) !== -1;
-  
-
-
-  const getHeadInfo = (head) => {
-    if (!head) return { name: 'N/A' };
-    return {
-      name: head.fullName,
-    };
-  };
-
 
   if (loading) {
     return (
@@ -103,7 +93,6 @@ const DepartmentTable = ({
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((department) => {
                 const selected = isSelected(department.id);
-                const headInfo = getHeadInfo(department.head);
 
                 return (
                   <TableRow
@@ -149,7 +138,7 @@ const DepartmentTable = ({
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body2">
-                          {headInfo.name}
+                          {department.managerName}
                         </Typography>
                       </Box>
                     </TableCell>
