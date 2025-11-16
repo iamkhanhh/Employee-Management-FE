@@ -23,6 +23,7 @@ import WorkIcon from "@mui/icons-material/Work";
 
 // Import service để gọi API
 import { employeeService } from "../../services/employeeService";
+import toast from 'react-hot-toast';
 
 export default function EmployeeDetail() {
     const navigate = useNavigate();
@@ -46,6 +47,7 @@ export default function EmployeeDetail() {
             } catch (err) {
                 console.error("Failed to fetch employee:", err);
                 setError("Không thể tải thông tin nhân viên. Vui lòng thử lại.");
+                toast.error("Không thể tải thông tin nhân viên. Vui lòng thử lại!");
             } finally {
                 setLoading(false);
             }
@@ -61,13 +63,17 @@ export default function EmployeeDetail() {
 
     const handleSave = async () => {
         // TODO: Xử lý việc gửi dữ liệu dưới dạng FormData nếu có upload file
+        const loadingToast = toast.loading("Đang cập nhật thông tin nhân viên...");
         try {
             await employeeService.updateEmployee(id, employee);
+            toast.dismiss(loadingToast);
+            toast.success(`Đã cập nhật thông tin nhân viên "${employee.fullName}" thành công!`);
+            setIsEditing(false); // Tắt chế độ chỉnh sửa sau khi lưu
         } catch (error) {
+            toast.dismiss(loadingToast);
             console.error("Failed to update employee:", error);
+            toast.error(error.response?.data?.message || `Không thể cập nhật thông tin nhân viên. Vui lòng thử lại!`);
         }
-        console.log("Đã lưu thông tin nhân viên:", employee);
-        setIsEditing(false); // Tắt chế độ chỉnh sửa sau khi lưu
     };
 
     const handleBack = () => {

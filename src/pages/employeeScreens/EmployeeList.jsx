@@ -10,6 +10,7 @@ import { employeeService } from "../../services/employeeService";
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import toast from 'react-hot-toast';
 
 export default function EmployeeList() {
   const navigate = useNavigate();
@@ -59,11 +60,11 @@ export default function EmployeeList() {
       await employeeService.deleteEmployee(employeeToDelete.id);
       setOpenDeleteDialog(false);
       setEmployeeToDelete(null);
+      toast.success(`Đã xóa nhân viên "${employeeToDelete.fullName}" thành công!`);
       fetchEmployees(); // Tải lại danh sách
-      // TODO: Thêm thông báo xóa thành công
     } catch (err) {
       console.error("Failed to delete employee:", err);
-      // TODO: Thêm thông báo lỗi
+      toast.error(err.response?.data?.message || `Không thể xóa nhân viên "${employeeToDelete.fullName}". Vui lòng thử lại!`);
     }
   };
 
@@ -141,6 +142,7 @@ export default function EmployeeList() {
     } catch (err) {
       console.error("Failed to fetch employees:", err);
       setError("Không thể tải danh sách nhân viên.");
+      toast.error("Không thể tải danh sách nhân viên. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -182,7 +184,7 @@ export default function EmployeeList() {
   const handleSaveEmployee = async (e) => {
     e.preventDefault();
     if (!formState.fullName || !formState.userId || !formState.deptId) {
-      console.error("Các trường bắt buộc: Tên, Email, Phòng ban");
+      toast.error("Vui lòng điền đầy đủ các trường bắt buộc: Tên, User ID, Phòng ban");
       return;
     }
 
@@ -192,14 +194,19 @@ export default function EmployeeList() {
       formData.append(key, formState[key]);
     });
     console.log("Submitting new employee:", formState);
+    
+    const loadingToast = toast.loading("Đang thêm nhân viên...");
     try {
-      await employeeService.createEmployee(formData);
+      const response = await employeeService.createEmployee(formData);
+      toast.dismiss(loadingToast);
+      toast.success(`Đã thêm nhân viên "${formState.fullName}" thành công!`);
       setOpenAdd(false);
       resetForm();
       fetchEmployees(); // Tải lại danh sách sau khi thêm thành công
     } catch (err) {
+      toast.dismiss(loadingToast);
       console.error("Failed to create employee:", err);
-      // TODO: Hiển thị thông báo lỗi cho người dùng
+      toast.error(err.response?.data?.message || `Không thể thêm nhân viên. Vui lòng thử lại!`);
     }
   };
 

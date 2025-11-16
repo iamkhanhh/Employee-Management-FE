@@ -15,6 +15,7 @@ import EditDepartmentDialog from '../../components/departments/DepartmentDialog/
 import DeleteDepartmentDialog from '../../components/departments/DepartmentDialog/DeleteDepartmentDialog';
 import { useDepartments } from '../../hooks/useDepartments';
 import ViewDepartmentDialog from '../../components/departments/DepartmentDialog/ViewDepartmentDialog';
+import toast from 'react-hot-toast';
 
 const DepartmentManagement = () => {
     const {
@@ -113,39 +114,59 @@ const DepartmentManagement = () => {
 
     const handleDeleteSelected = async () => {
         if (selectedDepartments.length > 0) {
+            const loadingToast = toast.loading(`Đang xóa ${selectedDepartments.length} phòng ban...`);
             const result = await deleteMultipleDepartments(selectedDepartments);
+            toast.dismiss(loadingToast);
             if (result.success) {
+                toast.success(`Đã xóa ${selectedDepartments.length} phòng ban thành công!`);
                 setSelectedDepartments([]);
                 fetchDepartments(filters);
+            } else {
+                toast.error(result.error || "Không thể xóa phòng ban. Vui lòng thử lại!");
             }
         }
     };
 
     const confirmDelete = async () => {
         if (currentDepartment) {
+            const loadingToast = toast.loading("Đang xóa phòng ban...");
             const result = await deleteDepartment(currentDepartment.id);
+            toast.dismiss(loadingToast);
             if (result.success) {
+                toast.success(`Đã xóa phòng ban "${currentDepartment.deptName || currentDepartment.dept_name}" thành công!`);
                 setOpenDeleteDialog(false);
                 setCurrentDepartment(null);
                 fetchDepartments(filters);
+            } else {
+                toast.error(result.error || "Không thể xóa phòng ban. Vui lòng thử lại!");
             }
         }
     };
 
     const handleAddDepartment = async (departmentData) => {
+        const loadingToast = toast.loading("Đang thêm phòng ban...");
         const result = await createDepartment(departmentData);
+        toast.dismiss(loadingToast);
         if (result.success) {
+            toast.success(`Đã thêm phòng ban "${departmentData.deptName}" thành công!`);
             fetchDepartments(filters);
+        } else {
+            toast.error(result.error || "Không thể thêm phòng ban. Vui lòng thử lại!");
         }
         return result;
     };
 
     const handleUpdateDepartment = async (departmentData) => {
+        const loadingToast = toast.loading("Đang cập nhật phòng ban...");
         const result = await updateDepartment(currentDepartment.id, departmentData);
+        toast.dismiss(loadingToast);
         if (result.success) {
+            toast.success(`Đã cập nhật phòng ban "${departmentData.deptName || currentDepartment.deptName || currentDepartment.dept_name}" thành công!`);
             setOpenEditDialog(false);
             setCurrentDepartment(null);
             fetchDepartments(filters);
+        } else {
+            toast.error(result.error || "Không thể cập nhật phòng ban. Vui lòng thử lại!");
         }
         return result;
     };

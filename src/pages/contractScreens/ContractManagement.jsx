@@ -8,6 +8,7 @@ import DeleteContractDialog from '../../components/contracts/ContractDialog/Dele
 import { useContracts } from '../../hooks/useContracts';
 // src/pages/contractScreens/ContractManagement.jsx
 import { generateEmployeeCode } from '../../data/mockData';
+import toast from 'react-hot-toast';
 
 const ContractManagement = () => {
   const {
@@ -111,11 +112,15 @@ const ContractManagement = () => {
 
   const handleDeleteSelected = () => {
     if (selectedContracts.length > 0) {
-      console.log('Delete multiple contracts:', selectedContracts);
+      const loadingToast = toast.loading(`Đang xóa ${selectedContracts.length} hợp đồng...`);
       deleteMultipleContracts(selectedContracts).then(result => {
+        toast.dismiss(loadingToast);
         if (result.success) {
+          toast.success(`Đã xóa ${selectedContracts.length} hợp đồng thành công!`);
           setSelectedContracts([]);
           fetchContracts(filters);
+        } else {
+          toast.error(result.error || "Không thể xóa hợp đồng. Vui lòng thử lại!");
         }
       });
     }
@@ -123,19 +128,29 @@ const ContractManagement = () => {
 
   const confirmDelete = async () => {
     if (contractToDelete) {
+      const loadingToast = toast.loading("Đang xóa hợp đồng...");
       const result = await deleteContract(contractToDelete.id);
+      toast.dismiss(loadingToast);
       if (result.success) {
+        toast.success(`Đã xóa hợp đồng của "${contractToDelete.employee?.full_name || contractToDelete.employeeName}" thành công!`);
         setOpenDeleteDialog(false);
         setContractToDelete(null);
         fetchContracts(filters);
+      } else {
+        toast.error(result.error || "Không thể xóa hợp đồng. Vui lòng thử lại!");
       }
     }
   };
 
   const handleAddContract = async (contractData) => {
+    const loadingToast = toast.loading("Đang tạo hợp đồng...");
     const result = await createContract(contractData);
+    toast.dismiss(loadingToast);
     if (result.success) {
+      toast.success(`Đã tạo hợp đồng thành công!`);
       fetchContracts(filters);
+    } else {
+      toast.error(result.error || "Không thể tạo hợp đồng. Vui lòng thử lại!");
     }
     return result;
   };
