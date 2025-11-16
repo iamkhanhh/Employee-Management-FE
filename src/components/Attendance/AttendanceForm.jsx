@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import toast from 'react-hot-toast';
 
 export default function AttendanceForm({ open, onClose, employees, isAdmin, initialData, onSave, currentUserId }) {
   const [form, setForm] = useState({ id: null, employeeId: employees[0]?.id ?? null, date: new Date().toISOString().slice(0,10), timeIn: '', timeOut: '', overtimeHours: 0, hoursWorked: 0, note: '', type: 'work' });
@@ -39,12 +40,22 @@ export default function AttendanceForm({ open, onClose, employees, isAdmin, init
   };
 
   const handleSubmit = () => {
-    if (!form.employeeId) { alert('Chọn nhân viên'); return; }
+    if (!form.employeeId) {
+      toast.error('Vui lòng chọn nhân viên!');
+      return;
+    }
+    
     if (form.timeIn && form.timeOut) {
       const inDt = parseTime(form.date, form.timeIn);
       const outDt = parseTime(form.date, form.timeOut);
-      if (!inDt || !outDt) { alert('Định dạng thời gian không hợp lệ'); return; }
-      if (outDt < inDt) { alert('Giờ ra phải lớn hơn hoặc bằng giờ vào'); return; }
+      if (!inDt || !outDt) {
+        toast.error('Định dạng thời gian không hợp lệ!');
+        return;
+      }
+      if (outDt < inDt) {
+        toast.error('Giờ ra phải lớn hơn hoặc bằng giờ vào!');
+        return;
+      }
     }
 
     const { hours, overtime } = computeHours(form.date, form.timeIn, form.timeOut);

@@ -3,8 +3,9 @@ import AttendanceTable from './AttendanceTable';
 import AttendanceForm from './AttendanceForm';
 import { mockEmployees } from '../../data/mockData';
 import { useAuth } from '../../hooks/useAuth';
-import { Box, Button, Typography, Stack, Paper } from '@mui/material';
+import { Box, Button, Typography, Stack, Paper, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import toast from 'react-hot-toast';
 
 const STORAGE_KEY = 'attendance_records_v1';
 
@@ -20,17 +21,39 @@ export default function AttendanceManager() {
   const [records, setRecords] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed;
+      }
+    } catch (e) {
+      console.error("Error loading attendance records:", e);
+    }
     // fallback sample seed
     return [
       { id: 1, employeeId: employees[0]?.id ?? 1, date: new Date().toISOString().slice(0,10), timeIn: '08:30', timeOut: '17:30', hoursWorked: 9, overtimeHours: 1, note: '' },
     ];
   });
 
+  // Load data notification
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          toast.success(`Đã tải ${parsed.length} bản ghi chấm công từ bộ nhớ!`);
+        }
+      }
+    } catch (e) {
+      toast.error("Không thể tải dữ liệu chấm công từ bộ nhớ!");
+    }
+  }, []);
+
   // This page is the global attendance management view for all employees in development
   const [filterEmployeeId, setFilterEmployeeId] = useState(null);
   const [openForm, setOpenForm] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
   const [editing, setEditing] = useState(null);
 
   // persist to localStorage
@@ -48,16 +71,33 @@ export default function AttendanceManager() {
     // normalize payload
     const p = { ...payload, employeeId: Number(payload.employeeId), overtimeHours: Number(payload.overtimeHours || 0), hoursWorked: Number(payload.hoursWorked || payload.hours || 0) };
 
-    // prevent duplicates: same employee + date when creating new
-    if (!p.id) {
-      const exists = records.some(r => r.employeeId === p.employeeId && r.date === p.date);
-      if (exists) { alert('Đã tồn tại bản ghi chấm công cho nhân viên này trong ngày đã chọn'); return; }
-      p.id = Date.now();
-      setRecords(prev => [p, ...prev]);
-    } else {
-      setRecords(prev => prev.map(r => r.id === p.id ? p : r));
+    const loadingToast = toast.loading(p.id ? "Đang cập nhật bản ghi chấm công..." : "Đang tạo bản ghi chấm công...");
+
+    try {
+      // prevent duplicates: same employee + date when creating new
+      if (!p.id) {
+        const exists = records.some(r => r.employeeId === p.employeeId && r.date === p.date);
+        if (exists) {
+          toast.dismiss(loadingToast);
+          toast.error('Đã tồn tại bản ghi chấm công cho nhân viên này trong ngày đã chọn!');
+          return;
+        }
+        p.id = Date.now();
+        setRecords(prev => [p, ...prev]);
+        toast.dismiss(loadingToast);
+        const employeeName = employees.find(e => e.id === p.employeeId)?.name || 'Nhân viên';
+        toast.success(`Đã tạo bản ghi chấm công cho ${employeeName} thành công!`);
+      } else {
+        setRecords(prev => prev.map(r => r.id === p.id ? p : r));
+        toast.dismiss(loadingToast);
+        const employeeName = employees.find(e => e.id === p.employeeId)?.name || 'Nhân viên';
+        toast.success(`Đã cập nhật bản ghi chấm công cho ${employeeName} thành công!`);
+      }
+      setOpenForm(false);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Không thể lưu bản ghi chấm công. Vui lòng thử lại!");
     }
-    setOpenForm(false);
   };
 
   const handleEdit = (id) => {
@@ -69,8 +109,27 @@ export default function AttendanceManager() {
   };
 
   const handleDelete = (id) => {
-    if (!window.confirm('Xóa bản ghi chấm công này?')) return;
-    setRecords(prev => prev.filter(r => r.id !== id));
+    setRecordToDelete(id);
+    setOpenDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!recordToDelete) return;
+    
+    const record = records.find(r => r.id === recordToDelete);
+    const employeeName = record ? employees.find(e => e.id === record.employeeId)?.name || 'Nhân viên' : 'bản ghi này';
+    
+    const loadingToast = toast.loading("Đang xóa bản ghi chấm công...");
+    try {
+      setRecords(prev => prev.filter(r => r.id !== recordToDelete));
+      toast.dismiss(loadingToast);
+      toast.success(`Đã xóa bản ghi chấm công của ${employeeName} thành công!`);
+      setOpenDeleteDialog(false);
+      setRecordToDelete(null);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Không thể xóa bản ghi chấm công. Vui lòng thử lại!");
+    }
   };
 
   const filtered = records.filter(r => (filterEmployeeId ? r.employeeId === filterEmployeeId : true));
@@ -154,6 +213,46 @@ export default function AttendanceManager() {
         initialData={editing}
         onSave={(data) => handleSave(data)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => {
+          setOpenDeleteDialog(false);
+          setRecordToDelete(null);
+        }}
+        PaperProps={{ sx: { borderRadius: '16px' } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {(() => {
+              const record = records.find(r => r.id === recordToDelete);
+              const employeeName = record ? employees.find(e => e.id === record.employeeId)?.name || 'Nhân viên' : 'bản ghi này';
+              return (
+                <>
+                  Bạn có chắc muốn xóa bản ghi chấm công của <strong>{employeeName}</strong>?
+                  <br />
+                  <span style={{ color: '#ef4444', marginTop: '8px', display: 'block' }}>
+                    Hành động này không thể hoàn tác.
+                  </span>
+                </>
+              );
+            })()}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setOpenDeleteDialog(false);
+            setRecordToDelete(null);
+          }}>
+            Hủy
+          </Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

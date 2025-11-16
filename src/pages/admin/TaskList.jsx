@@ -6,8 +6,14 @@ import {
   Button,
   Typography,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import { mockEmployees as globalMockEmployees } from '../../data/mockData';
+import toast from 'react-hot-toast';
 
 // Function to determine task status
 const getStatus = (start, end) => {
@@ -25,6 +31,8 @@ export default function TaskList() {
   const [tasks, setTasks] = useState([]);
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const [currentTask, setCurrentTask] = useState({
     id: null,
     title: "",
@@ -96,56 +104,114 @@ export default function TaskList() {
 
 const handleAddTask = () => {
   if (!currentTask.title || !currentTask.start || !currentTask.end) {
-    alert("Vui lòng nhập đủ thông tin!");
+    toast.error("Vui lòng nhập đủ thông tin: Tiêu đề, Ngày bắt đầu và Ngày kết thúc!");
     return;
   }
 
-  const assignees = Array.isArray(currentTask.assignees)
-    ? currentTask.assignees
-    : (currentTask.assignees ? [currentTask.assignees] : []);
+  const startDate = new Date(currentTask.start);
+  const endDate = new Date(currentTask.end);
+  
+  if (endDate < startDate) {
+    toast.error("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+    return;
+  }
 
-  const newTask = {
-    id: taskIdCounter,     
-    title: currentTask.title,
-    start: new Date(currentTask.start),
-    end: new Date(currentTask.end),
-    description: currentTask.description,
-    assignees,
-  };
+  const loadingToast = toast.loading("Đang tạo nhiệm vụ...");
+  
+  try {
+    const assignees = Array.isArray(currentTask.assignees)
+      ? currentTask.assignees
+      : (currentTask.assignees ? [currentTask.assignees] : []);
 
-  setTasks((prev) => [...prev, newTask]);
+    const newTask = {
+      id: taskIdCounter,     
+      title: currentTask.title,
+      start: startDate,
+      end: endDate,
+      description: currentTask.description,
+      assignees,
+    };
 
-  // Tăng ID lên 1 mỗi lần thêm
-  setTaskIdCounter(prev => prev + 1);
+    setTasks((prev) => [...prev, newTask]);
 
-  setOpen(false);
+    // Tăng ID lên 1 mỗi lần thêm
+    setTaskIdCounter(prev => prev + 1);
+
+    toast.dismiss(loadingToast);
+    toast.success(`Đã tạo nhiệm vụ "${currentTask.title}" thành công!`);
+    setOpen(false);
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    toast.error("Không thể tạo nhiệm vụ. Vui lòng thử lại!");
+  }
 };
 
 
   const handleUpdateTask = () => {
-    const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
+    if (!currentTask.title || !currentTask.start || !currentTask.end) {
+      toast.error("Vui lòng nhập đủ thông tin: Tiêu đề, Ngày bắt đầu và Ngày kết thúc!");
+      return;
+    }
 
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === currentTask.id
-          ? {
-              ...task,
-              title: currentTask.title,
-              start: new Date(currentTask.start),
-              end: new Date(currentTask.end),
-              description: currentTask.description,
-              assignees,
-            }
-          : task
-      )
-    );
-    setOpen(false);
+    const startDate = new Date(currentTask.start);
+    const endDate = new Date(currentTask.end);
+    
+    if (endDate < startDate) {
+      toast.error("Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+      return;
+    }
+
+    const loadingToast = toast.loading("Đang cập nhật nhiệm vụ...");
+    
+    try {
+      const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
+
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === currentTask.id
+            ? {
+                ...task,
+                title: currentTask.title,
+                start: startDate,
+                end: endDate,
+                description: currentTask.description,
+                assignees,
+              }
+            : task
+        )
+      );
+      
+      toast.dismiss(loadingToast);
+      toast.success(`Đã cập nhật nhiệm vụ "${currentTask.title}" thành công!`);
+      setOpen(false);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Không thể cập nhật nhiệm vụ. Vui lòng thử lại!");
+    }
   };
 
   const handleDeleteTask = (taskToDelete) => {
-    if (window.confirm("Bạn có chắc muốn xóa nhiệm vụ này?")) {
+    setTaskToDelete(taskToDelete);
+    setOpenDeleteDialog(true);
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+    
+    const task = tasks.find(t => t.id === taskToDelete.id);
+    const taskTitle = task?.title || 'nhiệm vụ này';
+    
+    const loadingToast = toast.loading("Đang xóa nhiệm vụ...");
+    try {
       setTasks((prev) => prev.filter((task) => task.id !== taskToDelete.id));
+      toast.dismiss(loadingToast);
+      toast.success(`Đã xóa nhiệm vụ "${taskTitle}" thành công!`);
+      setOpenDeleteDialog(false);
+      setTaskToDelete(null);
       setOpen(false);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error("Không thể xóa nhiệm vụ. Vui lòng thử lại!");
     }
   };
 
@@ -183,6 +249,38 @@ const handleAddTask = () => {
         editMode={editMode}
         employees={employees}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => {
+          setOpenDeleteDialog(false);
+          setTaskToDelete(null);
+        }}
+        PaperProps={{ sx: { borderRadius: '16px' } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600 }}>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc muốn xóa nhiệm vụ <strong>"{tasks.find(t => t.id === taskToDelete?.id)?.title || 'này'}"</strong>?
+            <br />
+            <span style={{ color: '#ef4444', marginTop: '8px', display: 'block' }}>
+              Hành động này không thể hoàn tác.
+            </span>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setOpenDeleteDialog(false);
+            setTaskToDelete(null);
+          }}>
+            Hủy
+          </Button>
+          <Button onClick={confirmDeleteTask} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

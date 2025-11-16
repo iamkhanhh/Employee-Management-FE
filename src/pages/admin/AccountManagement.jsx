@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Paper, Snackbar, Alert, CircularProgress, Box } from "@mui/material";
+import { Paper, CircularProgress, Box, Alert } from "@mui/material";
 import AccountFilters from '../../components/AccountManagement/AccountFilters';
 import AccountTable from '../../components/AccountManagement/AccountTable';
 import { CreateEditDialog, DeleteDialog, ResetPasswordDialog } from '../../components/AccountManagement/AccountDialogs';
 import { accountService } from '../../services/accountService';
+import toast from 'react-hot-toast';
 
 export default function AccountManager() {
   const [accounts, setAccounts] = useState([]);
@@ -16,7 +17,6 @@ export default function AccountManager() {
   const [editingAccount, setEditingAccount] = useState(null);
   const [deleteAccount, setDeleteAccount] = useState(null);
   const [resetAccount, setResetAccount] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Filter state
   const [query, setQuery] = useState("");
@@ -45,7 +45,7 @@ export default function AccountManager() {
       setError(null);
     } catch (error) {
       setError('Failed to fetch accounts. Please try again later.');
-      setSnackbar({ open: true, message: 'Failed to fetch accounts', severity: 'error' });
+      toast.error("Không thể tải danh sách tài khoản. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
@@ -88,56 +88,39 @@ export default function AccountManager() {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.username || !formData.email || !formData.full_name) {
-      setSnackbar({
-        open: true,
-        message: 'Please fill in all required fields',
-        severity: 'error',
-      });
+      toast.error("Vui lòng điền đầy đủ các trường bắt buộc!");
       return;
     }
 
+    const loadingToast = toast.loading(editingAccount ? "Đang cập nhật tài khoản..." : "Đang tạo tài khoản...");
+    
     try {
       if (editingAccount) {
         await accountService.updateAccount(editingAccount.id, formData);
-        setSnackbar({
-          open: true,
-          message: 'Account updated successfully',
-          severity: 'success',
-        });
+        toast.dismiss(loadingToast);
+        toast.success(`Đã cập nhật tài khoản "${formData.full_name || formData.username}" thành công!`);
       } else {
         if (!formData.password) {
-          setSnackbar({
-            open: true,
-            message: 'Password is required for new accounts',
-            severity: 'error',
-          });
+          toast.dismiss(loadingToast);
+          toast.error("Mật khẩu là bắt buộc cho tài khoản mới!");
           return;
         }
         
         if (formData.password !== formData.confirmPassword) {
-          setSnackbar({
-            open: true,
-            message: 'Passwords do not match',
-            severity: 'error',
-          });
+          toast.dismiss(loadingToast);
+          toast.error("Mật khẩu xác nhận không khớp!");
           return;
         }
         await accountService.createAccount(formData);
-        setSnackbar({
-          open: true,
-          message: 'Account created successfully',
-          severity: 'success',
-        });
+        toast.dismiss(loadingToast);
+        toast.success(`Đã tạo tài khoản "${formData.full_name || formData.username}" thành công!`);
       }
       fetchAccounts(); // Refetch accounts after save
       setOpenDialog(false);
       resetForm();
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Failed to save account: ${error.message}`,
-        severity: 'error',
-      });
+      toast.dismiss(loadingToast);
+      toast.error(error.response?.data?.message || `Không thể ${editingAccount ? 'cập nhật' : 'tạo'} tài khoản. Vui lòng thử lại!`);
     }
   };
 
@@ -148,20 +131,15 @@ export default function AccountManager() {
 
   const confirmDelete = async () => {
     if (deleteAccount) {
+      const loadingToast = toast.loading("Đang xóa tài khoản...");
       try {
         await accountService.deleteAccount(deleteAccount.id);
-        setSnackbar({
-          open: true,
-          message: 'Account deleted successfully',
-          severity: 'success',
-        });
+        toast.dismiss(loadingToast);
+        toast.success(`Đã xóa tài khoản "${deleteAccount.full_name || deleteAccount.username}" thành công!`);
         fetchAccounts(); // Refetch accounts after delete
       } catch (error) {
-        setSnackbar({
-          open: true,
-          message: `Failed to delete account: ${error.message}`,
-          severity: 'error',
-        });
+        toast.dismiss(loadingToast);
+        toast.error(error.response?.data?.message || `Không thể xóa tài khoản. Vui lòng thử lại!`);
       }
     }
     setOpenDeleteDialog(false);
@@ -169,20 +147,16 @@ export default function AccountManager() {
   };
 
   const handleToggleLock = async (account) => {
+    const loadingToast = toast.loading("Đang thay đổi trạng thái khóa...");
     try {
       await accountService.toggleAccountLock(account.id);
-      setSnackbar({
-        open: true,
-        message: `Account ${account.status === 'active' ? 'locked' : 'unlocked'} successfully`,
-        severity: 'success',
-      });
+      toast.dismiss(loadingToast);
+      const action = account.status === 'active' || account.status === 'ACTIVE' ? 'khóa' : 'mở khóa';
+      toast.success(`Đã ${action} tài khoản "${account.full_name || account.username}" thành công!`);
       fetchAccounts(); // Refetch accounts after toggle lock
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Failed to toggle lock status: ${error.message}`,
-        severity: 'error',
-      });
+      toast.dismiss(loadingToast);
+      toast.error(error.response?.data?.message || "Không thể thay đổi trạng thái khóa. Vui lòng thử lại!");
     }
   };
 
@@ -191,23 +165,25 @@ export default function AccountManager() {
     setOpenResetDialog(true);
   };
 
-  const confirmResetPassword = () => {
+  const confirmResetPassword = async () => {
     if (resetAccount) {
-      // This is likely a mock implementation, as frontend can't send emails.
-      // In a real app, this would call an API endpoint.
-      setSnackbar({
-        open: true,
-        message: `Password reset email sent to ${resetAccount.email}`,
-        severity: 'success',
-      });
+      const loadingToast = toast.loading("Đang gửi email đặt lại mật khẩu...");
+      try {
+        // This is likely a mock implementation, as frontend can't send emails.
+        // In a real app, this would call an API endpoint.
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        toast.dismiss(loadingToast);
+        toast.success(`Đã gửi email đặt lại mật khẩu đến ${resetAccount.email}!`);
+      } catch (error) {
+        toast.dismiss(loadingToast);
+        toast.error("Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại!");
+      }
     }
     setOpenResetDialog(false);
     setResetAccount(null);
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
 
   // Filtered rows for DataGrid
   const rows = accounts
@@ -262,11 +238,6 @@ export default function AccountManager() {
       <CreateEditDialog open={openDialog} onClose={() => { setOpenDialog(false); resetForm(); }} onSubmit={handleSave} editingAccount={editingAccount} formData={formData} setFormData={setFormData} />
       <DeleteDialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onConfirm={confirmDelete} deleteAccount={deleteAccount} />
       <ResetPasswordDialog open={openResetDialog} onClose={() => setOpenResetDialog(false)} onConfirm={confirmResetPassword} resetAccount={resetAccount} />
-
-      {/* Snackbar */}
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%', borderRadius: '8px' }}>{snackbar.message}</Alert>
-      </Snackbar>
     </div>
   );
 }
