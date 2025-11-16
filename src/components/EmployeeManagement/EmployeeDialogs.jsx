@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem, FormHelperText } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem, FormHelperText, DialogContentText } from '@mui/material';
 
 export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormState, departments }) {
   return (
@@ -8,7 +8,7 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
       <form onSubmit={onSubmit}>
         <DialogContent dividers>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextField label="Full name" value={formState.full_name} onChange={(e) => setFormState({ ...formState, fullName: e.target.value })} required />
+            <TextField label="Full name" value={formState.fullName} onChange={(e) => setFormState({ ...formState, fullName: e.target.value })} required />
             <TextField label="User ID" type="number" value={formState.userId} onChange={(e) => setFormState({ ...formState, userId: e.target.value })} required helperText="ID của tài khoản (user account)" />
 
             <FormControl required>
@@ -48,6 +48,22 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
           <Button type="submit" variant="contained">Save</Button>
         </DialogActions>
       </form>
+    </Dialog>
+  );
+}
+export function DeleteEmployeeDialog({ open, onClose, onConfirm, employeeName, selectedCount }) {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Xác nhận xoá</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Bạn có chắc muốn xoá nhân viên <strong>{employeeName}</strong>? Hành động này không thể hoàn tác.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Hủy</Button>
+        <Button color="error" variant="contained" onClick={onConfirm}>Xoá</Button>
+      </DialogActions>
     </Dialog>
   );
 }

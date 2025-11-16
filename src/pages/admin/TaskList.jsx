@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import React, { useState, useEffect, useMemo } from "react";
 import moment from "moment";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import TaskCalendar from '../../components/Task/TaskCalendar';
 import TaskDialog from '../../components/Task/TaskDialog';
+import TaskTable from '../../components/Task/TaskTable';
 import {
   Button,
   Typography,
@@ -11,31 +9,22 @@ import {
 } from "@mui/material";
 import { mockEmployees as globalMockEmployees } from '../../data/mockData';
 
-const localizer = momentLocalizer(moment);
+// Function to determine task status
+const getStatus = (start, end) => {
+  const now = new Date();
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (now < startDate) return 'pending';
+  if (now > endDate) return 'completed';
+  return 'in-progress';
+};
+
 
 export default function TaskList() {
-  const [date, setDate] = useState(new Date());
-  const [view, setView] = useState("month");
-  const [events, setEvents] = useState([]);
-
-  // Inline event style getter to override default/global rbc styles
-  const eventStyleGetter = (event, start, end, isSelected) => {
-    const style = {
-      backgroundColor: '#60a5fa',
-      color: '#ffffff',
-      border: 'none',
-      boxShadow: 'none',
-      borderRadius: '6px',
-      padding: '2px 6px',
-    };
-    return { style };
-  };
-
-  // Dialog control
+  const [tasks, setTasks] = useState([]);
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-
-  // Chứa task đang được tạo hoặc chỉnh sửa
   const [currentTask, setCurrentTask] = useState({
     id: null,
     title: "",
@@ -44,8 +33,6 @@ export default function TaskList() {
     description: "",
     assignees: [],
   });
-
-  // Danh sách nhân viên (lấy từ mockData nếu có)
   const [employees, setEmployees] = useState(() => {
     return (globalMockEmployees && globalMockEmployees.length) ? globalMockEmployees.map(e => e.full_name || e.user?.full_name || e.user?.name || e.user?.username || `User ${e.id}`) : [
       "Nguyễn Văn A",
@@ -54,9 +41,9 @@ export default function TaskList() {
       "Phạm Thị D",
     ];
   });
+  const [taskIdCounter, setTaskIdCounter] = useState(1);
 
   useEffect(() => {
-    // Listener để cập nhật khi mockEmployees thay đổi (EmployeeList sẽ dispatch event)
     const handleMockUpdate = () => {
       if (globalMockEmployees && globalMockEmployees.length) {
         setEmployees(globalMockEmployees.map(e => e.full_name || e.user?.full_name || e.user?.name || e.user?.username || `User ${e.id}`));
@@ -64,8 +51,6 @@ export default function TaskList() {
     };
 
     window.addEventListener('mockEmployeesUpdated', handleMockUpdate);
-
-    // ensure initial sync
     handleMockUpdate();
 
     return () => {
@@ -73,22 +58,20 @@ export default function TaskList() {
     };
   }, []);
 
-  // Local function to open edit dialog for a given event object
-  const openEditDialogForEvent = (eventObj) => {
-    const assigneesArr = Array.isArray(eventObj.assignees) ? eventObj.assignees : (eventObj.assignees ? eventObj.assignees.toString().split(/,\s*/).filter(Boolean) : []);
+  const openEditDialogForTask = (task) => {
+    const assigneesArr = Array.isArray(task.assignees) ? task.assignees : (task.assignees ? task.assignees.toString().split(/,\s*/).filter(Boolean) : []);
     setCurrentTask({
-      id: eventObj.id,
-      title: eventObj.originalTitle || eventObj.title,
-      start: moment(eventObj.start).format("YYYY-MM-DDTHH:mm"),
-      end: moment(eventObj.end).format("YYYY-MM-DDTHH:mm"),
-      description: eventObj.description,
+      id: task.id,
+      title: task.title,
+      start: moment(task.start).format("YYYY-MM-DDTHH:mm"),
+      end: moment(task.end).format("YYYY-MM-DDTHH:mm"),
+      description: task.description,
       assignees: assigneesArr,
     });
     setEditMode(true);
     setOpen(true);
   };
 
-  // Mở dialog thêm task
   const handleClickOpen = () => {
     setCurrentTask({
       id: null,
@@ -102,104 +85,101 @@ export default function TaskList() {
     setOpen(true);
   };
 
-  // Mở dialog khi click vào event (fallback)
-  const handleSelectEvent = (event) => {
-    openEditDialogForEvent(event);
-  };
-
   const handleClose = () => {
     setOpen(false);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // For multiple select, value will be array
     setCurrentTask((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Tạo mới task
-  const handleAddTask = () => {
-    if (!currentTask.title || !currentTask.start || !currentTask.end) {
-      alert("Vui lòng nhập đủ thông tin!");
-      return;
-    }
+const handleAddTask = () => {
+  if (!currentTask.title || !currentTask.start || !currentTask.end) {
+    alert("Vui lòng nhập đủ thông tin!");
+    return;
+  }
 
-    const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
+  const assignees = Array.isArray(currentTask.assignees)
+    ? currentTask.assignees
+    : (currentTask.assignees ? [currentTask.assignees] : []);
 
-    const newEvent = {
-      id: Date.now(),
-      // store originalTitle and assignees separately; title used for quick display in calendar is generated from them
-      originalTitle: currentTask.title,
-      title: `${currentTask.title}${assignees && assignees.length ? ` — ${assignees.join(', ')}` : ''}`,
-      start: new Date(currentTask.start),
-      end: new Date(currentTask.end),
-      description: currentTask.description,
-      assignees,
-    };
-
-    setEvents((prev) => [...prev, newEvent]);
-    setOpen(false);
+  const newTask = {
+    id: taskIdCounter,     
+    title: currentTask.title,
+    start: new Date(currentTask.start),
+    end: new Date(currentTask.end),
+    description: currentTask.description,
+    assignees,
   };
 
-  // Cập nhật task
+  setTasks((prev) => [...prev, newTask]);
+
+  // Tăng ID lên 1 mỗi lần thêm
+  setTaskIdCounter(prev => prev + 1);
+
+  setOpen(false);
+};
+
+
   const handleUpdateTask = () => {
     const assignees = Array.isArray(currentTask.assignees) ? currentTask.assignees : (currentTask.assignees ? [currentTask.assignees] : []);
 
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === currentTask.id
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === currentTask.id
           ? {
-              ...e,
-              originalTitle: currentTask.title,
-              title: `${currentTask.title}${assignees && assignees.length ? ` — ${assignees.join(', ')}` : ''}`,
+              ...task,
+              title: currentTask.title,
               start: new Date(currentTask.start),
               end: new Date(currentTask.end),
               description: currentTask.description,
               assignees,
             }
-          : e
+          : task
       )
     );
     setOpen(false);
   };
 
-  // Xóa task
-  const handleDeleteTask = (id) => {
+  const handleDeleteTask = (taskToDelete) => {
     if (window.confirm("Bạn có chắc muốn xóa nhiệm vụ này?")) {
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      setTasks((prev) => prev.filter((task) => task.id !== taskToDelete.id));
       setOpen(false);
     }
   };
 
+  const tasksWithStatus = useMemo(() => tasks.map(task => ({
+    ...task,
+    start: moment(task.start).format('YYYY-MM-DD HH:mm'),
+    end: moment(task.end).format('YYYY-MM-DD HH:mm'),
+    status: getStatus(task.start, task.end)
+  })), [tasks]);
+
   return (
     <Box sx={{ padding: 3 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" fontWeight="bold">
-          Task Calendar
+          Task Management
         </Typography>
         <Button variant="contained" onClick={handleClickOpen}>
           + Add Task
         </Button>
       </Box>
 
-      <TaskCalendar
-        events={events}
-        date={date}
-        setDate={setDate}
-        view={view}
-        setView={setView}
-        onSelectEvent={handleSelectEvent}
-        eventStyleGetter={eventStyleGetter}
+      <TaskTable
+        rows={tasksWithStatus}
+        onEdit={openEditDialogForTask}
+        onDelete={handleDeleteTask}
       />
 
-      {/* Dialog CRUD Task */}
       <TaskDialog
         open={open}
         onClose={handleClose}
         currentTask={currentTask}
         onChange={handleChange}
         onSave={editMode ? handleUpdateTask : handleAddTask}
-        onDelete={handleDeleteTask}
+        onDelete={() => handleDeleteTask({ id: currentTask.id })}
         editMode={editMode}
         employees={employees}
       />

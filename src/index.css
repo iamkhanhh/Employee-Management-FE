@@ -1,2 +1,16 @@
 @import "tailwindcss";
 @import "./assets/styles/global.css";
+
+/* FULL CELL for month view */
+.rbc-month-view .rbc-event {
+  height: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+}
+
+.rbc-month-view .rbc-event-content {
+  white-space: normal !important;
+}

@@ -1,220 +1,188 @@
-import React, { useEffect, useState } from 'react';
-import moment from 'moment';
-import { Box, Grid, Paper, Typography, Button, Divider, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
-import { useAuth } from '../../hooks/useAuth';
-import { mockEmployees } from '../../data/mockData';
+import React, { useState, useEffect } from "react";
+import AttendanceCalendar from "./AttendanceCalendar";
+import { Box, Button, Stack, Typography, Paper } from "@mui/material";
+import moment from "moment";
 
-const STORAGE_KEY = 'my_attendance_records_v1';
-const WORK_DAY_HOURS = 8;
+// --- Shift Schedule ---
+const MORNING_SHIFT_START = { hour: 8, minute: 30 };
+const MORNING_SHIFT_END = { hour: 12, minute: 0 };
+const AFTERNOON_SHIFT_START = { hour: 13, minute: 30 };
+const AFTERNOON_SHIFT_END = { hour: 18, minute: 0 };
 
-function loadRecords() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-}
-function saveRecords(records) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  } catch (e) {}
-}
+const getTodayWithTime = (hour, minute) => {
+  return moment().set({ hour, minute, second: 0, millisecond: 0 });
+};
 
 export default function MyAttendance() {
-  const { user } = useAuth();
-  // In development allow falling back to first mock employee when auth is not available
-  const fallbackUser = mockEmployees[0];
-  const userId = user?.id ?? fallbackUser?.id ?? null;
-  const userName = user?.full_name || user?.name || mockEmployees.find(e => e.id === userId)?.full_name || fallbackUser?.full_name || 'You';
+  const [date, setDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [attendanceToday, setAttendanceToday] = useState(null);
 
-  const [records, setRecords] = useState(() => loadRecords());
-  const [todayRecord, setTodayRecord] = useState(null);
-
+  // Load today's attendance status on component mount
   useEffect(() => {
-    // compute today's record for current user
-    if (!userId) return;
-    const today = moment().format('YYYY-MM-DD');
-    const rec = records.find(r => r.employeeId === userId && r.date === today);
-    setTodayRecord(rec || null);
-  }, [records, userId]);
-
-  useEffect(() => {
-    saveRecords(records);
-  }, [records]);
-
-  const addOrUpdateRecord = (payload) => {
-    setRecords(prev => {
-      const idx = prev.findIndex(r => r.id === payload.id);
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = payload;
-        return copy;
-      }
-      return [payload, ...prev];
-    });
-  };
-
-  const handleCheckIn = () => {
-    if (!userId) {
-      // graceful fallback: notify in console in dev
-      console.warn('No user available for check-in');
-      return alert('Không có user — không thể chấm công');
-    }
-    const now = moment();
-    const date = now.format('YYYY-MM-DD');
-    const time = now.format('HH:mm:ss');
-
-    // find existing
-    let rec = records.find(r => r.employeeId === userId && r.date === date);
-    if (rec) {
-      if (rec.timeIn) return alert('Bạn đã check-in hôm nay');
-      rec = { ...rec, timeIn: time, type: rec.type || 'work' };
+    const todayStart = moment().startOf("day");
+    const todaysEvent = events.find(e => moment(e.start).isSame(todayStart, "day"));
+    if (todaysEvent) {
+      setAttendanceToday({
+        actualCheckIn: todaysEvent.actualCheckIn,
+        actualCheckOut: todaysEvent.actualCheckOut,
+      });
     } else {
-      rec = {
-        id: Date.now(),
-        employeeId: userId,
-        date,
-        timeIn: time,
-        timeOut: null,
-        type: 'work',
-        note: '',
-        hours: 0,
-        overtime: 0,
-      };
+      setAttendanceToday(null);
     }
-    // no hours until checkout
-    addOrUpdateRecord(rec);
+  }, [events, date]);
+
+const handleCheckIn = () => {
+  const actualCheckIn = moment();
+
+  const morningStartTime = getTodayWithTime(MORNING_SHIFT_START.hour, MORNING_SHIFT_START.minute);
+  const afternoonStartTime = getTodayWithTime(AFTERNOON_SHIFT_START.hour, AFTERNOON_SHIFT_START.minute);
+
+  let lateMinutes = 0;
+  let status = "present";
+  let shiftType = "full"; // mặc định full ca
+  let title = "Đúng giờ";
+
+  // Xác định nửa ca (checkin sau 13:30 thì là nửa ca chiều)
+  if (actualCheckIn.isAfter(afternoonStartTime)) {
+    shiftType = "half";
+    lateMinutes = 0;
+    title = "Đi nửa ca chiều";
+  } else if (actualCheckIn.isAfter(morningStartTime) && actualCheckIn.isBefore(getTodayWithTime(MORNING_SHIFT_END.hour, MORNING_SHIFT_END.minute))) {
+    lateMinutes = actualCheckIn.diff(morningStartTime, "minutes");
+    if (lateMinutes > 0) {
+      status = "late";
+      title = `Đi muộn ${lateMinutes} phút`;
+    }
+  }
+
+  const todayStart = moment().startOf("day");
+  const todayEnd = moment(todayStart).add(1, "minute");
+
+  const newEvent = {
+    title,
+    start: todayStart.toDate(),
+    end: todayEnd.toDate(),
+    allDay: false,
+    actualCheckIn: actualCheckIn.toDate(),
+    actualCheckOut: null,
+    checkIn: actualCheckIn.toDate(),
+    checkOut: null,
+    lateMinutes,
+    earlyMinutes: 0,
+    status,
+    shiftType,
+    bgColor: getEventColor(status, shiftType), // màu dựa vào trạng thái
+    renderItem: (props) => <EventItem {...props} />,
   };
+
+  setEvents((prev) => [...prev, newEvent]);
+};
 
   const handleCheckOut = () => {
-    if (!userId) {
-      console.warn('No user available for check-out');
-      return alert('Không có user — không thể chấm công');
-    }
-    const now = moment();
-    const date = now.format('YYYY-MM-DD');
-    const time = now.format('HH:mm:ss');
+    const actualCheckOut = moment();
+    const todayStart = moment().startOf("day");
+    const afternoonEndTime = getTodayWithTime(AFTERNOON_SHIFT_END.hour, AFTERNOON_SHIFT_END.minute);
 
-    const rec = records.find(r => r.employeeId === userId && r.date === date);
-    if (!rec || !rec.timeIn) return alert('Bạn chưa check-in hôm nay');
-    if (rec.timeOut) return alert('Bạn đã check-out rồi');
+    const updatedEvents = events.map((e) => {
+      if (moment(e.start).isSame(todayStart, "day")) {
+        let earlyMinutes = 0;
+        if (actualCheckOut.isBefore(afternoonEndTime)) {
+          earlyMinutes = afternoonEndTime.diff(actualCheckOut, "minutes");
+        }
 
-    const start = moment(`${rec.date} ${rec.timeIn}`, 'YYYY-MM-DD HH:mm:ss');
-    const end = now;
-    const diffHours = moment.duration(end.diff(start)).asHours();
-    const roundedHours = Math.round(diffHours * 100) / 100; // two decimals
-    const overtime = Math.max(0, roundedHours - WORK_DAY_HOURS);
+        // cập nhật màu: nếu half ca đã check-out thì vẫn giữ tím, full ca -> đúng giờ hay muộn
+        const newBgColor = e.shiftType === "half" ? "#c299ff" : getEventColor(e.status, e.shiftType);
 
-    const updated = { ...rec, timeOut: time, hours: roundedHours, overtime };
-    addOrUpdateRecord(updated);
+        return {
+          ...e,
+          actualCheckOut: actualCheckOut.toDate(),
+          checkOut: actualCheckOut.toDate(),
+          earlyMinutes,
+          bgColor: newBgColor,
+        };
+      }
+      return e;
+    });
+
+    setEvents(updatedEvents);
   };
 
-  // Summary for current user
-  const userRecords = records.filter(r => r.employeeId === userId);
-  const daysWorked = userRecords.filter(r => r.timeIn && r.timeOut && (r.type || 'work') === 'work').length;
-  const totalHours = userRecords.reduce((s, r) => s + (r.hours || 0), 0);
-  const totalOvertime = userRecords.reduce((s, r) => s + (r.overtime || 0), 0);
-  const leaveCount = userRecords.filter(r => r.type === 'leave').length;
-  const remoteCount = userRecords.filter(r => r.type === 'remote').length;
-  const businessCount = userRecords.filter(r => r.type === 'business').length;
-  const holidayCount = userRecords.filter(r => r.type === 'holiday').length;
+// Hàm tính màu
+const getEventColor = (status, shiftType) => {
+  if (!status) return "#F44336"; // nghỉ làm (chưa checkin)
+  if (shiftType === "half") return "#9C27B0"; // nửa ca tím đậm
+  if (status === "late") return "#FFC107"; // vàng đậm
+  if (status === "present") return "#4CAF50"; // xanh lá đậm
+  return "#4CAF50";
+};
 
-  const lastRecords = userRecords.slice(0, 10);
+
+
+
+  // eventStyleGetter giữ nguyên
+  const eventStyleGetter = (event) => ({
+    style: {
+      backgroundColor: event.bgColor || "#d8f5d1",
+      borderRadius: "8px",
+      padding: "6px",
+      color: "#000",
+      border: "1px solid #ddd",
+      fontSize: 12,
+    },
+  });
+
+  const EventItem = ({ event }) => {
+  const actualIn = event.actualCheckIn ? moment(event.actualCheckIn).format("HH:mm:ss") : null;
+  const actualOut = event.actualCheckOut ? moment(event.actualCheckOut).format("HH:mm:ss") : null;
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h5">Bảng công — {userName}</Typography>
-          <Typography variant="body2" color="text.secondary">Tổng quan chấm công</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="contained" color="primary" onClick={handleCheckIn} disabled={todayRecord && todayRecord.timeIn}>Check In</Button>
-          <Button variant="contained" color="secondary" onClick={handleCheckOut} disabled={!todayRecord || !todayRecord.timeIn || todayRecord.timeOut}>Check Out</Button>
-        </Box>
-      </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{daysWorked}</Typography>
-            <Typography variant="caption">Số ngày làm</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{totalHours}</Typography>
-            <Typography variant="caption">Tổng số giờ</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{totalOvertime}</Typography>
-            <Typography variant="caption">Tổng giờ tăng ca</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{leaveCount}</Typography>
-            <Typography variant="caption">Số buổi nghỉ phép</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{remoteCount}</Typography>
-            <Typography variant="caption">Số buổi làm việc tại nhà</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{businessCount}</Typography>
-            <Typography variant="caption">Số buổi công tác</Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">{holidayCount}</Typography>
-            <Typography variant="caption">Số buổi nghỉ lễ</Typography>
-          </Paper>
-        </Grid>
-      </Grid>
-
-      <Divider sx={{ my: 2 }} />
-
-      <Typography variant="h6" sx={{ mb: 1 }}>Lịch sử gần đây</Typography>
-      <Paper>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Ngày</TableCell>
-              <TableCell>Giờ vào</TableCell>
-              <TableCell>Giờ ra</TableCell>
-              <TableCell>Giờ công</TableCell>
-              <TableCell>OT</TableCell>
-              <TableCell>Loại</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {lastRecords.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">Không có dữ liệu</TableCell>
-              </TableRow>
-            ) : (
-              lastRecords.map(r => (
-                <TableRow key={r.id} hover>
-                  <TableCell>{r.date}</TableCell>
-                  <TableCell>{r.timeIn || '-'}</TableCell>
-                  <TableCell>{r.timeOut || '-'}</TableCell>
-                  <TableCell>{r.hours || '-'}</TableCell>
-                  <TableCell>{r.overtime || '-'}</TableCell>
-                  <TableCell>{r.type || 'work'}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Paper>
+    <Box sx={{ p: 0.5, height: "100%" }}>
+      <strong style={{ display: "block", marginBottom: 4 }}>{event.title}</strong>
+      {actualIn && <div style={{ fontSize: 12 }}>Check-in: {actualIn}</div>}
+      {actualOut && <div style={{ fontSize: 12 }}>Check-out: {actualOut}</div>}
+      {event.lateMinutes > 0 && <div style={{ color: "orange", fontSize: 11 }}>Muộn: {event.lateMinutes} phút</div>}
+      {event.earlyMinutes > 0 && <div style={{ color: "red", fontSize: 11 }}>Sớm: {event.earlyMinutes} phút</div>}
     </Box>
+  );
+};
+
+
+  const hasCheckedInToday = attendanceToday && attendanceToday.actualCheckIn;
+  const hasCheckedOutToday = attendanceToday && attendanceToday.actualCheckOut;
+
+  return (
+    <Paper elevation={3} sx={{ p: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        Chấm công của tôi
+      </Typography>
+      <Stack direction="row" spacing={2} mb={3}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleCheckIn}
+          disabled={hasCheckedInToday}
+        >
+          Check In
+        </Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleCheckOut}
+          disabled={!hasCheckedInToday || hasCheckedOutToday}
+        >
+          Check Out
+        </Button>
+      </Stack>
+
+      <AttendanceCalendar
+        events={events}
+        date={date}
+        setDate={setDate}
+        views={["month"]}
+        eventStyleGetter={eventStyleGetter}
+        components={{ event: EventItem }}
+      />
+    </Paper>
   );
 }

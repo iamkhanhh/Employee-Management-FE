@@ -1,53 +1,14 @@
-import React, { useState } from "react";
-import { Paper, Snackbar, Alert } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Paper, Snackbar, Alert, CircularProgress, Box } from "@mui/material";
 import AccountFilters from '../../components/AccountManagement/AccountFilters';
 import AccountTable from '../../components/AccountManagement/AccountTable';
 import { CreateEditDialog, DeleteDialog, ResetPasswordDialog } from '../../components/AccountManagement/AccountDialogs';
-import { mockUsers } from '../../data/mockData';
+import { accountService } from '../../services/accountService';
 
 export default function AccountManager() {
-  const initialFromMock = (mockUsers && mockUsers.length > 0) ? mockUsers.map(u => ({
-    id: u.id,
-    username: u.username,
-    email: u.email,
-    // prefer full_name if available, otherwise try common fallbacks
-    full_name: u.full_name || u.fullName || u.name || u.username,
-    // map roles like 'ADMIN'/'HR'/'EMPLOYEE' to 'Admin' or 'User'
-    role: (u.role && u.role.toString().toLowerCase() === 'admin') || (u.role && u.role.toString().toLowerCase().includes('admin')) ? 'Admin' : 'User',
-    // map status 'ACTIVE' -> 'active', others -> 'locked' (fallback)
-    status: u.status && u.status.toString().toLowerCase() === 'active' ? 'active' : 'locked',
-    created_at: u.created_at ? u.created_at.replace('T', ' ').slice(0, 19) : new Date().toISOString().replace('T', ' ').slice(0, 19),
-  })) : [
-    {
-      id: 1,
-      username: 'admin',
-      email: 'admin@example.com',
-      full_name: 'Admin User',
-      role: 'Admin',
-      status: 'active',
-      created_at: '2024-01-01 09:00:00',
-    },
-    {
-      id: 2,
-      username: 'nguyenvana',
-      email: 'nguyenvana@example.com',
-      full_name: 'Nguyen Van A',
-      role: 'User',
-      status: 'active',
-      created_at: '2024-02-15 10:30:00',
-    },
-    {
-      id: 3,
-      username: 'tranthib',
-      email: 'tranthib@example.com',
-      full_name: 'Tran Thi B',
-      role: 'User',
-      status: 'locked',
-      created_at: '2024-03-20 14:20:00',
-    },
-  ];
-
-  const [accounts, setAccounts] = useState(initialFromMock);
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [openDialog, setOpenDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -61,23 +22,43 @@ export default function AccountManager() {
   const [query, setQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCreatedAt, setFilterCreatedAt] = useState("all");
 
   // Form state
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    full_name: '',
     role: 'User',
     password: '',
     confirmPassword: '', 
     status: 'pending',
   });
 
+  const fetchAccounts = async () => {
+    try {
+      setLoading(true);
+      const response = await accountService.getAccounts();
+      // Lấy mảng content từ response.data
+      const users = Array.isArray(response.data.data.content) ? response.data.data.content : [];
+      setAccounts(users);
+
+      setError(null);
+    } catch (error) {
+      setError('Failed to fetch accounts. Please try again later.');
+      setSnackbar({ open: true, message: 'Failed to fetch accounts', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
   const resetForm = () => {
     setFormData({
       username: '',
       email: '',
-      full_name: '',
       role: 'User',
       password: '',
       confirmPassword: '', 
@@ -96,7 +77,6 @@ export default function AccountManager() {
     setFormData({
       username: account.username,
       email: account.email,
-      full_name: account.full_name,
       role: account.role,
       password: '',
       status: account.status,
@@ -105,7 +85,7 @@ export default function AccountManager() {
     setOpenDialog(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.username || !formData.email || !formData.full_name) {
       setSnackbar({
@@ -116,66 +96,49 @@ export default function AccountManager() {
       return;
     }
 
-    if (editingAccount) {
-      // Update existing account
-      setAccounts(
-        accounts.map((acc) =>
-          acc.id === editingAccount.id
-            ? {
-                ...acc,
-                username: formData.username,
-                email: formData.email,
-                full_name: formData.full_name,
-                role: formData.role,
-                status: formData.status,
-                updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-              }
-            : acc
-        )
-      );
-      setSnackbar({
-        open: true,
-        message: 'Account updated successfully',
-        severity: 'success',
-      });
-    } else {
-      // Create new account
-      if (!formData.password) {
+    try {
+      if (editingAccount) {
+        await accountService.updateAccount(editingAccount.id, formData);
         setSnackbar({
           open: true,
-          message: 'Password is required for new accounts',
-          severity: 'error',
+          message: 'Account updated successfully',
+          severity: 'success',
         });
-        return;
-      }
-      
-      if (formData.password !== formData.confirmPassword) {
+      } else {
+        if (!formData.password) {
+          setSnackbar({
+            open: true,
+            message: 'Password is required for new accounts',
+            severity: 'error',
+          });
+          return;
+        }
+        
+        if (formData.password !== formData.confirmPassword) {
+          setSnackbar({
+            open: true,
+            message: 'Passwords do not match',
+            severity: 'error',
+          });
+          return;
+        }
+        await accountService.createAccount(formData);
         setSnackbar({
           open: true,
-          message: 'Passwords do not match',
-          severity: 'error',
+          message: 'Account created successfully',
+          severity: 'success',
         });
-        return;
       }
-      
-      const newAccount = {
-        id: accounts.length > 0 ? Math.max(...accounts.map((a) => a.id)) + 1 : 1,
-        username: formData.username,
-        email: formData.email,
-        full_name: formData.full_name,
-        role: formData.role,
-        status: formData.status,
-        created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-      };
-      setAccounts([...accounts, newAccount]);
+      fetchAccounts(); // Refetch accounts after save
+      setOpenDialog(false);
+      resetForm();
+    } catch (error) {
       setSnackbar({
         open: true,
-        message: 'Account created successfully',
-        severity: 'success',
+        message: `Failed to save account: ${error.message}`,
+        severity: 'error',
       });
     }
-    setOpenDialog(false);
-    resetForm();
   };
 
   const handleDelete = (account) => {
@@ -183,36 +146,44 @@ export default function AccountManager() {
     setOpenDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteAccount) {
-      setAccounts(accounts.filter((acc) => acc.id !== deleteAccount.id));
-      setSnackbar({
-        open: true,
-        message: 'Account deleted successfully',
-        severity: 'success',
-      });
+      try {
+        await accountService.deleteAccount(deleteAccount.id);
+        setSnackbar({
+          open: true,
+          message: 'Account deleted successfully',
+          severity: 'success',
+        });
+        fetchAccounts(); // Refetch accounts after delete
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: `Failed to delete account: ${error.message}`,
+          severity: 'error',
+        });
+      }
     }
     setOpenDeleteDialog(false);
     setDeleteAccount(null);
   };
 
-  const handleToggleLock = (account) => {
-    setAccounts(
-      accounts.map((acc) =>
-        acc.id === account.id
-          ? {
-              ...acc,
-              status: acc.status === 'active' ? 'locked' : 'active',
-              updated_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
-            }
-          : acc
-      )
-    );
-    setSnackbar({
-      open: true,
-      message: `Account ${account.status === 'active' ? 'locked' : 'unlocked'} successfully`,
-      severity: 'success',
-    });
+  const handleToggleLock = async (account) => {
+    try {
+      await accountService.toggleAccountLock(account.id);
+      setSnackbar({
+        open: true,
+        message: `Account ${account.status === 'active' ? 'locked' : 'unlocked'} successfully`,
+        severity: 'success',
+      });
+      fetchAccounts(); // Refetch accounts after toggle lock
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to toggle lock status: ${error.message}`,
+        severity: 'error',
+      });
+    }
   };
 
   const handleResetPassword = (account) => {
@@ -222,6 +193,8 @@ export default function AccountManager() {
 
   const confirmResetPassword = () => {
     if (resetAccount) {
+      // This is likely a mock implementation, as frontend can't send emails.
+      // In a real app, this would call an API endpoint.
       setSnackbar({
         open: true,
         message: `Password reset email sent to ${resetAccount.email}`,
@@ -241,9 +214,10 @@ export default function AccountManager() {
     .filter((acc) => {
       const queryLower = query.toLowerCase();
       const matchesQuery =
-        acc.full_name.toLowerCase().includes(queryLower) ||
-        acc.email.toLowerCase().includes(queryLower) ||
-        acc.username.toLowerCase().includes(queryLower);
+        (acc.email && acc.email.toLowerCase().includes(queryLower)) ||
+        (acc.userName && acc.username.toLowerCase().includes(queryLower) ||
+        (acc.createdAt && acc.createdAt.toLowerCase().includes(queryLower))
+      );
       
       const matchesRole = filterRole === 'all' || acc.role === filterRole;
       const matchesStatus = filterStatus === 'all' || acc.status === filterStatus;
@@ -271,7 +245,15 @@ export default function AccountManager() {
             />
 
             {/* Table */}
-            <AccountTable rows={rows} onEdit={handleEdit} onDelete={handleDelete} onToggleLock={handleToggleLock} onResetPassword={handleResetPassword} />
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : error ? (
+              <Alert severity="error" sx={{ my: 4 }}>{error}</Alert>
+            ) : (
+              <AccountTable rows={rows} onEdit={handleEdit} onDelete={handleDelete} onToggleLock={handleToggleLock} onResetPassword={handleResetPassword} />
+            )}
           </Paper>
         </div>
       </div>

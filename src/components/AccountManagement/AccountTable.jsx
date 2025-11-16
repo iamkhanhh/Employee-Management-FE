@@ -12,19 +12,6 @@ const columns = (handleEdit, handleDelete, handleToggleLock, handleResetPassword
   { field: 'username', headerName: 'Username', width: 150 },
   { field: 'email', headerName: 'Email', width: 220 },
   {
-    field: 'full_name',
-    headerName: 'Full Name',
-    width: 180,
-    renderCell: (params) => (
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-          {params.row.full_name?.charAt(0)?.toUpperCase?.()}
-        </span>
-        <div className="text-gray-900 font-medium">{params.row.full_name}</div>
-      </div>
-    ),
-  },
-  {
     field: 'role',
     headerName: 'Role',
     width: 120,
@@ -56,7 +43,7 @@ const columns = (handleEdit, handleDelete, handleToggleLock, handleResetPassword
       />
     ),
   },
-  { field: 'created_at', headerName: 'Created At', width: 160 },
+  { field: 'createdAt', headerName: 'Created At', width: 160 },
   {
     field: 'actions',
     headerName: 'Actions',

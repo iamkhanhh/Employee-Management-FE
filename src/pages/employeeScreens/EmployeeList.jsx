@@ -4,47 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography } from "@mui/material";
 import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters';
 import EmployeeTable from '../../components/EmployeeManagement/EmployeeTable';
-import { AddEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
+import { AddEmployeeDialog, DeleteEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
 // Import service để gọi API
 import { employeeService } from "../../services/employeeService";
-
-// columns and paginationModel unchanged
-const columns = [
-  { field: 'id', headerName: 'ID', width: 90, type: 'number' },
-  {
-    field: 'fullName',
-    headerName: 'Full name',
-    width: 200,
-    renderCell: (params) => (
-      <div className="flex items-center gap-3">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
-          {params.row.fullName?.charAt(0)?.toUpperCase?.()}
-        </span>
-        <div className="text-gray-900 font-medium">{params.row.fullName}</div>
-      </div>
-    ),
-  },
-  { field: 'gender', headerName: 'Gender', width: 110 },
-  { field: 'phoneNumber', headerName: 'Phone', width: 140 },
-  { field: 'department', headerName: 'Department', width: 150 },
-  { field: 'roleInDept', headerName: 'Position', width: 150 },
-  { field: 'hireDate', headerName: 'Hire date', width: 130 },
-  {
-    field: 'status',
-    headerName: 'Status',
-    width: 120,
-    renderCell: (params) => (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-semibold ${params.value === 'active'
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
-          }`}
-      >
-        {params.value}
-      </span>
-    ),
-  },
-];
+import IconButton from '@mui/material/IconButton';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 export default function EmployeeList() {
   const navigate = useNavigate();
@@ -55,6 +20,11 @@ export default function EmployeeList() {
   const [error, setError] = useState(null);
   const [totalRows, setTotalRows] = useState(0);
 
+  // State cho việc xóa
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const [rowSelectionModel, setRowSelectionModel] = useState([]);
+
   // State cho bộ lọc và phân trang
   const [query, setQuery] = useState("");
   const [department, setDepartment] = useState("all");
@@ -64,6 +34,7 @@ export default function EmployeeList() {
 
   // State cho dialog
   const [openAdd, setOpenAdd] = useState(false);
+
   const [departments, setDepartments] = useState([
     { id: 1, name: 'Phòng Kỹ thuật (IT)' },
     { id: 2, name: 'Phòng Nhân sự (HR)' },
@@ -71,6 +42,76 @@ export default function EmployeeList() {
     { id: 4, name: 'Phòng Marketing' },
     { id: 5, name: 'Ban Giám đốc' },
   ]); 
+
+  // --- Handlers ---
+  const handleEdit = (employee) => {
+    navigate(`/admin/employees/${employee.id}`);
+  };
+
+  const handleDelete = (employee) => {
+    setEmployeeToDelete(employee);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!employeeToDelete) return;
+    try {
+      await employeeService.deleteEmployee(employeeToDelete.id);
+      setOpenDeleteDialog(false);
+      setEmployeeToDelete(null);
+      fetchEmployees(); // Tải lại danh sách
+      // TODO: Thêm thông báo xóa thành công
+    } catch (err) {
+      console.error("Failed to delete employee:", err);
+      // TODO: Thêm thông báo lỗi
+    }
+  };
+
+  // --- Columns Definition ---
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 90, type: 'number' },
+    {
+      field: 'fullName',
+      headerName: 'Full name',
+      width: 200,
+      renderCell: (params) => (
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
+            {params.row.fullName?.charAt(0)?.toUpperCase?.()}
+          </span>
+          <div className="text-gray-900 font-medium">{params.row.fullName}</div>
+        </div>
+      ),
+    },
+    { field: 'gender', headerName: 'Gender', width: 110 },
+    { field: 'phoneNumber', headerName: 'Phone', width: 140 },
+    { field: 'department', headerName: 'Department', width: 150 },
+    { field: 'roleInDept', headerName: 'Position', width: 150 },
+    { field: 'hireDate', headerName: 'Hire date', width: 130 },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
+      renderCell: (params) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${params.value === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'action',
+      headerName: 'Action',
+      width: 130,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex gap-2">
+          <IconButton color="primary" onClick={() => handleEdit(params.row)}><EditIcon fontSize="small" /></IconButton>
+          <IconButton color="error" onClick={() => handleDelete(params.row)}><DeleteIcon fontSize="small" /></IconButton>
+        </div>
+      ),
+    },
+  ];
 
   // Hàm gọi API lấy danh sách nhân viên
   const fetchEmployees = useCallback(async () => {
@@ -89,13 +130,13 @@ export default function EmployeeList() {
 
       const response = await employeeService.getAllEmployees(params);
       console.log("Employee API response:", response);
-      // Lấy dữ liệu từ response.data.content và định dạng lại
+      // Sửa lỗi: Lấy dữ liệu từ response.data.content
       const formattedData = response.data.data.content.map(emp => ({
         ...emp,
         hireDate: emp.hireDate ? new Date(emp.hireDate).toLocaleDateString() : '',
       }));
       setEmployees(formattedData);
-      setTotalRows(response.data.totalElements || 0); // Lấy tổng số dòng từ API
+      setTotalRows(response.data.totalElements || 0); // Sửa lỗi: Lấy tổng số dòng từ API
       setError(null);
     } catch (err) {
       console.error("Failed to fetch employees:", err);
@@ -163,7 +204,7 @@ export default function EmployeeList() {
   };
 
   const handleRowClick = (params) => {
-    navigate(`/admin/employees/${params.row.id}`);
+    // navigate(`/admin/employees/${params.row.id}`);
   };
 
   return (
@@ -199,6 +240,8 @@ export default function EmployeeList() {
               rowCount={totalRows}
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
+              rowSelectionModel={rowSelectionModel}
+              onRowSelectionModelChange={setRowSelectionModel}
               paginationMode="server"
             />
           </Box>
@@ -207,6 +250,13 @@ export default function EmployeeList() {
         </div>
 
        <AddEmployeeDialog open={openAdd} onClose={() => { setOpenAdd(false); resetForm(); }} onSubmit={handleSaveEmployee} formState={formState} setFormState={setFormState} departments={departments} />
+
+       <DeleteEmployeeDialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        employeeName={employeeToDelete?.fullName}
+      />
     </div>
   );
 }

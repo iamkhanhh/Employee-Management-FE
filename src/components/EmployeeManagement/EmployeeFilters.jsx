@@ -72,7 +72,6 @@ export default function EmployeeFilters({
       <div className="mt-4 flex flex-wrap items-center gap-3 pb-6">
         <Button variant="outlined" className="normal-case" onClick={onSearch}>Search</Button>
         <Button variant="contained" className="normal-case" onClick={onCreate}>+ Add employee</Button>
-        <Button variant="outlined" color="error" className="normal-case">✕ Delete employee</Button>
         <Button variant="outlined" className="normal-case">📄 Excel report</Button>
       </div>
     </>
