@@ -1,5 +1,3 @@
-// components/contracts/ContractDialog/AddContractDialog.jsx
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -14,22 +12,20 @@ import {
   Alert,
   IconButton,
   CircularProgress,
-  MenuItem,
-  Grid,
+  Paper,
   Divider,
-  Autocomplete
+  MenuItem,
+  Grid
 } from '@mui/material';
 import {
   Close as CloseIcon,
   Save as SaveIcon,
-  Add as AddIcon,
-  Person as PersonIcon,
-  Category as CategoryIcon,
+  Edit as EditIcon,
+  Description as DescriptionIcon,
   CalendarToday as CalendarIcon,
-  CheckCircle as CheckCircleIcon,
-  Description as DescriptionIcon
+  Category as CategoryIcon,
+  CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
-import {axiosInstance} from '../../../lib/axios';
 
 const CONTRACT_TYPES = [
   { value: 'FULL_TIME', label: 'Full Time' },
@@ -39,59 +35,41 @@ const CONTRACT_TYPES = [
 
 const CONTRACT_STATUSES = [
   { value: 'ACTIVE', label: 'Active', color: '#4caf50' },
-  { value: 'PENDING', label: 'Pending', color: '#ff9800' },
   { value: 'EXPIRED', label: 'Expired', color: '#f44336' },
-  { value: 'TERMINATED', label: 'Terminated', color: '#9e9e9e' }
+  { value: 'TERMINATED', label: 'Terminated', color: '#9e9e9e' },
+  { value: 'PENDING', label: 'Pending', color: '#ff9800' }
 ];
 
-const AddContractDialog = ({ open, onClose, onSubmit }) => {
+const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
   const [formData, setFormData] = useState({
-    empId: '',
     contractType: '',
     startDate: '',
     endDate: '',
     fileUrl: '',
-    status: 'ACTIVE' // Default value
+    status: ''
   });
-
-  const [employees, setEmployees] = useState([]);
-  const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Fetch employees khi dialog mở
+  // Load contract data khi dialog mở
   useEffect(() => {
-    if (open) {
-      fetchEmployees();
-    }
-  }, [open]);
-
-  // Fetch danh sách employees
-  const fetchEmployees = async () => {
-    setLoadingEmployees(true);
-    try {
-      const res = await axiosInstance.get('/employees', {
-        params: { page: 0, pageSize: 1000 } // Lấy hết employees
+    if (contract && open) {
+      setFormData({
+        contractType: contract.contractType || '',
+        startDate: contract.startDate || '',
+        endDate: contract.endDate || '',
+        fileUrl: contract.fileUrl || '',
+        status: contract.status || ''
       });
-      
-      if (res.data?.code === 0) {
-        setEmployees(res.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-    } finally {
-      setLoadingEmployees(false);
+      setErrors({});
+      setSubmitError('');
     }
-  };
+  }, [contract, open]);
 
   // Validate form
   const validate = () => {
     const newErrors = {};
-
-    if (!formData.empId) {
-      newErrors.empId = 'Employee is required';
-    }
 
     if (!formData.contractType) {
       newErrors.contractType = 'Contract type is required';
@@ -113,14 +91,6 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
 
     if (!formData.status) {
       newErrors.status = 'Status is required';
-    }
-
-    // Validate file URL if provided
-    if (formData.fileUrl && formData.fileUrl.trim()) {
-      const urlPattern = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,})(\/.*)?$/i;
-      if (!urlPattern.test(formData.fileUrl)) {
-        newErrors.fileUrl = 'Please enter a valid URL';
-      }
     }
 
     setErrors(newErrors);
@@ -145,22 +115,6 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
     setSubmitError('');
   };
 
-  // Handle employee select
-  const handleEmployeeChange = (event, newValue) => {
-    setFormData(prev => ({
-      ...prev,
-      empId: newValue ? newValue.id : ''
-    }));
-
-    if (errors.empId) {
-      setErrors(prev => ({
-        ...prev,
-        empId: ''
-      }));
-    }
-    setSubmitError('');
-  };
-
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -173,19 +127,28 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
     setLoading(true);
 
     try {
-      const result = await onSubmit({
-        empId: parseInt(formData.empId),
+      const convertToArray = (dateStr) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-');
+        return [parseInt(year), parseInt(month), parseInt(day)];
+      };
+
+      const payload = {
         contractType: formData.contractType,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        fileUrl: formData.fileUrl.trim() || null,
+        startDate: convertToArray(formData.startDate),
+        endDate: convertToArray(formData.endDate),
+        fileUrl: formData.fileUrl || null,
         status: formData.status
-      });
+      };
+
+      console.log('📤 Sending payload:', payload);
+
+      const result = await onSubmit(payload);
 
       if (result.success) {
         handleClose();
       } else {
-        setSubmitError(result.error || 'Failed to create contract');
+        setSubmitError(result.error || 'Failed to update contract');
       }
     } catch (error) {
       setSubmitError('An unexpected error occurred');
@@ -198,12 +161,11 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
   const handleClose = () => {
     if (!loading) {
       setFormData({
-        empId: '',
         contractType: '',
         startDate: '',
         endDate: '',
         fileUrl: '',
-        status: 'ACTIVE'
+        status: ''
       });
       setErrors({});
       setSubmitError('');
@@ -211,14 +173,13 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
     }
   };
 
-  // Get today's date for min date
-  const today = new Date().toISOString().split('T')[0];
+  if (!contract) return null;
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: { borderRadius: 2 }
@@ -227,7 +188,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
       {/* Header */}
       <DialogTitle
         sx={{
-          background: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
@@ -236,20 +197,20 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
         }}
       >
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <AddIcon fontSize="large" />
+          <EditIcon fontSize="large" />
           <Box>
             <Typography variant="h6" fontWeight={600}>
-              Add New Contract
+              Edit Contract
             </Typography>
             <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Create a new employment contract
+              Update contract information for {contract.employeeName}
             </Typography>
           </Box>
         </Stack>
         <IconButton
           onClick={handleClose}
           disabled={loading}
-          sx={{ 
+          sx={{
             color: 'white',
             '&:hover': {
               backgroundColor: 'rgba(255,255,255,0.1)'
@@ -265,61 +226,66 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
         <DialogContent sx={{ pt: 3 }}>
           {/* Error Alert */}
           {submitError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {submitError}
             </Alert>
           )}
 
-          <Grid container spacing={3}>
-            {/* Employee Selection */}
-            <Grid item xs={12}>
-              <Autocomplete
-                options={employees}
-                getOptionLabel={(option) => `${option.empName} (ID: ${option.id})`}
-                loading={loadingEmployees}
-                onChange={handleEmployeeChange}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Employee *"
-                    error={!!errors.empId}
-                    helperText={errors.empId}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
-                          {params.InputProps.startAdornment}
-                        </>
-                      ),
-                      endAdornment: (
-                        <>
-                          {loadingEmployees ? <CircularProgress size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
-                    }}
-                  />
-                )}
-                disabled={loading}
-              />
-            </Grid>
+          {/* Current Contract Info */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 3,
+              bgcolor: 'grey.50',
+              border: '1px solid',
+              borderColor: 'grey.200',
+              borderRadius: 2
+            }}
+          >
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Current Contract Information
+            </Typography>
+            <Divider sx={{ my: 1 }} />
 
-            <Grid item xs={12}>
-              <Divider />
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="body2">
+                  <strong>Employee:</strong> {contract.employeeName}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body2">
+                  <strong>Employee ID:</strong> {contract.empId}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body2">
+                  <strong>Contract ID:</strong> {contract.id}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body2">
+                  <strong>Created:</strong> {contract.createdAt}
+                </Typography>
+              </Grid>
             </Grid>
+          </Paper>
 
+          {/* Form Fields */}
+          <Grid container spacing={2}>
             {/* Contract Type */}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 select
-                label="Contract Type *"
+                label="Contract Type"
                 name="contractType"
                 value={formData.contractType}
                 onChange={handleChange}
                 error={!!errors.contractType}
                 helperText={errors.contractType}
+                required
                 disabled={loading}
                 InputProps={{
                   startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} />
@@ -338,12 +304,13 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               <TextField
                 fullWidth
                 select
-                label="Status *"
+                label="Status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
                 error={!!errors.status}
                 helperText={errors.status}
+                required
                 disabled={loading}
                 InputProps={{
                   startAdornment: <CheckCircleIcon sx={{ mr: 1, color: 'action.active' }} />
@@ -372,15 +339,15 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               <TextField
                 fullWidth
                 type="date"
-                label="Start Date *"
+                label="Start Date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
                 error={!!errors.startDate}
                 helperText={errors.startDate}
+                required
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ min: today }}
                 InputProps={{
                   startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
                 }}
@@ -392,15 +359,15 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               <TextField
                 fullWidth
                 type="date"
-                label="End Date *"
+                label="End Date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
                 error={!!errors.endDate}
                 helperText={errors.endDate}
+                required
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
-                inputProps={{ min: formData.startDate || today }}
                 InputProps={{
                   startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
                 }}
@@ -411,37 +378,19 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Contract File URL (Optional)"
+                label="File URL (Optional)"
                 name="fileUrl"
                 value={formData.fileUrl}
                 onChange={handleChange}
-                error={!!errors.fileUrl}
-                helperText={errors.fileUrl || 'Enter the URL of the contract document'}
                 disabled={loading}
-                placeholder="https://example.com/contracts/contract.pdf"
+                placeholder="https://example.com/contract.pdf"
                 InputProps={{
                   startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'action.active' }} />
                 }}
+                helperText="Enter the URL of the contract document"
               />
             </Grid>
           </Grid>
-
-          {/* Info Box */}
-          <Box
-            sx={{
-              mt: 3,
-              p: 2,
-              bgcolor: 'info.lighter',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'info.light'
-            }}
-          >
-            <Typography variant="caption" color="info.dark">
-              <strong>Note:</strong> All fields marked with (*) are required. 
-              Make sure to select a valid employee and set appropriate contract dates.
-            </Typography>
-          </Box>
         </DialogContent>
 
         {/* Actions */}
@@ -460,14 +409,14 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
             disabled={loading}
             startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
             sx={{
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
+              background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+              boxShadow: '0 3px 5px 2px rgba(102, 126, 234, .3)',
               '&:hover': {
-                background: 'linear-gradient(45deg, #1976D2 30%, #00B0FF 90%)',
+                background: 'linear-gradient(45deg, #5568d3 30%, #6a4291 90%)',
               }
             }}
           >
-            {loading ? 'Creating...' : 'Create Contract'}
+            {loading ? 'Updating...' : 'Save Changes'}
           </Button>
         </DialogActions>
       </form>
@@ -475,4 +424,4 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
   );
 };
 
-export default AddContractDialog;
+export default EditContractDialog;

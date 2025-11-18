@@ -1,5 +1,5 @@
 export const formatDate = (date, formatString = 'dd/MM/yyyy') => {
-  if (!date) return '';
+  if (!date) return ''; 
 
   const dateObj = new Date(date);
   if (isNaN(dateObj)) return '';

@@ -108,8 +108,6 @@ const DepartmentManagement = () => {
                 selectedDepartments.slice(selectedIndex + 1)
             );
         }
-
-        // SỬA LỖI TẠI ĐÂY: Sửa tên hàm từ "setSelectedDselectedDepartments" thành "setSelectedDepartments"
         setSelectedDepartments(newSelected);
     };
 
@@ -167,12 +165,9 @@ const DepartmentManagement = () => {
     const handleUpdateDepartment = async (data) => {
         const result = await updateDepartment(currentDepartment.id, data);
         if (result.success) {
-            toast.success(`Đã cập nhật phòng ban "${departmentData.deptName || currentDepartment.deptName || currentDepartment.dept_name}" thành công!`);
             setOpenEditDialog(false);
             setCurrentDepartment(null);
             fetchDepartments(filters);
-        } else {
-            toast.error(result.error || "Không thể cập nhật phòng ban. Vui lòng thử lại!");
         }
         return result;
     };

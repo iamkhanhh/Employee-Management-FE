@@ -1,240 +1,288 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  mockContracts,
-  mockEmployees,
-  getActiveEmployeesWithInfo,
-  addContractToMockData,
-  updateContractInMockData,
-  deleteContractFromMockData
-} from '../data/mockData';
-import axios from 'axios';
+import { useState, useCallback } from 'react';
 import { axiosInstance } from '../lib/axios';
+import toast from 'react-hot-toast';
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    expired: 0,
-    expiringSoon: 0
+  const [pagination, setPagination] = useState({
+    page: 0,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrevious: false
   });
 
-  // Calculate stats
-  const calculateStats = useCallback((contractList) => {
-    const activeContracts = contractList.filter(c => !c.is_deleted);
-
-    const stats = {
-      total: activeContracts.length,
-      active: activeContracts.filter(c => c.status === 'ACTIVE').length,
-      expired: activeContracts.filter(c => c.status === 'EXPIRED').length,
-      expiringSoon: activeContracts.filter(c => {
-        if (c.status !== 'ACTIVE') return false;
-        const endDate = new Date(c.end_date);
-        const today = new Date();
-        const diffTime = endDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= 30 && diffDays > 0;
-      }).length
-    };
-
-    return stats;
-  }, []);
-
-  // Fetch contractDetail
-  const fetchContractDetail = useCallback(async (id) => {
-    if (!id) return null;
-
-    setLoading(true);
-    try {
-      const res = await axiosInstance.get(`/contracts/${id}`);
-      const detail = res.data?.data;  // <-- LẤY ĐÚNG DATA
-
-      return detail || null;
-    } catch (err) {
-      console.error("Error fetching contract detail:", err);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-
-
-  // Fetch contracts với full employee information
+  // ============================================
+  // FETCH CONTRACTS với FILTERS
+  // ============================================
   const fetchContracts = useCallback(async (filters = {}) => {
     setLoading(true);
 
     try {
       const params = {
-        page: filters.page || 0,
-        pageSize: filters.pageSize || 5,
-        contractType: filters.contractType || undefined,
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
+        page: filters.page ?? 0,
+        pageSize: filters.pageSize ?? 10,
       };
+
+      // Chỉ thêm filter khi có giá trị và khác "all"
+      if (filters.contractType && filters.contractType !== 'all') {
+        params.contractType = filters.contractType;
+      }
+
+      if (filters.status && filters.status !== 'all') {
+        params.status = filters.status;
+      }
+
+      if (filters.startDate) {
+        params.startDate = filters.startDate;
+      }
+
+      if (filters.endDate) {
+        params.endDate = filters.endDate;
+      }
+
+      if (filters.search) {
+        params.keyword = filters.search; // hoặc "search" tùy backend
+      }
 
       const res = await axiosInstance.get("/contracts", { params });
 
-      const data = res.data?.data;
-      if (!data) return [];
+      // ✅ Kiểm tra response đúng structure
+      if (res.data?.code === 0 && res.data?.data) {
+        const data = res.data.data;
 
-      let content = data.content || [];
+        setContracts(data.content || []);
+        setPagination({
+          page: data.currentPage,
+          pageSize: data.pageSize,
+          totalElements: data.totalElements,
+          totalPages: data.totalPages,
+          hasNext: data.hasNext,
+          hasPrevious: data.hasPrevious
+        });
 
-      setContracts(content);
-      setPagination({
-        page: data.currentPage,
-        rowsPerPage: data.pageSize,
-        total: data.totalElements
-      });
-
-      return content;
+        return data.content || [];
+      } else {
+        throw new Error(res.data?.message || 'Failed to fetch contracts');
+      }
     } catch (err) {
       console.error("Error fetching contracts:", err);
+      toast.error(err.response?.data?.message || "Cannot load contracts");
+      setContracts([]);
       return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // ============================================
+  // FETCH CONTRACT DETAIL
+  // ============================================
+  const fetchContractDetail = useCallback(async (id) => {
+    if (!id) return null;
 
+    setLoading(true);
+    try {
+      const res = await axiosInstance.get(`/contracts/${id}`);
 
+      if (res.data?.code === 0 && res.data?.data) {
+        return res.data.data;
+      } else {
+        throw new Error(res.data?.message || 'Failed to fetch contract detail');
+      }
+    } catch (err) {
+      console.error("Error fetching contract detail:", err);
+      toast.error(err.response?.data?.message || "Cannot load contract detail");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-
-
-  // Create new contract
+  // ============================================
+  // CREATE CONTRACT
+  // ============================================
   const createContract = useCallback(async (contractData) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // ✅ Chuyển date sang array format [year, month, day] để tránh lỗi parse
+      const formatDateToArray = (dateStr) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return [year, month, day];
+      };
 
-      const newContract = addContractToMockData(contractData);
+      const payload = {
+        empId: contractData.empId,
+        contractType: contractData.contractType,
+        startDate: formatDateToArray(contractData.startDate),
+        endDate: formatDateToArray(contractData.endDate),
+        fileUrl: contractData.fileUrl || null,
+        status: contractData.status
+      };
 
-      // Update local state
-      setContracts(prev => [...prev, newContract]);
-      setStats(calculateStats([...contracts, newContract]));
+      console.log('📤 Creating contract with payload:', payload);
 
-      return { success: true, data: newContract };
+      const res = await axiosInstance.post('/contracts', payload);
+
+      if (res.data?.code === 0) {
+        return { success: true, data: res.data.data };
+      } else {
+        throw new Error(res.data?.message || 'Failed to create contract');
+      }
     } catch (error) {
       console.error('Error creating contract:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
     } finally {
       setLoading(false);
     }
-  }, [contracts, calculateStats]);
+  }, []);
 
-  // Update contract
+  // ============================================
+  // UPDATE CONTRACT
+  // ============================================
+  // hooks/useContracts.js
+
   const updateContract = useCallback(async (id, updates) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // ✅ Chuyển date sang array format nếu là string
+      const formatDateToArray = (dateStr) => {
+        if (!dateStr) return null;
+        if (Array.isArray(dateStr)) return dateStr; // Đã là array thì return
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return [year, month, day];
+      };
 
-      const updatedContract = updateContractInMockData(id, updates);
+      const payload = {
+        contractType: updates.contractType,
+        startDate: formatDateToArray(updates.startDate),
+        endDate: formatDateToArray(updates.endDate),
+        fileUrl: updates.fileUrl || null,
+        status: updates.status
+      };
 
-      if (updatedContract) {
-        setContracts(prev =>
-          prev.map(c => c.id === id ? updatedContract : c)
-        );
-        return { success: true, data: updatedContract };
+      console.log('📤 Updating contract with payload:', payload);
+
+      const res = await axiosInstance.put(`/contracts/${id}`, payload);
+
+      if (res.data?.code === 0) {
+        return { success: true, data: res.data.data };
+      } else {
+        throw new Error(res.data?.message || 'Failed to update contract');
       }
-
-      throw new Error('Contract not found');
     } catch (error) {
       console.error('Error updating contract:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Delete contract (soft delete)
+  // ============================================
+  // DELETE CONTRACT
+  // ============================================
   const deleteContract = useCallback(async (id) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const res = await axiosInstance.delete(`/contracts/${id}`);
 
-      const success = deleteContractFromMockData(id);
-
-      if (success) {
-        setContracts(prev => prev.filter(c => c.id !== id));
-        setStats(calculateStats(contracts.filter(c => c.id !== id)));
+      if (res.data?.code === 0) {
         return { success: true };
+      } else {
+        throw new Error(res.data?.message || 'Failed to delete contract');
       }
-
-      throw new Error('Contract not found');
     } catch (error) {
       console.error('Error deleting contract:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
     } finally {
       setLoading(false);
     }
-  }, [contracts, calculateStats]);
+  }, []);
 
-  // Delete multiple contracts
+  // ============================================
+  // DELETE MULTIPLE CONTRACTS
+  // ============================================
   const deleteMultipleContracts = useCallback(async (ids) => {
     setLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Nếu API hỗ trợ xóa nhiều
+      const res = await axiosInstance.delete("/contracts/batch", {
+        data: { ids }
+      });
 
-      ids.forEach(id => deleteContractFromMockData(id));
-
-      setContracts(prev => prev.filter(c => !ids.includes(c.id)));
-      setStats(calculateStats(contracts.filter(c => !ids.includes(c.id))));
-
-      return { success: true };
+      if (res.data?.code === 0) {
+        return { success: true };
+      } else {
+        throw new Error(res.data?.message || 'Failed to delete contracts');
+      }
     } catch (error) {
       console.error('Error deleting contracts:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
     } finally {
       setLoading(false);
     }
-  }, [contracts, calculateStats]);
+  }, []);
 
-  // Simulate file download
-  const downloadFile = useCallback(async (fileUrl) => {
+  // ============================================
+  // DOWNLOAD FILE
+  // ============================================
+  const downloadFile = useCallback(async (fileUrl, fileName) => {
     try {
-      console.log('Downloading file:', fileUrl);
+      if (!fileUrl) {
+        toast.error('File URL not found');
+        return { success: false };
+      }
 
-      // Simulate file download
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Create a dummy link to simulate download
       const link = document.createElement('a');
-      link.href = '#';
-      link.download = fileUrl.split('/').pop();
+      link.href = fileUrl;
+      link.download = fileName || fileUrl.split('/').pop();
+      link.target = '_blank';
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
 
+      toast.success('Downloading file...');
       return { success: true };
     } catch (error) {
       console.error('Error downloading file:', error);
-      return { success: false, error: error.message };
+      toast.error('Cannot download file');
+      return { success: false };
     }
   }, []);
 
-  // Export contracts to Excel/CSV
+  // ============================================
+  // EXPORT CONTRACTS
+  // ============================================
   const exportContracts = useCallback(async (filters) => {
     try {
-      console.log('Exporting contracts with filters:', filters);
+      toast.loading('Exporting contracts...');
 
-      // Simulate export delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Create CSV content
       const csvContent = "data:text/csv;charset=utf-8,"
-        + "Mã NV,Họ tên,Phòng ban,Email,Điện thoại,Loại hợp đồng,Ngày bắt đầu,Ngày kết thúc,Trạng thái\n"
-        + contracts.map(c => {
-          const emp = c.employee;
-          return `NV${String(emp?.id).padStart(4, '0')},${emp?.full_name},${emp?.department?.dept_name},${emp?.user?.email},${emp?.phone_number},${c.contract_type},${c.start_date},${c.end_date},${c.status}`;
-        }).join("\n");
+        + "Employee Name,Contract Type,Start Date,End Date,Status,Created At\n"
+        + contracts.map(c =>
+          `${c.employeeName},${c.contractType},${c.startDate},${c.endDate},${c.status},${c.createdAt}`
+        ).join("\n");
 
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
@@ -244,26 +292,23 @@ export const useContracts = () => {
       link.click();
       link.remove();
 
+      toast.dismiss();
+      toast.success('Exported successfully!');
       return { success: true };
     } catch (error) {
       console.error('Error exporting contracts:', error);
-      return { success: false, error: error.message };
+      toast.dismiss();
+      toast.error('Cannot export contracts');
+      return { success: false };
     }
   }, [contracts]);
 
-  // Load initial data
-  useEffect(() => {
-    fetchContracts();
-    setEmployees(getActiveEmployeesWithInfo());
-  }, []);
-
   return {
     contracts,
-    employees,
-    stats,
+    pagination,
     loading,
-    fetchContractDetail,
     fetchContracts,
+    fetchContractDetail,
     createContract,
     updateContract,
     deleteContract,

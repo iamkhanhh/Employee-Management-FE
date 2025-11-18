@@ -62,7 +62,7 @@ const EditDepartmentDialog = ({ open, onClose, onSubmit, department }) => {
   const handleChange = (e) => {
     const { value } = e.target;
     setFormData({ deptName: value });
-    
+
     // Clear error khi user gõ
     if (errors.deptName) {
       setErrors({});

@@ -1,21 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
-
 import ContractFilters from '../../components/contracts/ContractList/ContractFilters';
 import ContractTable from '../../components/contracts/ContractList/ContractTable';
 import AddContractDialog from '../../components/contracts/ContractDialog/AddContractDialog';
 import DeleteContractDialog from '../../components/contracts/ContractDialog/DeleteContractDialog';
 import ContractDetailDialog from '../../components/contracts/ContractDialog/ContractDetailDialog';
+import EditContractDialog from '../../components/contracts/ContractDialog/EditContractDialog'
 import { useContracts } from '../../hooks/useContracts';
-// src/pages/contractScreens/ContractManagement.jsx
-import { generateEmployeeCode } from '../../data/mockData';
 import toast from 'react-hot-toast';
 
 const ContractManagement = () => {
   const {
     contracts,
-    employees,
-    stats,
+    pagination,
     loading,
     fetchContracts,
     fetchContractDetail,
@@ -33,7 +30,8 @@ const ContractManagement = () => {
     status: "all",
     startDate: "",
     endDate: "",
-    department: "all"
+    page: 0,
+    pageSize: 10
   });
 
   const [selectedContracts, setSelectedContracts] = useState([]);
@@ -42,9 +40,20 @@ const ContractManagement = () => {
   const [openContractDetail, setOpenContractDetail] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState(null);
   const [contractToDelete, setContractToDelete] = useState(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const [openEditDialog, setOpenEditDialog] = useState(null);
+  const [currentContract, setCurrentContract] = useState(null);
+
+  // ============================================
+  // LOAD INITIAL DATA
+  // ============================================
+  useEffect(() => {
+    fetchContracts(filters);
+  }, []);
+
+  // ============================================
+  // FILTER HANDLERS
+  // ============================================
   const handleFilterChange = (name, value) => {
     setFilters(prev => ({
       ...prev,
@@ -53,7 +62,9 @@ const ContractManagement = () => {
   };
 
   const handleSearch = () => {
-    fetchContracts(filters);
+    const searchFilters = { ...filters, page: 0 };
+    setFilters(searchFilters);
+    fetchContracts(searchFilters);
   };
 
   const handleClearFilters = () => {
@@ -63,12 +74,16 @@ const ContractManagement = () => {
       status: "all",
       startDate: "",
       endDate: "",
-      department: "all"
+      page: 0,
+      pageSize: filters.pageSize
     };
     setFilters(clearedFilters);
     fetchContracts(clearedFilters);
   };
 
+  // ============================================
+  // SELECTION HANDLERS
+  // ============================================
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelectedContracts(contracts.map(c => c.id));
@@ -103,6 +118,7 @@ const ContractManagement = () => {
   const handleView = (contractId) => {
     setSelectedContractId(contractId);
     setOpenContractDetail(true);
+    fetchContracts(filters);
   };
 
   const handleCloseDetail = () => {
@@ -113,13 +129,26 @@ const ContractManagement = () => {
   // ============================================
   // EDIT CONTRACT
   // ============================================
-  const handleEdit = (contractId) => {
-    const contract = contracts.find(c => c.id === contractId);
-    console.log('Edit contract:', contract);
-    // TODO: Implement edit dialog
-    // setSelectedContract(contract);
-    // setOpenEditDialog(true);
+  const handleEdit = (contract) => {
+    setCurrentContract(contract);
+    setOpenEditDialog(true);
   };
+
+  const handleUpdateContract = async (data) => {
+  const loadingToast = toast.loading("Updating contract...");
+  const result = await updateContract(currentContract.id, data);
+  toast.dismiss(loadingToast);
+  
+  if (result.success) {
+    toast.success("Contract updated successfully!");
+    setOpenEditDialog(false);
+    setCurrentContract(null);
+    fetchContracts(filters); // Refresh danh sách
+  } else {
+    toast.error(result.error || "Failed to update contract");
+  }
+  return result;
+};
 
   // ============================================
   // DELETE CONTRACT
@@ -130,32 +159,34 @@ const ContractManagement = () => {
   };
 
   const handleDeleteSelected = async () => {
-    if (selectedDepartments.length > 0) {
-      const loadingToast = toast.loading(`Deleting ${selectedDepartments.length} departments...`);
-      const result = await deleteMultipleDepartments(selectedDepartments);
+    if (selectedContracts.length > 0) {
+      const loadingToast = toast.loading(`Deleting ${selectedContracts.length} contracts...`);
+      const result = await deleteMultipleContracts(selectedContracts);
       toast.dismiss(loadingToast);
+
       if (result.success) {
-        toast.success(`Successfully deleted ${selectedDepartments.length} departments!`);
-        setSelectedDepartments([]);
-        fetchDepartments(filters);
+        toast.success(`Successfully deleted ${selectedContracts.length} contracts!`);
+        setSelectedContracts([]);
+        fetchContracts(filters);
       } else {
-        toast.error(result.error || "Unable to delete departments. Please try again!");
+        toast.error(result.error || "Unable to delete contracts. Please try again!");
       }
     }
   };
 
   const confirmDelete = async () => {
-    if (currentDepartment) {
-      const loadingToast = toast.loading("Deleting department...");
-      const result = await deleteDepartment(currentDepartment.id);
+    if (contractToDelete) {
+      const loadingToast = toast.loading("Deleting contract...");
+      const result = await deleteContract(contractToDelete.id);
       toast.dismiss(loadingToast);
+
       if (result.success) {
-        toast.success(`Department "${currentDepartment.deptName || currentDepartment.dept_name}" has been deleted successfully!`);
+        toast.success(`Contract for "${contractToDelete.employeeName}" has been deleted successfully!`);
         setOpenDeleteDialog(false);
-        setCurrentDepartment(null);
-        fetchDepartments(filters);
+        setContractToDelete(null);
+        fetchContracts(filters);
       } else {
-        toast.error(result.error || "Unable to delete department. Please try again!");
+        toast.error(result.error || "Unable to delete contract. Please try again!");
       }
     }
   };
@@ -164,15 +195,16 @@ const ContractManagement = () => {
   // ADD CONTRACT
   // ============================================
   const handleAddContract = async (contractData) => {
-    const loadingToast = toast.loading("Đang tạo hợp đồng...");
+    const loadingToast = toast.loading("Creating contract...");
     const result = await createContract(contractData);
     toast.dismiss(loadingToast);
+
     if (result.success) {
-      toast.success(`Đã tạo hợp đồng thành công!`);
+      toast.success("Contract created successfully!");
       setOpenAddDialog(false);
       fetchContracts(filters);
     } else {
-      toast.error(result.error || "Không thể tạo hợp đồng. Vui lòng thử lại!");
+      toast.error(result.error || "Cannot create contract. Please try again!");
     }
     return result;
   };
@@ -181,8 +213,7 @@ const ContractManagement = () => {
   // IMPORT/EXPORT
   // ============================================
   const handleImport = () => {
-    console.log('Import Excel functionality');
-    // TODO: Implement import functionality
+    toast.info('Import feature coming soon!');
   };
 
   const handleExport = () => {
@@ -200,12 +231,16 @@ const ContractManagement = () => {
   // PAGINATION
   // ============================================
   const handlePageChange = (event, newPage) => {
-    setPage(newPage);
+    const newFilters = { ...filters, page: newPage };
+    setFilters(newFilters);
+    fetchContracts(newFilters);
   };
 
   const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    const newPageSize = parseInt(event.target.value, 10);
+    const newFilters = { ...filters, pageSize: newPageSize, page: 0 };
+    setFilters(newFilters);
+    fetchContracts(newFilters);
   };
 
   return (
@@ -243,8 +278,9 @@ const ContractManagement = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onDownloadFile={handleDownloadFile}
-        page={page}
-        rowsPerPage={rowsPerPage}
+        page={pagination.page}
+        rowsPerPage={pagination.pageSize}
+        totalElements={pagination.totalElements}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         loading={loading}
@@ -259,20 +295,30 @@ const ContractManagement = () => {
         onDownloadFile={handleDownloadFile}
       />
 
-
+      <EditContractDialog
+        open={openEditDialog}
+        onClose={() => {
+          setOpenEditDialog(false);
+          setCurrentContract(null);
+        }}
+        onSubmit={handleUpdateContract}
+        contract={currentContract}
+      />
 
       <AddContractDialog
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
         onSubmit={handleAddContract}
-        employees={employees}
       />
 
       <DeleteContractDialog
         open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
+        onClose={() => {
+          setOpenDeleteDialog(false);
+          setContractToDelete(null);
+        }}
         onConfirm={confirmDelete}
-        contractName={contractToDelete?.employeeName || contractToDelete?.employee?.full_name}
+        contractName={contractToDelete?.employeeName}
       />
     </Box>
   );
