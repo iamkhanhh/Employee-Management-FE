@@ -135,7 +135,7 @@ export default function AccountManager() {
       try {
         await accountService.deleteAccount(deleteAccount.id);
         toast.dismiss(loadingToast);
-        toast.success(`Đã xóa tài khoản "${deleteAccount.full_name || deleteAccount.username}" thành công!`);
+        toast.success(`Đã xóa tài khoản "${deleteAccount.username}" thành công!`);
         fetchAccounts(); // Refetch accounts after delete
       } catch (error) {
         toast.dismiss(loadingToast);
