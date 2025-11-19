@@ -10,7 +10,6 @@ export function CreateEditDialog({ open, onClose, onSubmit, editingAccount, form
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField label="Username" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} required disabled={!!editingAccount} fullWidth />
             <TextField label="Email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required fullWidth />
-            <TextField label="Full Name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required fullWidth />
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
               <Select label="Role" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>

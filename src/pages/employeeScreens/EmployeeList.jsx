@@ -5,7 +5,6 @@ import { Box, Typography } from "@mui/material";
 import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters';
 import EmployeeTable from '../../components/EmployeeManagement/EmployeeTable';
 import { AddEmployeeDialog, DeleteEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
-// Import service để gọi API
 import { employeeService } from "../../services/employeeService";
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';

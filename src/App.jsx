@@ -3,7 +3,6 @@ import { Toaster } from "react-hot-toast";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import EmployeeList from "./pages/employeeScreens/EmployeeList";
-import AttendanceList from "./pages/admin/AttendanceList";
 import TaskList from "./pages/admin/TaskList";
 import PayrollList from "./pages/admin/PayrollList";
 import KPIList from "./pages/admin/KPIList";
@@ -15,7 +14,7 @@ import MyProfile from "./pages/profile/MyProfile";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import Login from "./pages/auth/LoginPage"
 import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
-import AttendanceManager from "./components/Attendance/AttendanceManager";
+import AttendanceManager from "./pages/admin/AttendanceManager";
 import MyAttendance from "./components/Attendance/MyAttendance";
 import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
 

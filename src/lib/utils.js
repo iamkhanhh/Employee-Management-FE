@@ -5,5 +5,5 @@
 //   return twMerge(clsx(inputs));
 // }
 export const apiUrl = {
-  baseURL: "http://localhost:8080/api"
+  baseURL: "http://localhost:2004/api"
 };
