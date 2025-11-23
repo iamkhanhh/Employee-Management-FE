@@ -6,6 +6,7 @@ export default function EmployeeFilters({
   setQuery,
   department,
   setDepartment,
+  departments,
   position,
   setPosition,
   jobLevel,
@@ -47,8 +48,11 @@ export default function EmployeeFilters({
           <InputLabel>Department</InputLabel>
           <Select label="Department" value={department} onChange={(e) => setDepartment(e.target.value)}>
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value="it">IT</MenuItem>
-            <MenuItem value="hr">HR</MenuItem>
+            {departments.map((dept) => (
+              <MenuItem key={dept.id} value={dept.name}>
+                {dept.name}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         <FormControl size="small">
