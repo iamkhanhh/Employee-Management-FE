@@ -291,9 +291,30 @@ export default function AdminLayout() {
                     </ListItemButton>
                     <Collapse in={openPayroll} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding>
-                            <ListItemButton sx={{ pl: 4 }} component={NavLink} to="/admin/payroll" selected={location.pathname.startsWith('/admin/payroll')}>
+                            <ListItemButton 
+                                sx={{ 
+                                    pl: 4,
+                                    '&.Mui-selected': {
+                                        backgroundColor: '#eff6ff',
+                                        borderLeft: '4px solid #2563eb',
+                                        '& .MuiListItemIcon-root': {
+                                            color: '#2563eb',
+                                        },
+                                        '& .MuiListItemText-primary': {
+                                            color: '#2563eb',
+                                            fontWeight: 600,
+                                        },
+                                    },
+                                    '&:hover': {
+                                        backgroundColor: '#f3f4f6',
+                                    },
+                                }} 
+                                component={NavLink} 
+                                to="/admin/payroll" 
+                                selected={location.pathname.startsWith('/admin/payroll')}
+                            >
                                 <ListItemIcon><PaidIcon /></ListItemIcon>
-                                <ListItemText primary="Auto payroll" />
+                                <ListItemText primary="Payroll Management" />
                             </ListItemButton>
                             <ListItemButton sx={{ pl: 4 }} disabled>
                                 <ListItemIcon><ReceiptLongIcon /></ListItemIcon>
