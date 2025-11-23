@@ -5,7 +5,9 @@ import { Box, Typography } from "@mui/material";
 import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters';
 import EmployeeTable from '../../components/EmployeeManagement/EmployeeTable';
 import { AddEmployeeDialog, DeleteEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
+import { useDepartments } from "../../hooks/useDepartments";
 import { employeeService } from "../../services/employeeService";
+
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -35,13 +37,20 @@ export default function EmployeeList() {
   // State cho dialog
   const [openAdd, setOpenAdd] = useState(false);
 
-  const [departments, setDepartments] = useState([
-    { id: 1, name: 'Phòng Kỹ thuật (IT)' },
-    { id: 2, name: 'Phòng Nhân sự (HR)' },
-    { id: 3, name: 'Phòng Kế toán' },
-    { id: 4, name: 'Phòng Marketing' },
-    { id: 5, name: 'Ban Giám đốc' },
-  ]); 
+  const { fetchDepartments, departments: deptList } = useDepartments();
+
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    const loadDepartments = async () => {
+      const data = await fetchDepartments(); // trả về data đã filter nếu có
+      if (Array.isArray(data)) {
+        const formatted = data.map(d => ({ id: d.id, name: d.deptName }));
+        setDepartments(formatted);
+      }
+    };
+    loadDepartments();
+  }, [fetchDepartments]);
 
   // --- Handlers ---
   const handleEdit = (employee) => {
@@ -227,6 +236,7 @@ export default function EmployeeList() {
             setQuery={setQuery}
             department={department}
             setDepartment={setDepartment}
+            departments={departments}
             position={position}
             setPosition={setPosition}
             workStatus={workStatus}

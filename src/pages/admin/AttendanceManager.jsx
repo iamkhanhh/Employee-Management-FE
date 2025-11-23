@@ -24,24 +24,35 @@ export default function AttendanceManager() {
   const [recordToDelete, setRecordToDelete] = useState(null);
   const [editing, setEditing] = useState(null);
 
+const [month, setMonth] = useState(new Date().getMonth() + 1);
+const [year, setYear] = useState(new Date().getFullYear());
+
+
   const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await attendanceService.getAllRecords();
-      setRecords(response.data);
+
+      const response = await attendanceService.getAllRecords({
+        month: month,
+        year: year
+      });
+
+      setRecords(response.data.data || response.data);  // tuỳ backend
       setError(null);
     } catch (err) {
+      console.error(err);
       setError(err);
-      toast.error('Không thể tải dữ liệu chấm công.');
+      toast.error("Không thể tải dữ liệu chấm công.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [month, year]);
+
 
   const fetchEmployees = useCallback(async () => {
     try {
       const response = await employeeService.getAllEmployees();
-      const employeeList = (response.data || []).map(e => ({ id: e.id, name: e.full_name || e.user?.full_name || e.user?.username || `User ${e.id}` }));
+      const employeeList = (response.data.data.content || []).map(e => ({ id: e.id, name: e.fullName || e.user?.fullName || e.user?.username || `User ${e.id}` }));
       setEmployees(employeeList);
     } catch (err) {
       toast.error('Không thể tải danh sách nhân viên.');

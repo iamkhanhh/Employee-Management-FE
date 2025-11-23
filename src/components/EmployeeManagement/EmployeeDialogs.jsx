@@ -40,7 +40,23 @@ export function AddEmployeeDialog({ open, onClose, onSubmit, formState, setFormS
                 <MenuItem value="pending">Pending</MenuItem>
               </Select>
             </FormControl>
-            <TextField label="Role in dept" value={formState.roleInDept} onChange={(e) => setFormState({ ...formState, roleInDept: e.target.value })} placeholder="e.g. Staff, Manager" />
+            <FormControl>
+              <InputLabel>Role in dept</InputLabel>
+              <Select
+                label="Role in dept"
+                value={formState.roleInDept}
+                onChange={(e) =>
+                  setFormState({ ...formState, roleInDept: e.target.value })
+                }
+              >
+                <MenuItem value="Staff">Staff</MenuItem>
+                <MenuItem value="Senior Staff">Senior Staff</MenuItem>
+                <MenuItem value="Team Lead">Team Lead</MenuItem>
+                <MenuItem value="Manager">Manager</MenuItem>
+                <MenuItem value="Director">Director</MenuItem>
+                <MenuItem value="Intern">Intern</MenuItem>
+              </Select>
+            </FormControl>
           </div>
         </DialogContent>
         <DialogActions>
