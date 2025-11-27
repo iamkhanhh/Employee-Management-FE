@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AttendanceTable from '../../components/Attendance/AttendanceTable';
 import AttendanceForm from '../../components/Attendance/AttendanceForm';
 import { useAuth } from '../../hooks/useAuth';
-import { Box, Button, Typography, Stack, Paper, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress } from '@mui/material';
+import {
+  Box, Button, Typography, Stack, Paper, Dialog, DialogTitle, DialogContent,
+  DialogContentText, DialogActions, CircularProgress
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import toast from 'react-hot-toast';
 import { attendanceService } from '../../services/attendanceService';
 import { employeeService } from '../../services/employeeService';
+import moment from 'moment';
 
 export default function AttendanceManager() {
   const { user } = useAuth();
@@ -24,20 +28,25 @@ export default function AttendanceManager() {
   const [recordToDelete, setRecordToDelete] = useState(null);
   const [editing, setEditing] = useState(null);
 
-const [month, setMonth] = useState(new Date().getMonth() + 1);
-const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [year, setYear] = useState(new Date().getFullYear());
 
-
+  // Fetch attendance records
   const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-
-      const response = await attendanceService.getAllRecords({
-        month: month,
-        year: year
-      });
-
-      setRecords(response.data.data || response.data);  // tuỳ backend
+      const response = await attendanceService.getAllRecords({ month, year });
+      const formattedRecords = response.data.data.map(r => ({
+        ...r,
+        date: r.checkIn ? moment(r.checkIn, "DD/MM/YYYY HH:mm:ss").format("DD/MM/YYYY") : '',
+        timeIn: r.checkIn ? moment(r.checkIn, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
+        timeOut: r.checkOut ? moment(r.checkOut, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
+        hoursWorked: r.hoursWorked ?? 0,
+        overtimeHours: r.overtimeHours ?? 0,
+        type: r.type ?? 'work',
+        note: r.note ?? ''
+      }));
+      setRecords(formattedRecords);
       setError(null);
     } catch (err) {
       console.error(err);
@@ -48,11 +57,14 @@ const [year, setYear] = useState(new Date().getFullYear());
     }
   }, [month, year]);
 
-
+  // Fetch employee list
   const fetchEmployees = useCallback(async () => {
     try {
       const response = await employeeService.getAllEmployees();
-      const employeeList = (response.data.data.content || []).map(e => ({ id: e.id, name: e.fullName || e.user?.fullName || e.user?.username || `User ${e.id}` }));
+      const employeeList = (response.data.data.content || []).map(e => ({
+        id: e.id,
+        name: e.fullName || e.user?.fullName || e.user?.username || `User ${e.id}`
+      }));
       setEmployees(employeeList);
     } catch (err) {
       toast.error('Không thể tải danh sách nhân viên.');
@@ -108,7 +120,6 @@ const [year, setYear] = useState(new Date().getFullYear());
 
   const confirmDelete = async () => {
     if (!recordToDelete) return;
-    
     const loadingToast = toast.loading("Đang xóa bản ghi chấm công...");
     try {
       await attendanceService.deleteRecord(recordToDelete);
@@ -123,15 +134,14 @@ const [year, setYear] = useState(new Date().getFullYear());
     }
   };
 
-  const filtered = records.filter(r => (filterEmployeeId ? r.employeeId === filterEmployeeId : true));
+  const filtered = records.filter(r => (filterEmployeeId ? r.empId === filterEmployeeId : true));
 
-  // Metrics (based on current filter)
-  const metricsSource = filtered;
-  const totalRecords = metricsSource.length;
-  const totalEmployees = new Set(metricsSource.map(r => r.employeeId)).size;
-  const totalHours = metricsSource.reduce((s, r) => s + (Number(r.hoursWorked) || 0), 0);
-  const totalOvertime = metricsSource.reduce((s, r) => s + (Number(r.overtimeHours) || 0), 0);
-  const daysWorked = metricsSource.filter(r => r.timeIn && r.timeOut && (r.type || 'work') === 'work').length;
+  // Metrics
+  const totalRecords = filtered.length;
+  const totalEmployees = new Set(filtered.map(r => r.empId)).size;
+  const totalHours = filtered.reduce((s, r) => s + (Number(r.hoursWorked) || 0), 0);
+  const totalOvertime = filtered.reduce((s, r) => s + (Number(r.overtimeHours) || 0), 0);
+  const daysWorked = filtered.filter(r => r.timeIn && r.timeOut && r.type === 'work').length;
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
@@ -143,113 +153,75 @@ const [year, setYear] = useState(new Date().getFullYear());
 
   return (
     <Box>
-      {/* center content and align with AdminLayout padding */}
       <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 0 } }}>
         {/* Header */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
           <Typography variant="h5">Quản lý chấm công</Typography>
-          <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenNew} sx={{ width: { xs: '100%', sm: 'auto' } }}>New Record</Button>
-          </Box>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenNew}>New Record</Button>
         </Stack>
 
         {/* Metrics */}
         <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160 }}>
-              <Paper sx={{ p: 2 }} elevation={1}>
-                <Typography variant="h6">{totalRecords}</Typography>
-                <Typography variant="caption" color="text.secondary">Tổng bản ghi</Typography>
+          <Stack direction="row" spacing={2} flexWrap="wrap">
+            {[
+              { label: 'Tổng bản ghi', value: totalRecords },
+              { label: 'Nhân viên có bản ghi', value: totalEmployees },
+              { label: 'Tổng giờ', value: totalHours.toFixed(2) },
+              { label: 'Tổng OT (h)', value: totalOvertime.toFixed(2) },
+              { label: 'Số ngày công', value: daysWorked }
+            ].map((m, i) => (
+              <Paper key={i} sx={{ p: 2, minWidth: 120 }}>
+                <Typography variant="h6">{m.value}</Typography>
+                <Typography variant="caption" color="text.secondary">{m.label}</Typography>
               </Paper>
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160 }}>
-              <Paper sx={{ p: 2 }} elevation={1}>
-                <Typography variant="h6">{totalEmployees}</Typography>
-                <Typography variant="caption" color="text.secondary">Nhân viên có bản ghi</Typography>
-              </Paper>
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160 }}>
-              <Paper sx={{ p: 2 }} elevation={1}>
-                <Typography variant="h6">{Number(totalHours.toFixed(2))}</Typography>
-                <Typography variant="caption" color="text.secondary">Tổng giờ</Typography>
-              </Paper>
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160 }}>
-              <Paper sx={{ p: 2 }} elevation={1}>
-                <Typography variant="h6">{Number(totalOvertime.toFixed(2))}</Typography>
-                <Typography variant="caption" color="text.secondary">Tổng OT (h)</Typography>
-              </Paper>
-            </Box>
-            <Box sx={{ flex: '1 1 160px', minWidth: 160 }}>
-              <Paper sx={{ p: 2 }} elevation={1}>
-                <Typography variant="h6">{daysWorked}</Typography>
-                <Typography variant="caption" color="text.secondary">Số ngày công</Typography>
-              </Paper>
-            </Box>
-          </Box>
+            ))}
+          </Stack>
         </Box>
 
         {/* Table */}
-        <Box sx={{ width: '100%', overflowX: 'auto' }}>
-          <AttendanceTable
-            records={filtered}
-            employees={employees}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isAdmin={true}
-            onFilterEmployee={(id) => setFilterEmployeeId(id)}
-            filterEmployeeId={filterEmployeeId}
-          />
-        </Box>
+        <AttendanceTable
+          records={filtered}
+          employees={employees}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isAdmin={isAdmin}
+          onFilterEmployee={setFilterEmployeeId}
+          filterEmployeeId={filterEmployeeId}
+        />
       </Box>
 
+      {/* Form */}
       <AttendanceForm
         open={openForm}
         onClose={handleCloseForm}
         employees={employees}
-        isAdmin={true}
+        isAdmin={isAdmin}
         currentUserId={currentUserId}
         initialData={editing}
-        onSave={(data) => handleSave(data)}
+        onSave={handleSave}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={openDeleteDialog}
-        onClose={() => {
-          setOpenDeleteDialog(false);
-          setRecordToDelete(null);
-        }}
-        PaperProps={{ sx: { borderRadius: '16px' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 600 }}>Xác nhận xóa</DialogTitle>
+      {/* Delete Dialog */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Xác nhận xóa</DialogTitle>
         <DialogContent>
           <DialogContentText>
             {(() => {
               const record = records.find(r => r.id === recordToDelete);
-              const employeeName = record ? employees.find(e => e.id === record.employeeId)?.name || 'Nhân viên' : 'bản ghi này';
+              const employeeName = record ? employees.find(e => e.id === record.empId)?.name || 'Nhân viên' : 'bản ghi này';
               return (
                 <>
                   Bạn có chắc muốn xóa bản ghi chấm công của <strong>{employeeName}</strong>?
                   <br />
-                  <span style={{ color: '#ef4444', marginTop: '8px', display: 'block' }}>
-                    Hành động này không thể hoàn tác.
-                  </span>
+                  <span style={{ color: '#ef4444' }}>Hành động này không thể hoàn tác.</span>
                 </>
               );
             })()}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setOpenDeleteDialog(false);
-            setRecordToDelete(null);
-          }}>
-            Hủy
-          </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Xóa
-          </Button>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">Xóa</Button>
         </DialogActions>
       </Dialog>
     </Box>

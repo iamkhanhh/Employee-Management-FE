@@ -1,6 +1,7 @@
 import { apiClient } from './api'
 import { storage } from '../utils/storage'
 import { STORAGE_KEYS } from '../constants'
+import { axiosInstance } from '../lib/axios';
 
 export const authService = {
   login: async (username, password) => {
@@ -37,6 +38,14 @@ export const authService = {
 
   isAuthenticated: () => {
     return !!storage.get(STORAGE_KEYS.AUTH_TOKEN)
+  },
+
+  getMe: async () => {
+    try {
+      const response = await axiosInstance.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }
-

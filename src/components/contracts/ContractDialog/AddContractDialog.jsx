@@ -29,7 +29,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Description as DescriptionIcon
 } from '@mui/icons-material';
-import {axiosInstance} from '../../../lib/axios';
+import {apiClient} from '../../../services/api';
 
 const CONTRACT_TYPES = [
   { value: 'FULL_TIME', label: 'Full Time' },
@@ -71,7 +71,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
   const fetchEmployees = async () => {
     setLoadingEmployees(true);
     try {
-      const res = await axiosInstance.get('/employees', {
+      const res = await apiClient.get('/employees', {
         params: { page: 0, pageSize: 1000 } // Lấy hết employees
       });
       

@@ -87,7 +87,7 @@ export default function AccountManager() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.email || !formData.full_name) {
+    if (!formData.username || !formData.email) {
       toast.error("Vui lòng điền đầy đủ các trường bắt buộc!");
       return;
     }

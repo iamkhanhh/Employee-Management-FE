@@ -6,20 +6,29 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  useEffect(() => {
-    const checkAuth = () => {
-      const userData = authService.getUser()
-      const token = authService.getToken()
-      
-      if (userData && token) {
-        setUser(userData)
-        setIsAuthenticated(true)
+useEffect(() => {
+  const fetchUser = async () => {
+    setIsLoading(true); 
+    try {
+      const response = await authService.getMe();
+      if (response) {
+        setUser(response);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
-      setIsLoading(false)
+    } catch (error) {
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    checkAuth()
-  }, [])
+  fetchUser();
+}, []);
+
 
   const login = async (username, password) => {
     try {
@@ -46,4 +55,3 @@ export const useAuth = () => {
     logout
   }
 }
-

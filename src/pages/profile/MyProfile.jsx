@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -18,7 +18,8 @@ import {
   LinearProgress,
   Tooltip,
   alpha,
-  useTheme
+  useTheme,
+  CircularProgress
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -47,54 +48,22 @@ import WorkTab from '../../components/profile/WorkTab';
 import ContractsTab from '../../components/profile/ContractsTab';
 import AttendanceTab from '../../components/profile/AttendanceTab';
 import LeaveRequestsTab from '../../components/profile/LeaveRequestsTab';
-
-// Mock current user data
-const currentUser = {
-  id: 1,
-  user_id: 1,
-  username: 'nguyenvanan',
-  email: 'nguyenvanan@company.com',
-  full_name: 'Nguyễn Văn An',
-  gender: 'Nam',
-  dob: '1990-05-15',
-  phone_number: '0901234567',
-  address: '123 Nguyễn Huệ, Quận 1, TP.HCM',
-  hire_date: '2023-01-15',
-  status: 'ACTIVE',
-  role: 'EMPLOYEE',
-  role_in_dept: 'STAFF',
-  department: {
-    id: 1,
-    dept_name: 'Phòng Kỹ thuật'
-  },
-  position: {
-    id: 1,
-    position_name: 'Senior Developer'
-  },
-  avatar: null,
-  employee_code: 'NV001',
-  emergency_contact: '0909999999',
-  emergency_name: 'Nguyễn Thị B',
-  emergency_relation: 'Vợ',
-  education: 'Đại học Bách Khoa TP.HCM',
-  major: 'Công nghệ thông tin',
-  skills: ['ReactJS', 'NodeJS', 'MongoDB', 'Docker', 'AWS', 'TypeScript'],
-  languages: ['Tiếng Việt', 'Tiếng Anh'],
-  total_working_days: 245,
-  total_leave_days: 12,
-  remaining_leave_days: 8,
-  current_projects: 3,
-  completed_tasks: 156,
-  kpi_score: 92
-};
+import { useAuth } from '../../hooks/useAuth';
 
 const MyProfile = () => {
+  const { user: authUser, isLoading } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
-  const [user, setUser] = useState(currentUser);
+  const [user, setUser] = useState(null);
 
   const theme = useTheme();
+
+  useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+    }
+  }, [authUser]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -120,6 +89,22 @@ const MyProfile = () => {
     console.log('Change password:', passwordData);
     setOpenPasswordDialog(false);
   };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Typography variant="h5">User not found. Please log in.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', py: 4 }}>
@@ -163,15 +148,15 @@ const MyProfile = () => {
                 bgcolor: 'primary.main'
               }}
             >
-              {user.full_name.charAt(0)}
+              {user?.fullName?.charAt(0)}
             </Avatar>
           </Badge>
 
           <Typography variant="h3" sx={{ mt: 3, mb: 1, fontWeight: 700, color: '#212529' }}>
-            {user.full_name}
+            {user.fullName}
           </Typography>
           <Typography variant="h6" sx={{ color: 'text.secondary', mb: 2, fontWeight: 500 }}>
-            {user.position.position_name}
+            {user?.position?.position_name}
           </Typography>
           <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" sx={{ gap: 1.5 }}>
             <Chip
@@ -188,7 +173,7 @@ const MyProfile = () => {
             />
             <Chip
               icon={<WorkIcon />}
-              label={user.department.dept_name}
+              label={user?.department?.dept_name}
               sx={{
                 bgcolor: 'white',
                 border: '2px solid',
@@ -401,7 +386,7 @@ const MyProfile = () => {
                     Skills & Technologies
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                    {user.skills.map((skill, index) => (
+                    {user?.skills?.map((skill, index) => (
                       <Chip
                         key={index}
                         label={skill}
@@ -450,19 +435,19 @@ const MyProfile = () => {
                           KPI Score
                         </Typography>
                         <Typography variant="h6" fontWeight={700} color="primary">
-                          {user.kpi_score}%
+                          {user?.kpi_score || 0}%
                         </Typography>
                       </Box>
                       <LinearProgress
                         variant="determinate"
-                        value={user.kpi_score}
+                        value={user?.kpi_score || 0}
                         sx={{
                           height: 10,
                           borderRadius: 5,
                           bgcolor: alpha(theme.palette.primary.main, 0.1),
                           '& .MuiLinearProgress-bar': {
                             borderRadius: 5,
-                            bgcolor: user.kpi_score >= 80 ? 'success.main' : 'warning.main'
+                            bgcolor: (user?.kpi_score || 0) >= 80 ? 'success.main' : 'warning.main'
                           }
                         }}
                       />
@@ -477,7 +462,7 @@ const MyProfile = () => {
                           Working Days
                         </Typography>
                         <Typography variant="h6" fontWeight={700}>
-                          {user.total_working_days}
+                          {user?.total_working_days || 0}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pb: 2, borderBottom: '1px dashed #dee2e6' }}>
@@ -485,7 +470,7 @@ const MyProfile = () => {
                           Completed Tasks
                         </Typography>
                         <Typography variant="h6" fontWeight={700}>
-                          {user.completed_tasks}
+                          {user?.completed_tasks || 0}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pb: 2, borderBottom: '1px dashed #dee2e6' }}>
@@ -493,7 +478,7 @@ const MyProfile = () => {
                           Current Projects
                         </Typography>
                         <Typography variant="h6" fontWeight={700}>
-                          {user.current_projects}
+                          {user?.current_projects || 0}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -501,7 +486,7 @@ const MyProfile = () => {
                           Remaining Leave Days
                         </Typography>
                         <Typography variant="h6" fontWeight={700} color="success.main">
-                          {user.remaining_leave_days}
+                          {user?.remaining_leave_days || 0}
                         </Typography>
                       </Box>
                     </Box>

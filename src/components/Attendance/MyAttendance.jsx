@@ -1,149 +1,146 @@
 // src/components/MyAttendance.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import AttendanceCalendar from "./AttendanceCalendar";
 import { Box, Button, Stack, Typography, Paper, CircularProgress } from "@mui/material";
 import moment from "moment";
-import { attendanceService } from "../../services/attendanceService" // đường dẫn theo dự án của bạn
+import { attendanceService } from "../../services/attendanceService";
 
-// --- Shift Schedule ---
-const MORNING_SHIFT_START = { hour: 8, minute: 30 };
-const MORNING_SHIFT_END = { hour: 12, minute: 0 };
-const AFTERNOON_SHIFT_START = { hour: 13, minute: 30 };
-const AFTERNOON_SHIFT_END = { hour: 18, minute: 0 };
-
-const getTodayWithTime = (hour, minute) =>
-  moment().set({ hour, minute, second: 0, millisecond: 0 });
-
+// ----- Helper: format attendance thành event -----
 const formatAttendanceToEvent = (item) => {
-  // item có thể có: date, checkIn, checkOut, lateMinutes, earlyMinutes, status, shiftType
-  const dayMoment = item.checkIn ? moment(item.checkIn).startOf("day") : (item.date ? moment(item.date).startOf("day") : moment().startOf("day"));
-  const start = dayMoment.toDate();
-  const end = moment(dayMoment).add(1, "minute").toDate();
+  const dayMoment = moment(item.createdAt, "DD/MM/YYYY HH:mm:ss").startOf("day");
+  const checkIn = item.checkIn 
+    ? moment(item.checkIn, "YYYY-MM-DD HH:mm:ss").format("HH:mm:ss") 
+    : "--:--";
+  const checkOut = item.checkOut 
+    ? moment(item.checkOut, "YYYY-MM-DD HH:mm:ss").format("HH:mm:ss") 
+    : "--:--";
 
   return {
-    id: item.id ?? `${dayMoment.format("YYYYMMDD")}`,
-    title: getEventTitle(item),
-    start,
-    end,
-    allDay: false,
-    actualCheckIn: item.checkIn ? new Date(item.checkIn) : null,
-    actualCheckOut: item.checkOut ? new Date(item.checkOut) : null,
-    checkIn: item.checkIn ?? null,
-    checkOut: item.checkOut ?? null,
-    lateMinutes: item.lateMinutes ?? 0,
-    earlyMinutes: item.earlyMinutes ?? 0,
-    status: item.status ?? null,
-    shiftType: item.shiftType ?? "full",
-    bgColor: getEventColor(item.status, item.shiftType),
+    id: item.id,
+    title: `Đi làm \n In: ${checkIn} / Out: ${checkOut}`, // thêm giờ vào title
+    start: dayMoment.toDate(),
+    end: moment(dayMoment).add(1, "minute").toDate(),
+    actualCheckIn: item.checkIn ? moment(`${item.createdAt.split(" ")[0]} ${item.checkIn}`, "DD/MM/YYYY HH:mm:ss").toDate() : null,
+    actualCheckOut: item.checkOut ? moment(`${item.createdAt.split(" ")[0]} ${item.checkOut}`, "DD/MM/YYYY HH:mm:ss").toDate() : null,
+    bgColor: item.checkIn ? "#4CAF50" : "#F44336",
   };
 };
 
-const getEventTitle = (item) => {
-  if (item.shiftType === "half") return "Đi nửa ca";
-  if (item.status === "late") return `Đi muộn ${item.lateMinutes ?? 0} phút`;
-  if (item.status === "absent") return "Vắng";
-  return "Đúng giờ";
+// ----- EventItem custom để hiển thị giờ -----
+const EventItem = ({ event }) => {
+  const e = event.event; 
+
+  const actualIn = e.actualCheckIn ? moment(e.actualCheckIn).format("HH:mm:ss") : null;
+  const actualOut = e.actualCheckOut ? moment(e.actualCheckOut).format("HH:mm:ss") : null;
+
+  return (
+    <Box sx={{ p: 0.5 }}>
+      <strong>{e.title}</strong>
+      {actualIn && <div>Check-in: {actualIn}</div>}
+      {actualOut && <div>Check-out: {actualOut}</div>}
+    </Box>
+  );
 };
 
-const getEventColor = (status, shiftType) => {
-  if (!status) return "#F44336"; // nghỉ làm / unknown
-  if (shiftType === "half") return "#9C27B0"; // nửa ca tím đậm
-  if (status === "late") return "#FFC107"; // vàng đậm
-  if (status === "present") return "#4CAF50"; // xanh lá đậm
-  return "#4CAF50";
-};
-
-
+// ================= MAIN COMPONENT =====================
 export default function MyAttendance() {
   const [date, setDate] = useState(new Date());
+  const [attendance, setAttendance] = useState([]);
   const [events, setEvents] = useState([]);
   const [attendanceToday, setAttendanceToday] = useState(null);
+
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load my attendance history
-  const loadMyAttendance = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
+  // -------- Load attendance từ server -------------
+  const loadMyAttendance = async () => {
     try {
-      // Lấy tháng & năm hiện tại (hoặc bạn tự truyền khi cần)
-      const month = moment().month() + 1; 
-      const year  = moment().year();
-
-      // Gọi API lấy chấm công của user đang login
-      const res = await attendanceService.getMyRecords({ month, year });
-
-      const data = res?.data ?? [];
-
-      // Dữ liệu backend có thể trả về dạng array hoặc object → normalize
-      const records = Array.isArray(data)
-        ? data
-        : (data.records ?? []);
-
-      // Format để render lên calendar
-      const formatted = records.map(formatAttendanceToEvent);
-      setEvents(formatted);
-
-      // Lấy chấm công hôm nay
-      const todayRecord =
-        formatted.find((item) =>
-          moment(item.start).isSame(moment(), "day")
-        ) ?? null;
-
-      setAttendanceToday(todayRecord);
-
+      setLoading(true);
+      setError(null);
+      const res = await attendanceService.getMyRecords();
+      const records = res?.data?.data ?? [];
+      setAttendance(records);
     } catch (err) {
-      console.error("Lỗi load attendance:", err);
-      setError(err);
+      console.error(err);
+      setError("Lỗi tải dữ liệu");
     } finally {
       setLoading(false);
     }
-  }, []);
-
-
+  };
 
   useEffect(() => {
     loadMyAttendance();
-  }, [loadMyAttendance]);
+  }, []);
 
-  // Check In API
+  // -------- Sync events + attendanceToday -------------
+  useEffect(() => {
+    const formattedEvents = attendance.map(formatAttendanceToEvent);
+    setEvents(formattedEvents);
+
+    const today = attendance.find((r) =>
+      moment(r.createdAt, "DD/MM/YYYY HH:mm:ss").startOf("day").isSame(moment().startOf("day"))
+    ) || null;
+    setAttendanceToday(today);
+  }, [attendance]);
+
+  // ================== CHECK IN ========================
   const handleCheckIn = async () => {
-    if (actionLoading) return;
-    setActionLoading(true);
+    if (checkInLoading) return;
+
+    setCheckInLoading(true);
+    setError(null);
+
     try {
-      // Nếu API của bạn cần body (ví dụ shiftType), truyền vào object. Nếu không, gọi rỗng.
-      const res = await attendanceService.checkIn(); // POST /attendance/check-in
-      // res.data có thể là record mới; tốt nhất là refresh dữ liệu từ server
-      await loadMyAttendance();
+      const res = await attendanceService.checkIn();
+      const record = res?.data?.data;
+
+      if (record) {
+        setAttendanceToday(record);
+        setAttendance((prev) => {
+          const exists = prev.some((r) => r.id === record.id);
+          if (!exists) return [...prev, record];
+          return prev.map((r) => (r.id === record.id ? record : r));
+        });
+      }
     } catch (err) {
-      console.error("Check in lỗi:", err);
-      setError(err);
+      console.error(err);
+      setError("Check-in thất bại");
     } finally {
-      setActionLoading(false);
+      setCheckInLoading(false);
     }
   };
 
-  // Check Out API
+  // ================== CHECK OUT =======================
   const handleCheckOut = async () => {
-    if (actionLoading) return;
-    setActionLoading(true);
+    if (checkOutLoading) return;
+
+    setCheckOutLoading(true);
+    setError(null);
+
     try {
-      const res = await attendanceService.checkOut(); // POST /attendance/check-out
-      await loadMyAttendance();
+      const res = await attendanceService.checkOut();
+      const record = res?.data?.data;
+
+      if (record) {
+        setAttendanceToday(record);
+        setAttendance((prev) =>
+          prev.map((r) => (r.id === record.id ? record : r))
+        );
+      }
     } catch (err) {
-      console.error("Check out lỗi:", err);
-      setError(err);
+      console.error(err);
+      setError("Check-out thất bại");
     } finally {
-      setActionLoading(false);
+      setCheckOutLoading(false);
     }
   };
 
-  // Event style for calendar
+  // ---------------- Event style -----------------------
   const eventStyleGetter = (event) => ({
     style: {
-      backgroundColor: event.bgColor || "#d8f5d1",
+      backgroundColor: event.bgColor,
       borderRadius: "8px",
       padding: "6px",
       color: "#000",
@@ -152,65 +149,36 @@ export default function MyAttendance() {
     },
   });
 
-  const EventItem = ({ event }) => {
-    const actualIn = event.actualCheckIn ? moment(event.actualCheckIn).format("HH:mm:ss") : null;
-    const actualOut = event.actualCheckOut ? moment(event.actualCheckOut).format("HH:mm:ss") : null;
-
-    return (
-      <Box sx={{ p: 0.5, height: "100%" }}>
-        <strong style={{ display: "block", marginBottom: 4 }}>{event.title}</strong>
-        {actualIn && <div style={{ fontSize: 12 }}>Check-in: {actualIn}</div>}
-        {actualOut && <div style={{ fontSize: 12 }}>Check-out: {actualOut}</div>}
-        {event.lateMinutes > 0 && <div style={{ color: "orange", fontSize: 11 }}>Muộn: {event.lateMinutes} phút</div>}
-        {event.earlyMinutes > 0 && <div style={{ color: "red", fontSize: 11 }}>Sớm: {event.earlyMinutes} phút</div>}
-      </Box>
-    );
-  };
-
-  // disable/enable nút dựa vào dữ liệu từ server (attendanceToday)
-  const hasCheckedInToday = attendanceToday && attendanceToday.actualCheckIn;
-  const hasCheckedOutToday = attendanceToday && attendanceToday.actualCheckOut;
-
+  // ================= UI ==============================
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
         Chấm công của tôi
       </Typography>
 
-      <Stack direction="row" spacing={2} mb={3} alignItems="center">
+      <Stack direction="row" spacing={2} mb={3}>
         <Button
           variant="contained"
           color="primary"
           onClick={handleCheckIn}
-          disabled={!!hasCheckedInToday || actionLoading}
+          disabled={!!attendanceToday?.checkIn || checkInLoading}
         >
-          {actionLoading && !hasCheckedInToday ? <CircularProgress size={20} color="inherit" /> : "Check In"}
+          {checkInLoading ? <CircularProgress size={20} color="inherit" /> : "Check In"}
         </Button>
 
         <Button
           variant="contained"
           color="secondary"
           onClick={handleCheckOut}
-          disabled={!hasCheckedInToday || !!hasCheckedOutToday || actionLoading}
+          disabled={!attendanceToday?.checkIn || !!attendanceToday?.checkOut || checkOutLoading}
         >
-          {actionLoading && hasCheckedInToday && !hasCheckedOutToday ? <CircularProgress size={20} color="inherit" /> : "Check Out"}
+          {checkOutLoading ? <CircularProgress size={20} color="inherit" /> : "Check Out"}
         </Button>
 
-        {loading && (
-          <Box sx={{ display: "flex", alignItems: "center", ml: 2 }}>
-            <CircularProgress size={20} />
-            <Typography variant="body2" sx={{ ml: 1 }}>
-              Đang tải lịch sử...
-            </Typography>
-          </Box>
-        )}
+        {loading && <CircularProgress size={20} />}
       </Stack>
 
-      {error && (
-        <Typography color="error" variant="body2" sx={{ mb: 2 }}>
-          Lỗi: {error.message ?? "Không thể tải dữ liệu chấm công."}
-        </Typography>
-      )}
+      {error && <Typography color="error">{error}</Typography>}
 
       <AttendanceCalendar
         events={events}
@@ -218,7 +186,7 @@ export default function MyAttendance() {
         setDate={setDate}
         views={["month"]}
         eventStyleGetter={eventStyleGetter}
-        components={{ event: EventItem }}
+        components={{ event: EventItem }} // hiển thị title + giờ
       />
     </Paper>
   );

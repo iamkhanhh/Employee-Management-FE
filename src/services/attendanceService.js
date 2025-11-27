@@ -12,6 +12,10 @@ export const attendanceService = {
     const queryString = new URLSearchParams(params).toString();
     return axiosInstance.get(`/attendance`);
   },
+  getMyRecords: async (params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return axiosInstance.get(`/attendance/me?${queryString}`);
+  },
 
   /**
    * @param {string|number} id - ID of the attendance record.
@@ -45,5 +49,16 @@ export const attendanceService = {
    */
   deleteRecord: async (id) => {
     return axiosInstance.delete(`/attendances/${id}`);
+  },
+  checkIn: async (data) => {
+    return axiosInstance.post('/attendance/check-in', data);
+  },
+
+  /**
+   * POST /attendance/check-out
+   * Check-out nhân viên
+   */
+  checkOut: async (data) => {
+    return axiosInstance.post('/attendance/check-out', data);
   },
 };
