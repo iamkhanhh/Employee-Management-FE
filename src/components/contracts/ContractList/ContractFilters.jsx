@@ -1,7 +1,4 @@
 import React from 'react';
-import { CONTRACT_TYPES, CONTRACT_STATUS } from '../../../constants/contractConstants';
-
-
 import {
   Paper,
   Grid,
@@ -17,182 +14,183 @@ import {
   Search as SearchIcon,
   Clear as ClearIcon,
   FilterList as FilterListIcon,
-  Add as AddIcon,
-  FileUpload as FileUploadIcon,
-  FileDownload as FileDownloadIcon,
-  Delete as DeleteIcon
+  Add as AddIcon
 } from '@mui/icons-material';
+
+import { CONTRACT_TYPES, CONTRACT_STATUS } from '../../../constants/contractConstants';
 
 const ContractFilters = ({
   filters,
-  departments,
-  contractTypes,
   onFilterChange,
   onSearch,
   onClearFilters,
-  onAdd,
-  onImport,
-  onExport,
-  onDeleteSelected,
-  selectedCount
+  onAdd
 }) => {
   return (
-    <Paper sx={{
-      p: 3,
-      mb: 3,
-      borderRadius: 2,
-      boxShadow: '0 3px 10px rgba(0,0,0,0.1)'
-    }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <FilterListIcon sx={{ mr: 1, color: '#1976d2' }} />
-        <Typography variant="h6" sx={{ fontWeight: 500 }}>
-          Search Filters
+    <Paper
+      elevation={3}
+      sx={{
+        p: 4,
+        mb: 4,
+        borderRadius: 3,
+        background: 'linear-gradient(145deg, #ffffff, #f8faff)',
+        boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
+        border: '1px solid #e3e6f0'
+      }}
+    >
+      {/* Header */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <FilterListIcon sx={{ fontSize: 28, mr: 1.5, color: '#4361ee' }} />
+        <Typography variant="h5" fontWeight={700} color="primary.main">
+          Contract Search Filters
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
-        {/* Row 1: Search, Department, Contract Type, Status */}
-        <Grid item xs={12} md={12}>
+      <Grid container spacing={3}>
+
+        {/* Full-width Search Bar */}
+        <Grid item xs={12}>
           <TextField
-            name="search"
-            label="Search"
-            placeholder="Enter name, email, phone..."
             fullWidth
-            value={filters.search}
+            label="Search Employee"
+            placeholder="Enter name, email, phone, employee ID..."
+            value={filters.search || ''}
             onChange={(e) => onFilterChange('search', e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon />
+                  <SearchIcon sx={{ color: '#4361ee' }} />
                 </InputAdornment>
               ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                height: 56,
+                fontSize: '1.05rem',
+              }
             }}
           />
         </Grid>
 
-        <Grid item xs={12} md={3} >
+        {/* Row with 4 perfectly equal fields */}
+        <Grid item xs={12} md={3}>
           <TextField
             select
-            name="contractType"
-            label="Contract Type"
             fullWidth
-            value={filters.contractType}
+            label="Contract Type"
+            value={filters.contractType || 'all'}
             onChange={(e) => onFilterChange('contractType', e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { height: 56 } }}
           >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Part_time</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Full_time</MenuItem>
-            <MenuItem value={CONTRACT_TYPES.INTERNSHIP}>Intership</MenuItem>
+            <MenuItem value="all">All Contract Types</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.FULL_TIME}>Full-time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.PART_TIME}>Part-time</MenuItem>
+            <MenuItem value={CONTRACT_TYPES.INTERNSHIP}>Internship</MenuItem>
           </TextField>
         </Grid>
-
 
         <Grid item xs={12} md={3}>
           <TextField
             select
-            name="status"
-            label="Status"
             fullWidth
-            value={filters.status}
+            label="Status"
+            value={filters.status || 'all'}
             onChange={(e) => onFilterChange('status', e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { height: 56 } }}
           >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Actives</MenuItem>
-            <MenuItem value={CONTRACT_STATUS.EXPIRED}>Expired</MenuItem>
+            <MenuItem value="all">All Status</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.ACTIVE}>Active</MenuItem>
             <MenuItem value={CONTRACT_STATUS.PENDING}>Pending</MenuItem>
+            <MenuItem value={CONTRACT_STATUS.EXPIRED}>Expired</MenuItem>
             <MenuItem value={CONTRACT_STATUS.TERMINATED}>Terminated</MenuItem>
           </TextField>
         </Grid>
 
-        {/* Row 2: From Date, To Date */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={3}>
           <TextField
             type="date"
-            name="startDate"
+            fullWidth
             label="From Date"
             InputLabelProps={{ shrink: true }}
-            fullWidth
-            value={filters.startDate}
+            value={filters.startDate || ''}
             onChange={(e) => onFilterChange('startDate', e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { height: 56 } }}
           />
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={3}>
           <TextField
             type="date"
-            name="endDate"
+            fullWidth
             label="To Date"
             InputLabelProps={{ shrink: true }}
-            fullWidth
-            value={filters.endDate}
+            value={filters.endDate || ''}
             onChange={(e) => onFilterChange('endDate', e.target.value)}
+            sx={{ '& .MuiOutlinedInput-root': { height: 56 } }}
           />
         </Grid>
+
       </Grid>
 
-      {/* Search / Clear Buttons */}
-      <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+      {/* Action Buttons */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>
         <Button
           variant="contained"
+          size="large"
           startIcon={<SearchIcon />}
           onClick={onSearch}
+          sx={{
+            height: 52,
+            px: 4,
+            fontWeight: 600,
+            background: 'linear-gradient(45deg, #4361ee 30%, #3f37c9 90%)',
+            boxShadow: '0 4px 15px rgba(67, 97, 238, 0.4)',
+            '&:hover': { boxShadow: '0 6px 20px rgba(67, 97, 238, 0.5)' }
+          }}
         >
           Search
         </Button>
 
         <Button
           variant="outlined"
+          size="large"
           startIcon={<ClearIcon />}
           onClick={onClearFilters}
-          color="error"
+          sx={{
+            height: 52,
+            px: 4,
+            fontWeight: 600,
+            borderColor: '#e74c3c',
+            color: '#e74c3c',
+            '&:hover': {
+              borderColor: '#c0392b',
+              color: '#c0392b',
+              backgroundColor: 'rgba(231, 76, 60, 0.04)'
+            }
+          }}
         >
           Clear Filters
         </Button>
-      </Stack>
 
-      {/* Action Buttons */}
-      <Box sx={{ mt: 3, display: "flex", gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ flexGrow: 1 }} />
+
         <Button
           variant="contained"
+          size="large"
           startIcon={<AddIcon />}
           onClick={onAdd}
           sx={{
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+            height: 52,
+            px: 5,
+            fontWeight: 600,
+            background: 'linear-gradient(45deg, #00d2d3 30%, #00b894 90%)',
+            boxShadow: '0 4px 15px rgba(0, 210, 211, 0.4)',
+            '&:hover': { boxShadow: '0 6px 20px rgba(0, 210, 211, 0.5)' }
           }}
         >
-          Add Contract
+          Add New Contract
         </Button>
-
-        <Button
-          variant="outlined"
-          startIcon={<FileUploadIcon />}
-          color="info"
-          onClick={onImport}
-        >
-          Import Excel
-        </Button>
-
-        <Button
-          variant="outlined"
-          startIcon={<FileDownloadIcon />}
-          color="success"
-          onClick={onExport}
-        >
-          Export Report
-        </Button>
-
-        {selectedCount > 0 && (
-          <Button
-            variant="outlined"
-            startIcon={<DeleteIcon />}
-            color="error"
-            onClick={onDeleteSelected}
-          >
-            Delete ({selectedCount})
-          </Button>
-        )}
-      </Box>
+      </Stack>
     </Paper>
   );
 };

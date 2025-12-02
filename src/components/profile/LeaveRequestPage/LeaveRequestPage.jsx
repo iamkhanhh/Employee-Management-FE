@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
+  Container,
   Box,
   Typography,
   Button,
@@ -21,183 +22,627 @@ import {
   Grid,
   Card,
   CardContent,
-  InputAdornment,
+  IconButton,
+  TablePagination,
+  Alert,
+  Avatar,
+  CircularProgress,
+  Snackbar,
+  Tooltip,
+  Collapse,
   FormControl,
   InputLabel,
   Select,
-  Tooltip,
-  IconButton,
-  TablePagination,
+  InputAdornment,
   Divider,
-  Alert,
-  Container,
 } from "@mui/material";
 import {
   Add as AddIcon,
-  Search as SearchIcon,
+  Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   Pending as PendingIcon,
   Visibility as VisibilityIcon,
   EventNote as EventNoteIcon,
-  CalendarMonth as CalendarIcon,
   FilterList as FilterListIcon,
-  Info as InfoIcon,
+  Clear as ClearIcon,
+  Search as SearchIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  EditNote as EditNoteIcon,
+  Send as SendIcon,
+  CalendarToday as CalendarTodayIcon,
+  EventBusy as EventBusyIcon,
 } from "@mui/icons-material";
-import { mockLeaveRequests, addLeaveRequestToMockData } from "../../../data/mockData";
 
-const LeaveRequestPage = () => {
-  const [open, setOpen] = useState(false);
-  const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [requests, setRequests] = useState(mockLeaveRequests);
-  const [form, setForm] = useState({
-    emp_id: 1,
-    leave_type: "",
-    start_date: "",
-    end_date: "",
-    reason: "",
+import { axiosInstance } from "../../../lib/axios";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  formatDate,
+  formatDateForAPI,
+  getTodayForInput,
+  calculateDaysBetween,
+} from '../../../utils/dateUtils';
+
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const LEAVE_TYPES = [
+  { value: "SICK_LEAVE", label: "Sick Leave" },
+  { value: "ANNUAL_LEAVE", label: "Annual Leave" },
+  { value: "MATERNITY_LEAVE", label: "Maternity Leave" },
+  { value: "UNPAID_LEAVE", label: "Unpaid Leave" },
+  { value: "OTHER", label: "Other" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "", label: "All Status" },
+  { value: "PENDING", label: "Pending" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
+  { value: "CANCELLED", label: "Cancelled" },
+];
+
+const STATUS_CONFIG = {
+  APPROVED: { color: "success", text: "Approved", icon: <CheckCircleIcon /> },
+  REJECTED: { color: "error", text: "Rejected", icon: <CancelIcon /> },
+  PENDING: { color: "warning", text: "Pending", icon: <PendingIcon /> },
+  CANCELLED: { color: "default", text: "Cancelled", icon: <CancelIcon /> },
+};
+
+const INITIAL_FILTERS = {
+  status: "",
+  startDate: "",
+  endDate: "",
+};
+
+const INITIAL_FORM = {
+  leaveType: "SICK_LEAVE",
+  startDate: "",
+  endDate: "",
+  reason: "",
+};
+
+// ═══════════════════════════════════════════════════════════════
+// LOADING COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const AuthLoading = ({ message = "Loading..." }) => (
+  <Container
+    sx={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: "80vh",
+      flexDirection: "column",
+    }}
+  >
+    <CircularProgress size={70} />
+    <Typography mt={3} variant="h6" color="text.secondary">
+      {message}
+    </Typography>
+  </Container>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// FILTER COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const LeaveFilters = ({
+  filters,
+  onFilterChange,
+  onApplyFilters,
+  onClearFilters,
+  loading,
+}) => {
+  const [expanded, setExpanded] = useState(true);
+
+  const hasActiveFilters = filters.status || filters.startDate || filters.endDate;
+
+  return (
+    <Paper elevation={2} sx={{ mb: 3, overflow: "hidden" }}>
+      {/* Header */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          px: 2,
+          py: 1.5,
+          bgcolor: "grey.100",
+          cursor: "pointer",
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <FilterListIcon color="primary" />
+          <Typography variant="subtitle1" fontWeight="bold">
+            Filters
+          </Typography>
+          {hasActiveFilters && (
+            <Chip size="small" label="Active" color="primary" variant="filled" />
+          )}
+        </Stack>
+        <IconButton size="small">
+          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+      </Box>
+
+      {/* Filter Content */}
+      <Collapse in={expanded}>
+        <Box sx={{ p: 2 }}>
+          {/* Row 1: Filters */}
+          <Grid container spacing={2}>
+            {/* Status Filter */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth size="small">
+                <InputLabel shrink>Status</InputLabel>
+                <Select
+                  value={filters.status}
+                  label="Status"
+                  onChange={(e) => onFilterChange("status", e.target.value)}
+                  displayEmpty
+                  notched
+                  renderValue={(selected) => {
+                    if (!selected) {
+                      return "All Status";
+                    }
+                    const option = STATUS_OPTIONS.find((opt) => opt.value === selected);
+                    return option?.label || selected;
+                  }}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {opt.value && STATUS_CONFIG[opt.value] && (
+                          React.cloneElement(STATUS_CONFIG[opt.value].icon, {
+                            color: STATUS_CONFIG[opt.value].color,
+                            fontSize: "small",
+                          })
+                        )}
+                        <span>{opt.label}</span>
+                      </Stack>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Start Date Filter */}
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label="From Date"
+                value={filters.startDate}
+                onChange={(e) => onFilterChange("startDate", e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventNoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            {/* End Date Filter */}
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                size="small"
+                type="date"
+                label="To Date"
+                value={filters.endDate}
+                onChange={(e) => onFilterChange("endDate", e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ min: filters.startDate }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EventNoteIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Row 2: Action Buttons */}
+          <Box
+            sx={{
+              mt: 2,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 1.5
+            }}
+          >
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<ClearIcon />}
+              onClick={onClearFilters}
+              disabled={loading || !hasActiveFilters}
+              sx={{
+                minWidth: 100,
+                borderColor: "grey.400",
+                "&:hover": {
+                  borderColor: "grey.600",
+                  bgcolor: "grey.100",
+                },
+              }}
+            >
+              Clear
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<SearchIcon />}
+              onClick={onApplyFilters}
+              disabled={loading}
+              sx={{ minWidth: 120 }}
+            >
+              Search
+            </Button>
+          </Box>
+
+          {/* Active Filters Display */}
+          {hasActiveFilters && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #eee" }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                alignItems="center"
+                useFlexGap
+              >
+                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                  Active filters:
+                </Typography>
+                {filters.status && (
+                  <Chip
+                    size="small"
+                    label={`Status: ${STATUS_OPTIONS.find((o) => o.value === filters.status)?.label || filters.status}`}
+                    onDelete={() => onFilterChange("status", "")}
+                    color="primary"
+                    variant="outlined"
+                  />
+                )}
+                {filters.startDate && (
+                  <Chip
+                    size="small"
+                    label={`From: ${formatDate(filters.startDate)}`}
+                    onDelete={() => onFilterChange("startDate", "")}
+                    color="info"
+                    variant="outlined"
+                  />
+                )}
+                {filters.endDate && (
+                  <Chip
+                    size="small"
+                    label={`To: ${formatDate(filters.endDate)}`}
+                    onDelete={() => onFilterChange("endDate", "")}
+                    color="info"
+                    variant="outlined"
+                  />
+                )}
+              </Stack>
+            </Box>
+          )}
+        </Box>
+      </Collapse>
+    </Paper>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+const getStatusChip = (status) => {
+  const config = STATUS_CONFIG[status?.toUpperCase()] || STATUS_CONFIG.PENDING;
+  return (
+    <Chip
+      icon={config.icon}
+      label={config.text}
+      color={config.color}
+      size="small"
+      sx={{ fontWeight: 600 }}
+    />
+  );
+};
+
+const getLeaveTypeLabel = (type) => {
+  const found = LEAVE_TYPES.find((t) => t.value === type);
+  return found?.label || type?.replace(/_/g, " ");
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN CONTENT COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const LeaveRequestContent = ({ user }) => {
+  // ─────────────────────────────────────────────────────────────
+  // STATE: Employee Info
+  // ─────────────────────────────────────────────────────────────
+  const [employeeInfo, setEmployeeInfo] = useState(null);
+  const [departmentId, setDepartmentId] = useState(null);
+  const [loadingEmployee, setLoadingEmployee] = useState(true);
+  const [employeeError, setEmployeeError] = useState("");
+
+  // ─────────────────────────────────────────────────────────────
+  // STATE: Leave Requests
+  // ─────────────────────────────────────────────────────────────
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
-  const [errors, setErrors] = useState({});
 
-  // Filters & Search
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [leaveTypeFilter, setLeaveTypeFilter] = useState("All");
+  // ─────────────────────────────────────────────────────────────
+  // STATE: Filters
+  // ─────────────────────────────────────────────────────────────
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(INITIAL_FILTERS);
 
-  // Pagination
+  // ─────────────────────────────────────────────────────────────
+  // STATE: Dialogs
+  // ─────────────────────────────────────────────────────────────
+  const [openCreate, setOpenCreate] = useState(false);
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [formError, setFormError] = useState("");
+  const [openDetail, setOpenDetail] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [openReject, setOpenReject] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  // 🆕 STATE: Approve Dialog
+  const [openApprove, setOpenApprove] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  // ─────────────────────────────────────────────────────────────
+  // STATE: Pagination
+  // ─────────────────────────────────────────────────────────────
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const leaveTypes = ["Annual Leave", "Sick Leave", "Personal Leave", "Maternity Leave"];
-  const currentUserId = 1;
+  // ─────────────────────────────────────────────────────────────
+  // COMPUTED VALUES
+  // ─────────────────────────────────────────────────────────────
+  const isHead = useMemo(() => employeeInfo?.roleInDept === "HEAD", [employeeInfo]);
+  const isViewingDepartment = isHead && departmentId;
+  const hasActiveFilters = appliedFilters.status || appliedFilters.startDate || appliedFilters.endDate;
 
-  // Statistics for current user
-  const userStats = useMemo(() => {
-    const userRequests = requests.filter((r) => r.emp_id === currentUserId);
-    const total = userRequests.length;
-    const pending = userRequests.filter((r) => r.status === "Pending").length;
-    const approved = userRequests.filter((r) => r.status === "Approved").length;
-    const rejected = userRequests.filter((r) => r.status === "Rejected").length;
-    return { total, pending, approved, rejected };
-  }, [requests, currentUserId]);
+  const stats = useMemo(
+    () => ({
+      total: requests.length,
+      pending: requests.filter((r) => r.status === "PENDING").length,
+      approved: requests.filter((r) => r.status === "APPROVED").length,
+      rejected: requests.filter((r) => r.status === "REJECTED").length,
+    }),
+    [requests]
+  );
 
-  // Filtered requests
-  const filteredRequests = useMemo(() => {
-    return requests
-      .filter((req) => req.emp_id === currentUserId)
-      .filter((req) => {
-        const matchesSearch =
-          req.leave_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          req.reason.toLowerCase().includes(searchTerm.toLowerCase());
+  const paginatedRequests = useMemo(
+    () => requests.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [requests, page, rowsPerPage]
+  );
 
-        const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-        const matchesLeaveType = leaveTypeFilter === "All" || req.leave_type === leaveTypeFilter;
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Filters
+  // ─────────────────────────────────────────────────────────────
+  const handleFilterChange = useCallback((field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-        return matchesSearch && matchesStatus && matchesLeaveType;
-      });
-  }, [requests, currentUserId, searchTerm, statusFilter, leaveTypeFilter]);
+  const handleApplyFilters = useCallback(() => {
+    setAppliedFilters({ ...filters });
+    setPage(0);
+  }, [filters]);
 
-  // Paginated requests
-  const paginatedRequests = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredRequests.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredRequests, page, rowsPerPage]);
+  const handleClearFilters = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+    setAppliedFilters(INITIAL_FILTERS);
+    setPage(0);
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved":
-        return "success";
-      case "Rejected":
-        return "error";
-      default:
-        return "warning";
-    }
-  };
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Snackbar
+  // ─────────────────────────────────────────────────────────────
+  const showSnackbar = useCallback((message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+  }, []);
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Approved":
-        return <CheckCircleIcon fontSize="small" />;
-      case "Rejected":
-        return <CancelIcon fontSize="small" />;
-      default:
-        return <PendingIcon fontSize="small" />;
-    }
-  };
+  const closeSnackbar = useCallback(() => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
 
-  const calculateDuration = (startDate, endDate) => {
-    if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
-  };
+  // ─────────────────────────────────────────────────────────────
+  // FETCH: Employee Info
+  // ─────────────────────────────────────────────────────────────
+  const fetchEmployeeInfo = useCallback(async () => {
+    setLoadingEmployee(true);
+    setEmployeeError("");
 
-  const validateForm = () => {
-    const newErrors = {};
+    try {
+      const empRes = await axiosInstance.get("/employees/me");
+      const empData = empRes.data?.data;
+      setEmployeeInfo(empData);
 
-    if (!form.leave_type) {
-      newErrors.leave_type = "Please select a leave type";
-    }
-
-    if (!form.start_date) {
-      newErrors.start_date = "Please select start date";
-    }
-
-    if (!form.end_date) {
-      newErrors.end_date = "Please select end date";
-    }
-
-    if (form.start_date && form.end_date) {
-      const start = new Date(form.start_date);
-      const end = new Date(form.end_date);
-      if (end < start) {
-        newErrors.end_date = "End date must be after start date";
+      if (empData?.roleInDept === "HEAD" && empData?.department) {
+        try {
+          const deptRes = await axiosInstance.get("/departments");
+          const deptList = deptRes.data?.data || [];
+          const foundDept = deptList.find((d) => d.deptName === empData.department);
+          if (foundDept) {
+            setDepartmentId(foundDept.id);
+          }
+        } catch (deptErr) {
+          console.error("Failed to fetch departments:", deptErr);
+        }
       }
+    } catch (err) {
+      console.error("Failed to fetch employee:", err);
+      setEmployeeError(err.response?.data?.message || "Failed to load employee info");
+    } finally {
+      setLoadingEmployee(false);
     }
+  }, []);
 
-    if (!form.reason || form.reason.trim().length < 10) {
-      newErrors.reason = "Please provide a detailed reason (at least 10 characters)";
+  // ─────────────────────────────────────────────────────────────
+  // FETCH: Leave Requests
+  // ─────────────────────────────────────────────────────────────
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const params = {};
+
+      if (appliedFilters.status) {
+        params.status = appliedFilters.status;
+      }
+      if (appliedFilters.startDate) {
+        params.startDate = formatDateForAPI(appliedFilters.startDate);
+      }
+      if (appliedFilters.endDate) {
+        params.endDate = formatDateForAPI(appliedFilters.endDate);
+      }
+
+      console.log("📌 API Params:", params);
+
+      let res;
+      if (isHead && departmentId) {
+        res = await axiosInstance.get(`/leaves/department/${departmentId}`, { params });
+      } else {
+        res = await axiosInstance.get("/leaves/my", { params });
+      }
+
+      const leaveData = res.data?.data || [];
+      setRequests(Array.isArray(leaveData) ? leaveData : []);
+    } catch (err) {
+      console.error("Failed to fetch leaves:", err);
+      const msg = err.response?.data?.message || "Server connection error";
+      setError(msg);
+      showSnackbar(msg, "error");
+    } finally {
+      setLoading(false);
     }
+  }, [isHead, departmentId, appliedFilters, showSnackbar]);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: "" });
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Create Leave
+  // ─────────────────────────────────────────────────────────────
+  const handleCreateLeave = async () => {
+    if (!form.startDate || !form.endDate) {
+      setFormError("Please select start and end dates");
+      return;
     }
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) {
+    if (new Date(form.startDate) > new Date(form.endDate)) {
+      setFormError("Start date must be before or equal to end date");
+      return;
+    }
+    if (form.reason.trim().length < 10) {
+      setFormError("Reason must be at least 10 characters");
       return;
     }
 
-    const newReq = addLeaveRequestToMockData(form);
-    setRequests([...requests, newReq]);
-    setOpen(false);
-    setForm({
-      emp_id: 1,
-      leave_type: "",
-      start_date: "",
-      end_date: "",
-      reason: "",
-    });
-    setErrors({});
+    try {
+      await axiosInstance.post("/leaves", {
+        leaveType: form.leaveType,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        reason: form.reason.trim(),
+      });
+
+      showSnackbar("Leave request created successfully!");
+      setOpenCreate(false);
+      setForm(INITIAL_FORM);
+      setFormError("");
+      fetchRequests();
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || "Failed to create leave request", "error");
+    }
   };
 
-  const handleViewDetails = (req) => {
-    setSelectedRequest(req);
-    setOpenDetailDialog(true);
+  const handleCloseCreateDialog = () => {
+    setOpenCreate(false);
+    setFormError("");
   };
 
-  const handleChangePage = (event, newPage) => {
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Approve (🆕 CẬP NHẬT)
+  // ─────────────────────────────────────────────────────────────
+  const handleOpenApproveDialog = (request) => {
+    setSelectedRequest(request);
+    setOpenApprove(true);
+  };
+
+  const handleCloseApproveDialog = () => {
+    if (!approving) {
+      setOpenApprove(false);
+      setSelectedRequest(null);
+    }
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!selectedRequest) return;
+
+    setApproving(true);
+    try {
+      await axiosInstance.post(`/leaves/${selectedRequest.id}/approve`);
+      showSnackbar("Leave request approved successfully!", "success");
+      setOpenApprove(false);
+      setSelectedRequest(null);
+      fetchRequests();
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || "Approval failed", "error");
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Reject
+  // ─────────────────────────────────────────────────────────────
+  const handleOpenRejectDialog = (request) => {
+    setSelectedRequest(request);
+    setOpenReject(true);
+    setRejectReason("");
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectReason.trim()) {
+      showSnackbar("Please enter rejection reason", "warning");
+      return;
+    }
+
+    try {
+      await axiosInstance.post(`/leaves/${selectedRequest.id}/reject`, {
+        rejectReason: rejectReason.trim(),
+      });
+      showSnackbar("Leave request rejected!");
+      setOpenReject(false);
+      setRejectReason("");
+      setSelectedRequest(null);
+      fetchRequests();
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || "Rejection failed", "error");
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: View Detail
+  // ─────────────────────────────────────────────────────────────
+  const handleOpenDetailDialog = (request) => {
+    setSelectedRequest(request);
+    setOpenDetail(true);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // HANDLERS: Pagination
+  // ─────────────────────────────────────────────────────────────
+  const handleChangePage = (_, newPage) => {
     setPage(newPage);
   };
 
@@ -206,523 +651,826 @@ const LeaveRequestPage = () => {
     setPage(0);
   };
 
-  const handleOpenDialog = () => {
-    setForm({
-      emp_id: 1,
-      leave_type: "",
-      start_date: "",
-      end_date: "",
-      reason: "",
-    });
-    setErrors({});
-    setOpen(true);
-  };
+  // ─────────────────────────────────────────────────────────────
+  // EFFECTS
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchEmployeeInfo();
+  }, [fetchEmployeeInfo]);
 
+  useEffect(() => {
+    if (!loadingEmployee) {
+      fetchRequests();
+    }
+  }, [loadingEmployee, fetchRequests]);
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: Loading State
+  // ─────────────────────────────────────────────────────────────
+  if (loadingEmployee) {
+    return <AuthLoading message="Loading employee info..." />;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: Error State
+  // ─────────────────────────────────────────────────────────────
+  if (employeeError) {
+    return (
+      <Container maxWidth="md" sx={{ py: 10 }}>
+        <Alert severity="error" action={<Button onClick={fetchEmployeeInfo}>Retry</Button>}>
+          <Typography variant="h6" gutterBottom>
+            Failed to load employee info
+          </Typography>
+          <Typography variant="body2">{employeeError}</Typography>
+        </Alert>
+      </Container>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER: Main Content
+  // ─────────────────────────────────────────────────────────────
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* HEADER */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
-          <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
-            My Leave Requests
+          <Typography variant="h4" fontWeight="bold" color="primary">
+            {isViewingDepartment ? "Department Leave Management" : "My Leave Requests"}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage your leave requests and track their status
+          <Typography color="text.secondary" mt={0.5}>
+            Welcome, <strong>{employeeInfo?.fullName}</strong>
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          size="large"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-          sx={{
-            px: 3,
-            py: 1.5,
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            boxShadow: 3,
-          }}
-        >
-          Request Leave
-        </Button>
-      </Stack>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          {!isHead && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenCreate(true)}
+              size="large"
+            >
+              New Leave Request
+            </Button>
+          )}
+        </Box>
+      </Box>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} mb={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #1976d2" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Total Requests
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700}>
-                    {userStats.total}
-                  </Typography>
-                </Box>
-                <EventNoteIcon sx={{ fontSize: 48, color: "#1976d2", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Warning if HEAD but no departmentId */}
+      {isHead && !departmentId && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Department ID not found for "{employeeInfo?.department}". Showing personal leave requests only.
+        </Alert>
+      )}
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #ed6c02" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Pending
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="warning.main">
-                    {userStats.pending}
-                  </Typography>
-                </Box>
-                <PendingIcon sx={{ fontSize: 48, color: "#ed6c02", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* FILTERS */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <LeaveFilters
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onApplyFilters={handleApplyFilters}
+        onClearFilters={handleClearFilters}
+        loading={loading}
+      />
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #2e7d32" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Approved
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="success.main">
-                    {userStats.approved}
-                  </Typography>
-                </Box>
-                <CheckCircleIcon sx={{ fontSize: 48, color: "#2e7d32", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
+      {/* Loading State */}
+      {loading && (
+        <Box textAlign="center" my={10}>
+          <CircularProgress size={60} />
+          <Typography mt={2}>Loading data...</Typography>
+        </Box>
+      )}
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #d32f2f" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Rejected
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="error.main">
-                    {userStats.rejected}
-                  </Typography>
-                </Box>
-                <CancelIcon sx={{ fontSize: 48, color: "#d32f2f", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Error State */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} action={<Button onClick={fetchRequests}>Retry</Button>}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Filters */}
-      <Card elevation={2} sx={{ mb: 3 }}>
-        <CardContent>
-          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-            <FilterListIcon color="primary" />
-            <Typography variant="h6" fontWeight={600}>
-              Filters
-            </Typography>
-          </Stack>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search by leave type or reason..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All Status</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Approved">Approved</MenuItem>
-                  <MenuItem value="Rejected">Rejected</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Leave Type</InputLabel>
-                <Select
-                  value={leaveTypeFilter}
-                  label="Leave Type"
-                  onChange={(e) => setLeaveTypeFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All Types</MenuItem>
-                  {leaveTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* MAIN CONTENT */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {!loading && !error && (
+        <>
+          {/* Stats Cards */}
+          <Grid container spacing={3} mb={4}>
+            {[
+              { label: "Total", value: stats.total, color: "#1976d2", Icon: EventNoteIcon },
+              { label: "Pending", value: stats.pending, color: "#ed6c02", Icon: PendingIcon },
+              { label: "Approved", value: stats.approved, color: "#2e7d32", Icon: CheckCircleIcon },
+              { label: "Rejected", value: stats.rejected, color: "#d32f2f", Icon: CancelIcon },
+            ].map((item) => (
+              <Grid item xs={12} sm={6} md={3} key={item.label}>
+                <Card elevation={3} sx={{ borderLeft: `5px solid ${item.color}` }}>
+                  <CardContent>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.label}
+                        </Typography>
+                        <Typography variant="h4" fontWeight="bold" sx={{ color: item.color }}>
+                          {item.value}
+                        </Typography>
+                      </Box>
+                      <item.Icon sx={{ fontSize: 48, color: item.color, opacity: 0.2 }} />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        </CardContent>
-      </Card>
 
-      {/* Table */}
-      <Card elevation={3}>
-        <TableContainer>
-          <Table sx={{ minWidth: 800 }}>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
-                <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Leave Type</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Duration</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedRequests.length > 0 ? (
-                paginatedRequests.map((req, index) => (
-                  <TableRow
-                    key={req.id}
-                    hover
-                    sx={{
-                      "&:hover": { backgroundColor: "#f9f9f9" },
-                      transition: "background-color 0.2s",
-                    }}
-                  >
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>
-                      <Chip label={req.leave_type} size="small" variant="outlined" color="primary" />
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        <CalendarIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{req.start_date}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        <CalendarIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{req.end_date}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={`${calculateDuration(req.start_date, req.end_date)} days`}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={getStatusIcon(req.status)}
-                        label={req.status}
-                        color={getStatusColor(req.status)}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="View Details">
-                        <IconButton size="small" color="info" onClick={() => handleViewDetails(req)}>
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+          {/* Table */}
+          <Paper elevation={3}>
+            <TableContainer>
+              <Table sx={{ minWidth: 900 }}>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                    <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
+                    {isViewingDepartment && <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>}
+                    <TableCell sx={{ fontWeight: 700 }}>Leave Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>From</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>To</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Days</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Actions</TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    <EventNoteIcon sx={{ fontSize: 64, color: "text.disabled", mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      No leave requests found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                      You haven't submitted any leave requests yet
-                    </Typography>
-                    <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenDialog}>
-                      Create Your First Request
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {paginatedRequests.length > 0 && (
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            component="div"
-            count={filteredRequests.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        )}
-      </Card>
+                </TableHead>
+                <TableBody>
+                  {paginatedRequests.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={isViewingDepartment ? 8 : 7} align="center" sx={{ py: 10 }}>
+                        <EventNoteIcon sx={{ fontSize: 60, color: "#ccc", mb: 2 }} />
+                        <Typography variant="h6" color="text.secondary">
+                          {hasActiveFilters
+                            ? "No leave requests match your filters"
+                            : isViewingDepartment
+                              ? "No leave requests in department"
+                              : "You have no leave requests"}
+                        </Typography>
+                        {hasActiveFilters ? (
+                          <Button
+                            variant="outlined"
+                            startIcon={<ClearIcon />}
+                            onClick={handleClearFilters}
+                            sx={{ mt: 2 }}
+                          >
+                            Clear Filters
+                          </Button>
+                        ) : (
+                          !isHead && (
+                            <Button
+                              variant="outlined"
+                              startIcon={<AddIcon />}
+                              onClick={() => setOpenCreate(true)}
+                              sx={{ mt: 2 }}
+                            >
+                              Create First Request
+                            </Button>
+                          )
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedRequests.map((req, index) => (
+                      <TableRow key={req.id} hover>
+                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                        {isViewingDepartment && (
+                          <TableCell>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Avatar sx={{ width: 32, height: 32, fontSize: "0.8rem", bgcolor: "primary.main" }}>
+                                {(req.employeeName || req.fullName || "?")?.[0]?.toUpperCase()}
+                              </Avatar>
+                              <Typography variant="body2" fontWeight={500}>
+                                {req.employeeName || req.fullName || `Employee #${req.empId}`}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <Chip label={getLeaveTypeLabel(req.leaveType)} size="small" variant="outlined" />
+                        </TableCell>
+                        <TableCell>{req.startDate}</TableCell>
+                        <TableCell>{req.endDate}</TableCell>
+                        <TableCell>
+                          <strong>{calculateDaysBetween(req.startDate, req.endDate)}</strong> days
+                        </TableCell>
+                        <TableCell>{getStatusChip(req.status)}</TableCell>
+                        <TableCell align="center">
+                          <Stack direction="row" spacing={0.5} justifyContent="center">
+                            <Tooltip title="View Details">
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => handleOpenDetailDialog(req)}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {isViewingDepartment && req.status === "PENDING" && (
+                              <>
+                                <Tooltip title="Approve">
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() => handleOpenApproveDialog(req)}
+                                  >
+                                    <CheckCircleIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Reject">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => handleOpenRejectDialog(req)}
+                                  >
+                                    <CancelIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-      {/* Create Request Dialog */}
+            {/* Pagination */}
+            {requests.length > 0 && (
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                component="div"
+                count={requests.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage="Rows per page:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} of ${count}`}
+              />
+            )}
+          </Paper>
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* DIALOG: Create Leave Request */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
       <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
+        open={openCreate}
+        onClose={handleCloseCreateDialog}
+        maxWidth="lg"
         fullWidth
-        maxWidth="md"
-        PaperProps={{
-          elevation: 5,
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              overflow: "hidden",
+            },
+          },
         }}
       >
-        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <AddIcon color="primary" />
-            <Typography variant="h6" fontWeight={700}>
-              Request Leave
+        {/* Header */}
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            py: 2,
+            px: 3,
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <AddIcon />
+            <Typography variant="h6" fontWeight="bold" component="span">
+              New Leave Request
             </Typography>
           </Stack>
         </DialogTitle>
-        <Divider />
-        <DialogContent sx={{ mt: 2 }}>
-          <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-            Please fill in all required fields. Your request will be reviewed by HR.
-          </Alert>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                select
-                fullWidth
-                label="Leave Type"
-                name="leave_type"
-                value={form.leave_type}
-                onChange={handleChange}
-                error={!!errors.leave_type}
-                helperText={errors.leave_type}
-                required
-              >
-                {leaveTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
+        {/* Content */}
+        <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ p: 3 }}>
+            <Grid container spacing={2.5}>
+              {/* First Row: Three Fields */}
+              <Grid container spacing={2}>
+                {/* Leave Type */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Leave Type"
+                    value={form.leaveType}
+                    onChange={(e) => setForm((prev) => ({ ...prev, leaveType: e.target.value }))}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EventNoteIcon color="action" />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  >
+                    {LEAVE_TYPES.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Start Date"
-                name="start_date"
-                value={form.start_date}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                error={!!errors.start_date}
-                helperText={errors.start_date}
-                required
-                inputProps={{ min: new Date().toISOString().split("T")[0] }}
-              />
-            </Grid>
+                {/* Start Date */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="From Date"
+                    value={form.startDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EventNoteIcon color="action" />
+                          </InputAdornment>
+                        ),
+                        min: getTodayForInput(),
+                      },
+                      htmlInput: {
+                        min: getTodayForInput(),
+                      },
+                    }}
+                  />
+                </Grid>
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                type="date"
-                label="End Date"
-                name="end_date"
-                value={form.end_date}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                error={!!errors.end_date}
-                helperText={errors.end_date}
-                required
-                inputProps={{ min: form.start_date || new Date().toISOString().split("T")[0] }}
-              />
-            </Grid>
+                {/* End Date */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="To Date"
+                    value={form.endDate}
+                    onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EventNoteIcon color="action" />
+                          </InputAdornment>
+                        ),
+                        min: form.startDate || getTodayForInput(),
+                      },
+                      htmlInput: {
+                        min: form.startDate || getTodayForInput(),
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Paper
-                sx={{
-                  p: 2,
-                  backgroundColor: "#f0f7ff",
-                  border: "1px solid #90caf9",
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  Duration
-                </Typography>
-                <Typography variant="h5" fontWeight={700} color="primary">
-                  {calculateDuration(form.start_date, form.end_date)} days
-                </Typography>
-              </Paper>
+              {/* Reason - Full Width on Second Row */}
+              <Grid size={{ xs: 12, md: 12 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Reason"
+                  placeholder="Please provide a detailed reason for your leave request (minimum 10 characters)..."
+                  value={form.reason}
+                  onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+                  error={!!formError}
+                  helperText={formError || `${form.reason.length}/10 characters minimum`}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ mt: 1.5, alignSelf: "flex-start" }}>
+                          <EditNoteIcon color="action" />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </Grid>
             </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Reason"
-                name="reason"
-                value={form.reason}
-                onChange={handleChange}
-                multiline
-                rows={4}
-                error={!!errors.reason}
-                helperText={errors.reason || "Provide a detailed reason for your leave request"}
-                required
-                placeholder="Please explain the reason for your leave request in detail..."
-              />
-            </Grid>
-          </Grid>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)} variant="outlined">
+
+        {/* Actions */}
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: "grey.50",
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Button
+            onClick={handleCloseCreateDialog}
+            variant="outlined"
+            color="inherit"
+            sx={{ minWidth: 100 }}
+          >
             Cancel
           </Button>
-          <Button variant="contained" color="primary" onClick={handleSubmit} startIcon={<AddIcon />}>
-            Submit Request
+          <Button
+            variant="contained"
+            onClick={handleCreateLeave}
+            startIcon={<SendIcon />}
+            sx={{ minWidth: 120 }}
+          >
+            Submit
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Detail Dialog */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* DIALOG: View Details */}
+      {/* ═══════════════════════════════════════════════════════ */}
       <Dialog
-        open={openDetailDialog}
-        onClose={() => setOpenDetailDialog(false)}
+        open={openDetail}
+        onClose={() => setOpenDetail(false)}
         maxWidth="md"
-        fullWidth
-        PaperProps={{
-          elevation: 5,
-        }}
+        PaperProps={{ sx: { borderRadius: 4 } }}
       >
-        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <VisibilityIcon color="primary" />
-            <Typography variant="h6" fontWeight={700}>
+        <DialogTitle sx={{ bgcolor: "primary.main", color: "white", py: 3 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <VisibilityIcon />
+            <Typography variant="h6" fontWeight={600}>
               Leave Request Details
             </Typography>
           </Stack>
         </DialogTitle>
-        <Divider />
-        <DialogContent sx={{ mt: 2 }}>
+
+        <DialogContent sx={{ bgcolor: "#f9fafb", p: 5 }}>
           {selectedRequest && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
+            <Grid container spacing={4}>
+              {/* Row 1 */}
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   Leave Type
                 </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.leave_type}
+                <Typography variant="h6" fontWeight={600}>
+                  {getLeaveTypeLabel(selectedRequest.leaveType)}
                 </Typography>
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   Status
                 </Typography>
-                <Box mt={0.5}>
-                  <Chip
-                    icon={getStatusIcon(selectedRequest.status)}
-                    label={selectedRequest.status}
-                    color={getStatusColor(selectedRequest.status)}
-                    sx={{ fontWeight: 600 }}
-                  />
+                <Box sx={{ mt: 0.5 }}>
+                  {getStatusChip(selectedRequest.status)}
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Total Days
+                </Typography>
+                <Typography variant="h4" fontWeight={700} color="primary.main">
+                  {calculateDaysBetween(selectedRequest.startDate, selectedRequest.endDate)}
+                </Typography>
+              </Grid>
+
+              {/* Row 2 */}
+              <Grid item xs={12} md={6}>
+                <Box sx={{ bgcolor: "white", p: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    From Date
+                  </Typography>
+                  <Typography variant="h5" fontWeight={600} color="success.dark">
+                    {formatDate(selectedRequest.startDate)}
+                  </Typography>
                 </Box>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Start Date
-                </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.start_date}
-                </Typography>
+                <Box sx={{ bgcolor: "white", p: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    To Date
+                  </Typography>
+                  <Typography variant="h5" fontWeight={600} color="error.dark">
+                    {formatDate(selectedRequest.endDate)}
+                  </Typography>
+                </Box>
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
-                  End Date
-                </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.end_date}
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Duration
-                </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {calculateDuration(selectedRequest.start_date, selectedRequest.end_date)} days
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" color="text.secondary">
-                  Submitted Date
-                </Typography>
-                <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.created_at?.split("T")[0] || "N/A"}
-                </Typography>
-              </Grid>
-
+              {/* Row 3 */}
               <Grid item xs={12}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom fontWeight={500}>
                   Reason
                 </Typography>
-                <Paper sx={{ p: 2, mt: 0.5, backgroundColor: "#f9f9f9" }}>
-                  <Typography variant="body2">{selectedRequest.reason}</Typography>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    bgcolor: "white",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 3,
+                    minHeight: 100
+                  }}
+                >
+                  <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                    {selectedRequest.reason || "No reason provided"}
+                  </Typography>
                 </Paper>
               </Grid>
 
-              {selectedRequest.approved_date && (
+              {/* Rejection Reason */}
+              {selectedRequest.status === "REJECTED" && selectedRequest.rejectReason && (
                 <Grid item xs={12}>
-                  <Typography variant="caption" color="text.secondary">
-                    Processed Date
+                  <Typography variant="subtitle2" color="error.main" gutterBottom fontWeight={500}>
+                    Rejection Reason
                   </Typography>
-                  <Typography variant="body2" mt={0.5}>
-                    {selectedRequest.approved_date}
-                  </Typography>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 4,
+                      bgcolor: "#fff5f5",
+                      border: "1px solid #fca5a5",
+                      borderRadius: 3
+                    }}
+                  >
+                    <Typography color="error.main" sx={{ lineHeight: 1.8 }}>
+                      {selectedRequest.rejectReason}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )}
+
+              {/* Employee Name (for HEAD view) */}
+              {isViewingDepartment && (
+                <Grid item xs={12}>
+                  <Box sx={{ textAlign: "center", pt: 2, mt: 2, borderTop: "1px dashed #cbd5e1" }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Employee:
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600} color="primary.main" component="span" sx={{ ml: 1 }}>
+                      {selectedRequest.employeeName || selectedRequest.fullName || `Employee #${selectedRequest.empId}`}
+                    </Typography>
+                  </Box>
                 </Grid>
               )}
             </Grid>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpenDetailDialog(false)} variant="contained">
+
+        <DialogActions sx={{ p: 3, bgcolor: "white", borderTop: "1px solid #e2e8f0" }}>
+          <Button
+            onClick={() => setOpenDetail(false)}
+            variant="contained"
+            size="large"
+            sx={{ minWidth: 140, height: 48, fontWeight: 600 }}
+          >
             Close
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* 🆕 DIALOG: Approve Confirmation */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <Dialog
+        open={openApprove}
+        onClose={handleCloseApproveDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ bgcolor: "success.main", color: "white", py: 2.5 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <CheckCircleIcon />
+            <Typography variant="h6" fontWeight="bold">
+              Confirm Approval
+            </Typography>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 3, pb: 2 }}>
+          {selectedRequest && (
+            <Box>
+              {/* Confirmation Message */}
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Are you sure you want to approve this leave request?
+              </Alert>
+
+              {/* Request Details */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  bgcolor: "grey.50",
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "grey.200"
+                }}
+              >
+                <Grid container spacing={2}>
+                  {/* Employee */}
+                  <Grid item xs={12}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "primary.main",
+                          fontWeight: 600
+                        }}
+                      >
+                        {(selectedRequest.employeeName || selectedRequest.fullName || "?")?.[0]?.toUpperCase()}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Employee
+                        </Typography>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {selectedRequest.employeeName || selectedRequest.fullName || `Employee #${selectedRequest.empId}`}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Divider />
+                  </Grid>
+
+                  {/* Leave Type */}
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Leave Type
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {getLeaveTypeLabel(selectedRequest.leaveType)}
+                    </Typography>
+                  </Grid>
+
+                  {/* Duration */}
+                  <Grid item xs={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Duration
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600} color="primary.main">
+                      {calculateDaysBetween(selectedRequest.startDate, selectedRequest.endDate)} days
+                    </Typography>
+                  </Grid>
+
+                  {/* From Date */}
+                  <Grid item xs={6}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <CalendarTodayIcon fontSize="small" color="success" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          From
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {formatDate(selectedRequest.startDate)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  {/* To Date */}
+                  <Grid item xs={6}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <EventBusyIcon fontSize="small" color="error" />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          To
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {formatDate(selectedRequest.endDate)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Grid>
+
+                  {/* Reason */}
+                  {selectedRequest.reason && (
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Reason
+                      </Typography>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: "white",
+                          borderRadius: 1,
+                          border: "1px solid",
+                          borderColor: "grey.300"
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {selectedRequest.reason}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  )}
+                </Grid>
+              </Paper>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+          <Button
+            onClick={handleCloseApproveDialog}
+            variant="outlined"
+            color="inherit"
+            disabled={approving}
+            sx={{ minWidth: 100 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleApproveConfirm}
+            disabled={approving}
+            startIcon={approving ? <CircularProgress size={18} color="inherit" /> : <CheckCircleIcon />}
+            sx={{ minWidth: 140 }}
+          >
+            {approving ? "Approving..." : "Approve"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* DIALOG: Reject */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <Dialog open={openReject} onClose={() => setOpenReject(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ bgcolor: "error.main", color: "white" }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <CancelIcon />
+            <Typography variant="h6" fontWeight="bold">Reject Leave Request</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {selectedRequest && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Rejecting request from: <strong>{selectedRequest.employeeName || selectedRequest.fullName}</strong>
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Rejection Reason"
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Please provide a reason for rejection..."
+            required
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setOpenReject(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleRejectConfirm}
+            disabled={!rejectReason.trim()}
+          >
+            Confirm Rejection
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* SNACKBAR */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert severity={snackbar.severity} onClose={closeSnackbar} variant="filled">
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
+const LeaveRequestPage = () => {
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+
+  if (authLoading || !isAuthenticated || !user) {
+    return <AuthLoading message="Loading user info..." />;
+  }
+
+  return <LeaveRequestContent user={user} />;
 };
 
 export default LeaveRequestPage;

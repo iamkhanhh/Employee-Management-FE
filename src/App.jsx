@@ -8,20 +8,20 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminLayout from "./layouts/AdminLayout";
 import ClientLayout from "./layouts/ClientLayout";
 
-// Pages - Admin
+// Pages - Admin (chỉ ADMIN & HR)
 import Dashboard from "./pages/admin/Dashboard";
 import EmployeeList from "./pages/employeeScreens/EmployeeList";
 import EmployeeDetail from "./pages/employeeScreens/EmployeeDetail";
 import TaskList from "./pages/admin/TaskList";
 import PayrollList from "./pages/admin/PayrollList";
-import KPIList from "./pages/admin/KPIList";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
 import AttendanceManager from "./pages/admin/AttendanceManager";
 import ContractManagement from "./pages/contractScreens/ContractManagement";
 import DepartmentManagement from "./pages/departmentScreens/DepartmentManagement";
+import KpiReviewPage from "./pages/admin/KpiReviewPage";
 
-// Pages - Client/User
+// Pages - Client (tất cả USER, ADMIN, HR đều vào được)
 import MyProfile from "./pages/profile/MyProfile";
 import MyAttendance from "./components/Attendance/MyAttendance";
 import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
@@ -43,18 +43,25 @@ function App() {
       />
 
       <Routes>
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/login" />} />
-
-        {/* Login page */}
+        {/* Root & Login */}
+        <Route path="/" element={<Navigate to="/profile" replace />} />
         <Route path="/login" element={<Login />} />
 
-        {/* --- ADMIN ROUTES --- */}
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        {/* ==================== CLIENT ROUTES - TẤT CẢ ROLE ĐỀU VÀO ĐƯỢC ==================== */}
+        <Route element={<ProtectedRoute allowedRoles={["USER", "ADMIN", "HR"]} />}>
+          <Route element={<ClientLayout />}>
+            <Route path="/profile" element={<MyProfile />} />
+            <Route path="/my-attendance" element={<MyAttendance />} />
+            <Route path="/leave-requests" element={<LeaveRequestPage />} />
+            <Route path="/my-kpi" element={<KpiReviewPage />} /> {/* USER xem KPI cá nhân */}
+          </Route>
+        </Route>
+
+        {/* ==================== ADMIN ROUTES - CHỈ ADMIN & HR ==================== */}
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "HR"]} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="account-management" element={<AccountManagementPage />} />
             <Route path="employees" element={<EmployeeList />} />
             <Route path="employees/:id" element={<EmployeeDetail />} />
             <Route path="departments" element={<DepartmentManagement />} />
@@ -63,23 +70,18 @@ function App() {
             <Route path="tasks" element={<TaskList />} />
             <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
             <Route path="payroll" element={<PayrollList />} />
-            <Route path="kpi" element={<KPIList />} />
+            <Route path="account-management" element={<AccountManagementPage />} />
+            <Route path="kpi-review" element={<KpiReviewPage />} /> {/* HR/ADMIN duyệt KPI */}
           </Route>
         </Route>
 
-        {/* --- CLIENT/USER ROUTES --- */}
-        <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
-          <Route element={<ClientLayout />}>
-            <Route path="/profile" element={<MyProfile />} />
-            <Route path="/my-attendance" element={<MyAttendance />} />
-            <Route path="/leave-requests" element={<LeaveRequestPage />} />
-          </Route>
-        </Route>
+        {/* Redirect cũ để không bị lạc */}
+        <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
 
-        {/* Fallback for unknown routes */}
-        <Route path="*" element={<Navigate to="/login" />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/profile" replace />} />
       </Routes>
-      </>
+    </>
   );
 }
 

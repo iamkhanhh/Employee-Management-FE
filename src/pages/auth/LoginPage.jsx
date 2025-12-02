@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 import { axiosInstance } from "../../lib/axios";
 
+
 export default function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -23,18 +24,46 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let data = {
-      email: username,
-      password: password
+
+    if (!username || !password) {
+      toast.error("Please enter both email and password");
+      return;
     }
-    const res = await axiosInstance.post("/auth/login", data);
-    console.log(res);
-    if (res.data.status == "success") {
-      toast.success(res.data.message);
-      navigate("/admin")
-    }
-    else {
-      toast.error(res.data.message);
+
+    try {
+      const res = await axiosInstance.post("/auth/login", {
+        email: username,
+        password: password
+      });
+
+      console.log("Login response:", res.data);
+
+      if (res.data.status === "success" || res.data.token) {
+        // Lưu token + user info (nếu backend trả về)
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+        }
+        if (res.data.user) {
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        }
+
+        // THÀNH CÔNG → CHUYỂN HƯỚNG VỀ /profile LUÔN!
+        toast.success(res.data.message || "Welcome back! 👋");
+
+        // Delay nhẹ 1s để user thấy toast rồi mới chuyển trang (UX mượt)
+        setTimeout(() => {
+          navigate("/profile", { replace: true });
+        }, 800);
+
+      } else {
+        toast.error(res.data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error(
+        error.response?.data?.message ||
+        "Invalid email or password"
+      );
     }
   };
 

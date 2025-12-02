@@ -102,7 +102,7 @@ const ContractDetailDialog = ({
       fullWidth
       PaperProps={{ elevation: 5, sx: { borderRadius: 2 } }}
     >
-      {/* HEADER */}
+      {/* HEADER - giữ nguyên như cũ */}
       <DialogTitle sx={{ backgroundColor: '#f5f5f5' }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Stack direction="row" spacing={1} alignItems="center">
@@ -134,15 +134,7 @@ const ContractDetailDialog = ({
         ) : (
           <Grid container spacing={3}>
 
-            {/* ID */}
-            {/* <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary">
-                Contract ID
-              </Typography>
-              <Typography fontWeight={600}>#{contract.id}</Typography>
-            </Grid> */}
-
-            {/* Employee Name */}
+            {/* === PHẦN TRÊN: Employee Name, ID, Contract Type, Created At === */}
             <Grid item xs={12} md={6}>
               <Typography variant="caption" color="text.secondary">
                 Employee Name
@@ -155,7 +147,6 @@ const ContractDetailDialog = ({
               </Stack>
             </Grid>
 
-            {/* Employee ID */}
             <Grid item xs={12} md={6}>
               <Typography variant="caption" color="text.secondary">
                 Employee ID
@@ -163,20 +154,6 @@ const ContractDetailDialog = ({
               <Typography fontWeight={600}>{contract.empId}</Typography>
             </Grid>
 
-            {/* Status */}
-            {/* <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary">
-                Status
-              </Typography>
-              <Chip
-                sx={{ mt: 0.5 }}
-                icon={getStatusIcon(contract.status)}
-                label={contract.status}
-                color={getStatusColor(contract.status)}
-              />
-            </Grid> */}
-
-            {/* Contract Type */}
             <Grid item xs={12} md={6}>
               <Typography variant="caption" color="text.secondary">
                 Contract Type
@@ -186,8 +163,6 @@ const ContractDetailDialog = ({
               </Typography>
             </Grid>
 
-
-            {/* Created Date */}
             <Grid item xs={12} md={6}>
               <Typography variant="caption" color="text.secondary">
                 Created At
@@ -201,6 +176,37 @@ const ContractDetailDialog = ({
             </Grid>
 
             <Grid item xs={12}><Divider /></Grid>
+
+            {/* === DƯỚI CÙNG: Start Date + End Date + Contract Document === */}
+
+            {/* Contract Document - nằm cuối cùng */}
+            {contract.fileUrl && (
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary">
+                  Contract Document
+                </Typography>
+
+                <Paper sx={{ p: 2, mt: 1 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <DescriptionIcon />
+                      <Typography fontSize="14px">
+                        {contract.fileUrl.split("/").pop()}
+                      </Typography>
+                    </Stack>
+
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => onDownloadFile(contract.fileUrl, "contract.pdf")}
+                    >
+                      Download
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Grid>
+            )}
 
             {/* Start Date */}
             <Grid item xs={12} md={6}>
@@ -231,40 +237,6 @@ const ContractDetailDialog = ({
                 </Stack>
               </Paper>
             </Grid>
-
-            {/* File */}
-            {contract.fileUrl && (
-              <Grid item xs={12}>
-                {/* Label phía trên */}
-                <Typography variant="caption" color="text.secondary">
-                  Contract Document
-                </Typography>
-
-                {/* Box chứa file + download phía dưới */}
-                <Paper sx={{ p: 2, mt: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    {/* Tên file */}
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <DescriptionIcon />
-                      <Typography fontSize="14px">
-                        {contract.fileUrl.split("/").pop()}
-                      </Typography>
-                    </Stack>
-                  </Stack>
-                  {/* Nút Download */}
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => onDownloadFile(contract.fileUrl, "contract.pdf")}
-                  >
-                    Download
-                  </Button>
-                </Paper>
-              </Grid>
-            )}
-
-
 
           </Grid>
         )}

@@ -367,46 +367,6 @@ const MyProfile = () => {
                 </CardContent>
               </Card>
 
-              {/* Skills Card */}
-              <Card elevation={2} sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      fontWeight: 700,
-                      color: '#212529',
-                      mb: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}
-                  >
-                    <SchoolIcon color="primary" />
-                    Skills & Technologies
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-                    {user?.skills?.map((skill, index) => (
-                      <Chip
-                        key={index}
-                        label={skill}
-                        size="medium"
-                        icon={<CheckCircleIcon />}
-                        sx={{
-                          fontWeight: 600,
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          color: 'primary.main',
-                          border: '1px solid',
-                          borderColor: alpha(theme.palette.primary.main, 0.3),
-                          '& .MuiChip-icon': {
-                            color: 'primary.main'
-                          }
-                        }}
-                      />
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
 
               {/* Statistics Card */}
               <Card elevation={2} sx={{ borderRadius: 3 }}>

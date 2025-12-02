@@ -1,6 +1,4 @@
-// components/contracts/ContractDialog/AddContractDialog.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,7 +15,8 @@ import {
   MenuItem,
   Grid,
   Divider,
-  Autocomplete
+  Autocomplete,
+  Paper
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -27,9 +26,11 @@ import {
   Category as CategoryIcon,
   CalendarToday as CalendarIcon,
   CheckCircle as CheckCircleIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Search as SearchIcon,
+  UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import {apiClient} from '../../../services/api';
+import { axiosInstance } from '../../../lib/axios';
 
 const CONTRACT_TYPES = [
   { value: 'FULL_TIME', label: 'Full Time' },
@@ -50,329 +51,277 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
     contractType: '',
     startDate: '',
     endDate: '',
-    fileUrl: '',
-    status: 'ACTIVE' // Default value
+    status: 'ACTIVE',
+    file: null,        // ← New: file object
+    fileName: ''       // ← Display name
   });
 
   const [employees, setEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Fetch employees khi dialog mở
-  useEffect(() => {
-    if (open) {
-      fetchEmployees();
-    }
-  }, [open]);
+  const fileInputRef = useRef(null);
 
-  // Fetch danh sách employees
-  const fetchEmployees = async () => {
+  // Fetch employees
+  const fetchEmployees = useCallback(async (search = '') => {
     setLoadingEmployees(true);
     try {
-      const res = await apiClient.get('/employees', {
-        params: { page: 0, pageSize: 1000 } // Lấy hết employees
+      const res = await axiosInstance.get('/employees', {
+        params: { page: 0, pageSize: 1000 }
       });
-      
+
       if (res.data?.code === 0) {
-        setEmployees(res.data.data || []);
+        let list = [];
+        if (Array.isArray(res.data.data)) list = res.data.data;
+        else if (res.data.data?.content) list = res.data.data.content;
+        else if (res.data.data?.items) list = res.data.data.items;
+
+        setEmployees(list);
+      } else {
+        setEmployees([]);
       }
     } catch (error) {
       console.error('Error fetching employees:', error);
+      setEmployees([]);
     } finally {
       setLoadingEmployees(false);
     }
-  };
+  }, []);
 
-  // Validate form
+  useEffect(() => {
+    if (open) {
+      fetchEmployees('');
+      setSearchTerm('');
+      setSelectedEmployee(null);
+    }
+  }, [open, fetchEmployees]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchEmployees(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, fetchEmployees]);
+
+  // Validate
   const validate = () => {
     const newErrors = {};
-
-    if (!formData.empId) {
-      newErrors.empId = 'Employee is required';
+    if (!formData.empId) newErrors.empId = 'Employee is required';
+    if (!formData.contractType) newErrors.contractType = 'Contract type is required';
+    if (!formData.startDate) newErrors.startDate = 'Start date is required';
+    if (!formData.endDate) newErrors.endDate = 'End date is required';
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
+      newErrors.endDate = 'End date must be after start date';
     }
-
-    if (!formData.contractType) {
-      newErrors.contractType = 'Contract type is required';
-    }
-
-    if (!formData.startDate) {
-      newErrors.startDate = 'Start date is required';
-    }
-
-    if (!formData.endDate) {
-      newErrors.endDate = 'End date is required';
-    }
-
-    if (formData.startDate && formData.endDate) {
-      if (new Date(formData.startDate) > new Date(formData.endDate)) {
-        newErrors.endDate = 'End date must be after start date';
-      }
-    }
-
-    if (!formData.status) {
-      newErrors.status = 'Status is required';
-    }
-
-    // Validate file URL if provided
-    if (formData.fileUrl && formData.fileUrl.trim()) {
-      const urlPattern = /^(https?:\/\/)?([\w.-]+)\.([a-z]{2,})(\/.*)?$/i;
-      if (!urlPattern.test(formData.fileUrl)) {
-        newErrors.fileUrl = 'Please enter a valid URL';
-      }
-    }
+    if (!formData.status) newErrors.status = 'Status is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Clear error khi user thay đổi
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-    setSubmitError('');
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // Handle employee select
   const handleEmployeeChange = (event, newValue) => {
+    setSelectedEmployee(newValue);
     setFormData(prev => ({
       ...prev,
-      empId: newValue ? newValue.id : ''
+      empId: newValue ? (newValue.id || newValue.empId) : ''
     }));
-
-    if (errors.empId) {
-      setErrors(prev => ({
-        ...prev,
-        empId: ''
-      }));
-    }
-    setSubmitError('');
+    if (errors.empId) setErrors(prev => ({ ...prev, empId: '' }));
   };
 
-  // Handle submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitError('');
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    if (!validate()) {
+    if (!file.type.includes('pdf')) {
+      setSubmitError('Only PDF files are allowed');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setSubmitError('File must be smaller than 10MB');
       return;
     }
 
+    setFormData(prev => ({
+      ...prev,
+      file,
+      fileName: file.name
+    }));
+    setSubmitError('');
+  };
+
+  const handleFileBoxClick = () => fileInputRef.current?.click();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     setLoading(true);
+    setSubmitError('');
 
     try {
-      const result = await onSubmit({
+      const payload = {
         empId: parseInt(formData.empId),
         contractType: formData.contractType,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        fileUrl: formData.fileUrl.trim() || null,
-        status: formData.status
-      });
+        status: formData.status,
+        file: formData.file || undefined
+      };
 
-      if (result.success) {
-        handleClose();
-      } else {
-        setSubmitError(result.error || 'Failed to create contract');
-      }
-    } catch (error) {
+      const result = await onSubmit(payload);
+      if (result?.success) handleClose();
+      else setSubmitError(result?.error || 'Failed to create contract');
+    } catch (err) {
       setSubmitError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle close
   const handleClose = () => {
-    if (!loading) {
-      setFormData({
-        empId: '',
-        contractType: '',
-        startDate: '',
-        endDate: '',
-        fileUrl: '',
-        status: 'ACTIVE'
-      });
-      setErrors({});
-      setSubmitError('');
-      onClose();
-    }
+    if (loading) return;
+    setFormData({
+      empId: '', contractType: '', startDate: '', endDate: '', status: 'ACTIVE', file: null, fileName: ''
+    });
+    setErrors({});
+    setSubmitError('');
+    setSearchTerm('');
+    setSelectedEmployee(null);
+    onClose();
   };
 
-  // Get today's date for min date
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
-      {/* Header */}
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #2196F3 0%, #21CBF3 100%)',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <AddIcon fontSize="large" />
-          <Box>
-            <Typography variant="h6" fontWeight={600}>
-              Add New Contract
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Create a new employment contract
-            </Typography>
-          </Box>
-        </Stack>
-        <IconButton
-          onClick={handleClose}
-          disabled={loading}
-          sx={{ 
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255,255,255,0.1)'
-            }
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      {/* Form */}
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ pt: 3 }}>
-          {/* Error Alert */}
-          {submitError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {submitError}
-            </Alert>
-          )}
+        {/* Header */}
+        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white', py: 3, }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={2} alignItems="center">
+              <AddIcon sx={{ fontSize: 36 }} />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>Add New Contract</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>Create employment contract for employee</Typography>
+              </Box>
+            </Stack>
+            <IconButton onClick={handleClose} disabled={loading} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
 
+        <DialogContent sx={{ mt: 4 }}>   {/* <<< THÊM DÒNG NÀY */}
+         <br></br>
+
+          {/* Employee Search */}
           <Grid container spacing={3}>
-            {/* Employee Selection */}
             <Grid item xs={12}>
               <Autocomplete
                 options={employees}
-                getOptionLabel={(option) => `${option.empName} (ID: ${option.id})`}
-                loading={loadingEmployees}
+                value={selectedEmployee}
                 onChange={handleEmployeeChange}
+                onInputChange={(_, value) => setSearchTerm(value)}
+                inputValue={searchTerm}
+                getOptionLabel={(opt) => opt ? `${opt.fullName || opt.empName} (ID: ${opt.id || opt.empId})` : ''}
+                isOptionEqualToValue={(opt, val) => (opt?.id || opt?.empId) === (val?.id || val?.empId)}
+                loading={loadingEmployees}
+                noOptionsText="Type to search employees..."
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    label="Select Employee *"
+                    label="Search & Select Employee *"
+                    placeholder="Enter name or ID..."
                     error={!!errors.empId}
-                    helperText={errors.empId}
+                    helperText={errors.empId || "Start typing to search employees"}
                     InputProps={{
                       ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
-                          {params.InputProps.startAdornment}
-                        </>
-                      ),
-                      endAdornment: (
-                        <>
-                          {loadingEmployees ? <CircularProgress size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
+                      startAdornment: <SearchIcon sx={{ ml: 1, color: 'action.active' }} />,
+                      endAdornment: loadingEmployees ? <CircularProgress size={20} /> : params.InputProps.endAdornment
                     }}
                   />
                 )}
-                disabled={loading}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} key={option.id || option.empId}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <PersonIcon color="action" />
+                      <Box>
+                        <Typography fontWeight={600}>{option.fullName || option.empName}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ID: {option.id || option.empId} • {option.email || ''} • {option.deptName || ''}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                )}
+                filterOptions={(x) => x}
               />
             </Grid>
 
-            <Grid item xs={12}>
-              <Divider />
+            {/* Contract Details Title */}
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <Typography variant="h6" fontWeight={700} color="primary.main">
+                Contract Details
+              </Typography>
+              <Divider sx={{ mt: 1 }} />
             </Grid>
 
-            {/* Contract Type */}
+            {/* Hàng 1: Contract Type + Status */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
-                select
-                label="Contract Type *"
+                select fullWidth required
+                label="Contract Type"
                 name="contractType"
                 value={formData.contractType}
                 onChange={handleChange}
                 error={!!errors.contractType}
                 helperText={errors.contractType}
                 disabled={loading}
-                InputProps={{
-                  startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               >
-                {CONTRACT_TYPES.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                {CONTRACT_TYPES.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </TextField>
             </Grid>
 
-            {/* Status */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
-                select
-                label="Status *"
+                select fullWidth required
+                label="Status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
                 error={!!errors.status}
                 helperText={errors.status}
                 disabled={loading}
-                InputProps={{
-                  startAdornment: <CheckCircleIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CheckCircleIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               >
-                {CONTRACT_STATUSES.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
+                {CONTRACT_STATUSES.map(o => (
+                  <MenuItem key={o.value} value={o.value}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          bgcolor: option.color
-                        }}
-                      />
-                      <span>{option.label}</span>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: o.color }} />
+                      {o.label}
                     </Stack>
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
 
-            {/* Start Date */}
+            {/* Hàng 2: Start Date + End Date */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                fullWidth required
                 type="date"
-                label="Start Date *"
+                label="Start Date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
@@ -381,18 +330,15 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ min: today }}
-                InputProps={{
-                  startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               />
             </Grid>
 
-            {/* End Date */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                fullWidth required
                 type="date"
-                label="End Date *"
+                label="End Date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
@@ -401,70 +347,68 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
                 inputProps={{ min: formData.startDate || today }}
-                InputProps={{
-                  startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               />
             </Grid>
 
-            {/* File URL */}
+            {/* File Upload */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Contract File URL (Optional)"
-                name="fileUrl"
-                value={formData.fileUrl}
-                onChange={handleChange}
-                error={!!errors.fileUrl}
-                helperText={errors.fileUrl || 'Enter the URL of the contract document'}
-                disabled={loading}
-                placeholder="https://example.com/contracts/contract.pdf"
-                InputProps={{
-                  startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'action.active' }} />
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
+                Contract Document (PDF) - Optional
+              </Typography>
+              <Paper
+                variant="outlined"
+                onClick={handleFileBoxClick}
+                sx={{
+                  p: 4,
+                  borderStyle: 'dashed',
+                  borderColor: formData.fileName ? 'primary.main' : 'grey.400',
+                  bgcolor: formData.fileName ? 'primary.50' : 'grey.50',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.3s',
+                  '&:hover': {
+                    bgcolor: formData.fileName ? 'primary.100' : 'grey.100',
+                    borderColor: 'primary.main',
+                    boxShadow: 3
+                  }
                 }}
+              >
+                <UploadFileIcon sx={{ fontSize: 56, color: formData.fileName ? 'primary.main' : 'grey.500', mb: 1 }} />
+                <Typography variant="h6" fontWeight={600} color={formData.fileName ? 'primary.main' : 'text.primary'}>
+                  {formData.fileName || 'Click to upload contract file'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {formData.fileName ? 'Click to replace • PDF only' : 'PDF only • Max 10MB'}
+                </Typography>
+              </Paper>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
               />
             </Grid>
           </Grid>
-
-          {/* Info Box */}
-          <Box
-            sx={{
-              mt: 3,
-              p: 2,
-              bgcolor: 'info.lighter',
-              borderRadius: 1,
-              border: '1px solid',
-              borderColor: 'info.light'
-            }}
-          >
-            <Typography variant="caption" color="info.dark">
-              <strong>Note:</strong> All fields marked with (*) are required. 
-              Make sure to select a valid employee and set appropriate contract dates.
-            </Typography>
-          </Box>
         </DialogContent>
 
-        {/* Actions */}
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={handleClose}
-            disabled={loading}
-            variant="outlined"
-            startIcon={<CloseIcon />}
-          >
+        <DialogActions sx={{ px: 4, pb: 4, gap: 2 }}>
+          <Button onClick={handleClose} disabled={loading} variant="outlined" size="large" startIcon={<CloseIcon />}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
+            size="large"
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={loading ? <CircularProgress size={24} /> : <SaveIcon />}
             sx={{
+              minWidth: 180,
               background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              boxShadow: '0 3px 5px 2px rgba(33, 150, 243, .3)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #1976D2 30%, #00B0FF 90%)',
-              }
+              boxShadow: '0 4px 15px rgba(33,150,243,0.4)',
+              '&:hover': { boxShadow: '0 8px 25px rgba(33,150,243,0.5)' }
             }}
           >
             {loading ? 'Creating...' : 'Create Contract'}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -45,53 +45,71 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
     contractType: '',
     startDate: '',
     endDate: '',
-    fileUrl: '',
-    status: ''
+    status: '',
+    file: null,           // File object mới chọn
+    fileName: ''          // Tên file để hiển thị (cũ hoặc mới)
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  // Load contract data khi dialog mở
+  const fileInputRef = useRef(null);
+
+  // Load dữ liệu khi mở dialog
   useEffect(() => {
     if (contract && open) {
       setFormData({
         contractType: contract.contractType || '',
         startDate: contract.startDate || '',
         endDate: contract.endDate || '',
-        fileUrl: contract.fileUrl || '',
-        status: contract.status || ''
+        status: contract.status || '',
+        file: null,
+        fileName: contract.fileUrl ? contract.fileUrl.split('/').pop() : ''
       });
       setErrors({});
       setSubmitError('');
     }
   }, [contract, open]);
 
+  // Xử lý chọn file
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        setSubmitError('Only PDF files are allowed');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        setSubmitError('File size must be less than 10MB');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        file,
+        fileName: file.name
+      }));
+      setSubmitError('');
+    }
+  };
+
+  // Click vào box để mở file picker
+  const handleBoxClick = () => {
+    fileInputRef.current?.click();
+  };
+
   // Validate form
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.contractType) {
-      newErrors.contractType = 'Contract type is required';
-    }
-
-    if (!formData.startDate) {
-      newErrors.startDate = 'Start date is required';
-    }
-
-    if (!formData.endDate) {
-      newErrors.endDate = 'End date is required';
-    }
-
+    if (!formData.contractType) newErrors.contractType = 'Contract type is required';
+    if (!formData.startDate) newErrors.startDate = 'Start date is required';
+    if (!formData.endDate) newErrors.endDate = 'End date is required';
     if (formData.startDate && formData.endDate) {
       if (new Date(formData.startDate) > new Date(formData.endDate)) {
         newErrors.endDate = 'End date must be after start date';
       }
     }
-
-    if (!formData.status) {
-      newErrors.status = 'Status is required';
-    }
+    if (!formData.status) newErrors.status = 'Status is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -100,17 +118,9 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
   // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Clear error khi user thay đổi
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
     setSubmitError('');
   };
@@ -120,9 +130,7 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
     e.preventDefault();
     setSubmitError('');
 
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setLoading(true);
 
@@ -130,27 +138,28 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
       const convertToArray = (dateStr) => {
         if (!dateStr) return null;
         const [year, month, day] = dateStr.split('-');
-        return [parseInt(year), parseInt(month), parseInt(day)];
+        return [parseInt(year), parseInt(month - 1), parseInt(day)]; // tháng bắt đầu từ 0
       };
 
       const payload = {
         contractType: formData.contractType,
         startDate: convertToArray(formData.startDate),
         endDate: convertToArray(formData.endDate),
-        fileUrl: formData.fileUrl || null,
-        status: formData.status
+        status: formData.status,
+        file: formData.file || undefined  // chỉ gửi nếu có file mới
       };
 
-      console.log('📤 Sending payload:', payload);
+      console.log('Sending contract update:', payload);
 
-      const result = await onSubmit(payload);
+      const result = await onSubmit(payload, contract.id);
 
-      if (result.success) {
+      if (result?.success) {
         handleClose();
       } else {
-        setSubmitError(result.error || 'Failed to update contract');
+        setSubmitError(result?.error || 'Failed to update contract');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Submit error:', err);
       setSubmitError('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -164,8 +173,9 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
         contractType: '',
         startDate: '',
         endDate: '',
-        fileUrl: '',
-        status: ''
+        status: '',
+        file: null,
+        fileName: ''
       });
       setErrors({});
       setSubmitError('');
@@ -176,158 +186,78 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
   if (!contract) return null;
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 }
-      }}
-    >
-      {/* Header */}
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2
-        }}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <EditIcon fontSize="large" />
-          <Box>
-            <Typography variant="h6" fontWeight={600}>
-              Edit Contract
-            </Typography>
-            <Typography variant="caption" sx={{ opacity: 0.9 }}>
-              Update contract information for {contract.employeeName}
-            </Typography>
-          </Box>
-        </Stack>
-        <IconButton
-          onClick={handleClose}
-          disabled={loading}
-          sx={{
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'rgba(255,255,255,0.1)'
-            }
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      {/* Form */}
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <form onSubmit={handleSubmit}>
-        <DialogContent sx={{ pt: 3 }}>
-          {/* Error Alert */}
-          {submitError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {submitError}
-            </Alert>
-          )}
+        {/* Header */}
+        <DialogTitle sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', py: 3 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={2} alignItems="center">
+              <EditIcon sx={{ fontSize: 36 }} />
+              <Box>
+                <Typography variant="h6" fontWeight={700}>Edit Contract</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {contract.employeeName} • Employee ID: {contract.empId}
+                </Typography>
+              </Box>
+            </Stack>
+            <IconButton onClick={handleClose} disabled={loading} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
 
-          {/* Current Contract Info */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              mb: 3,
-              bgcolor: 'grey.50',
-              border: '1px solid',
-              borderColor: 'grey.200',
-              borderRadius: 2
-            }}
-          >
+        <DialogContent sx={{ pt: 4, pb: 2 }}>
+          {submitError && <Alert severity="error" sx={{ mb: 3 }}>{submitError}</Alert>}
+
+          {/* Current Info */}
+          <Paper elevation={0} sx={{ p: 3, mb: 4, bgcolor: 'grey.50', borderRadius: 2, border: '1px dashed', borderColor: 'grey.300' }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
               Current Contract Information
             </Typography>
-            <Divider sx={{ my: 1 }} />
-
+            <Divider sx={{ my: 1.5 }} />
             <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Typography variant="body2">
-                  <strong>Employee:</strong> {contract.employeeName}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2">
-                  <strong>Employee ID:</strong> {contract.empId}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2">
-                  <strong>Contract ID:</strong> {contract.id}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="body2">
-                  <strong>Created:</strong> {contract.createdAt}
-                </Typography>
-              </Grid>
+              <Grid item xs={6}><Typography variant="body2"><strong>Contract ID:</strong> {contract.id}</Typography></Grid>
+              <Grid item xs={6}><Typography variant="body2"><strong>Created:</strong> {contract.createdAt}</Typography></Grid>
             </Grid>
           </Paper>
 
-          {/* Form Fields */}
-          <Grid container spacing={2}>
+          <Grid container spacing={3}>
+
             {/* Contract Type */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
-                select
+                fullWidth select required
                 label="Contract Type"
                 name="contractType"
                 value={formData.contractType}
                 onChange={handleChange}
                 error={!!errors.contractType}
                 helperText={errors.contractType}
-                required
                 disabled={loading}
-                InputProps={{
-                  startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               >
-                {CONTRACT_TYPES.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
+                {CONTRACT_TYPES.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </TextField>
             </Grid>
 
             {/* Status */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
-                select
+                fullWidth select required
                 label="Status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
                 error={!!errors.status}
                 helperText={errors.status}
-                required
                 disabled={loading}
-                InputProps={{
-                  startAdornment: <CheckCircleIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CheckCircleIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               >
-                {CONTRACT_STATUSES.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
+                {CONTRACT_STATUSES.map(o => (
+                  <MenuItem key={o.value} value={o.value}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          bgcolor: option.color
-                        }}
-                      />
-                      <span>{option.label}</span>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: o.color }} />
+                      <span>{o.label}</span>
                     </Stack>
                   </MenuItem>
                 ))}
@@ -337,7 +267,7 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
             {/* Start Date */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                fullWidth required
                 type="date"
                 label="Start Date"
                 name="startDate"
@@ -345,19 +275,16 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
                 onChange={handleChange}
                 error={!!errors.startDate}
                 helperText={errors.startDate}
-                required
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
-                InputProps={{
-                  startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               />
             </Grid>
 
             {/* End Date */}
             <Grid item xs={12} sm={6}>
               <TextField
-                fullWidth
+                fullWidth required
                 type="date"
                 label="End Date"
                 name="endDate"
@@ -365,58 +292,77 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
                 onChange={handleChange}
                 error={!!errors.endDate}
                 helperText={errors.endDate}
-                required
                 disabled={loading}
                 InputLabelProps={{ shrink: true }}
-                InputProps={{
-                  startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} />
-                }}
+                InputProps={{ startAdornment: <CalendarIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               />
             </Grid>
 
-            {/* File URL */}
+            {/* CHỌN FILE PDF - SIÊU ĐẸP */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="File URL (Optional)"
-                name="fileUrl"
-                value={formData.fileUrl}
-                onChange={handleChange}
-                disabled={loading}
-                placeholder="https://example.com/contract.pdf"
-                InputProps={{
-                  startAdornment: <DescriptionIcon sx={{ mr: 1, color: 'action.active' }} />
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
+                Contract Document (PDF)
+              </Typography>
+              <Paper
+                variant="outlined"
+                onClick={handleBoxClick}
+                sx={{
+                  p: 4,
+                  borderStyle: 'dashed',
+                  borderColor: formData.fileName ? 'primary.main' : 'grey.400',
+                  bgcolor: formData.fileName ? 'primary.50' : 'grey.50',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    bgcolor: formData.fileName ? 'primary.100' : 'grey.100',
+                    borderColor: 'primary.main',
+                    transform: 'translateY(-2px)',
+                    boxShadow: 3
+                  }
                 }}
-                helperText="Enter the URL of the contract document"
+              >
+                <DescriptionIcon sx={{ fontSize: 56, color: formData.fileName ? 'primary.main' : 'grey.500', mb: 2 }} />
+                <Typography variant="h6" fontWeight={600} color={formData.fileName ? 'primary.main' : 'text.primary'}>
+                  {formData.fileName || 'Click to upload new contract file'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  {formData.fileName ? 'Click to replace • PDF only' : 'PDF only • Maximum 10MB'}
+                </Typography>
+              </Paper>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
               />
             </Grid>
+
           </Grid>
         </DialogContent>
 
         {/* Actions */}
-        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-          <Button
-            onClick={handleClose}
-            disabled={loading}
-            variant="outlined"
-            startIcon={<CloseIcon />}
-          >
+        <DialogActions sx={{ px: 4, pb: 4, pt: 2, gap: 2 }}>
+          <Button onClick={handleClose} disabled={loading} variant="outlined" size="large" startIcon={<CloseIcon />}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
+            size="large"
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+            startIcon={loading ? <CircularProgress size={24} color="inherit" /> : <SaveIcon />}
             sx={{
+              minWidth: 180,
+              px: 4,
               background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
-              boxShadow: '0 3px 5px 2px rgba(102, 126, 234, .3)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #5568d3 30%, #6a4291 90%)',
-              }
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+              '&:hover': { boxShadow: '0 6px 20px rgba(102, 126, 234, 0.5)' }
             }}
           >
-            {loading ? 'Updating...' : 'Save Changes'}
+            {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogActions>
       </form>

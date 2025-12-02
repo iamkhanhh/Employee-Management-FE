@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React from "react";
 import {
   Box,
   Typography,
@@ -27,10 +27,12 @@ import {
   InputLabel,
   Tooltip,
   IconButton,
-  Badge,
   TablePagination,
   Divider,
   Avatar,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -40,236 +42,178 @@ import {
   FilterList as FilterListIcon,
   Visibility as VisibilityIcon,
   EventNote as EventNoteIcon,
-  Person as PersonIcon,
   CalendarMonth as CalendarIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import { mockLeaveRequests, mockEmployees } from "../../data/mockData";
+import { useLeaveRequestsAdmin } from "../../hooks/useLeaveRequestsAdmin";
+
+// ==================== SUB COMPONENTS ====================
+
+const StatusIcon = ({ status }) => {
+  switch (status?.toUpperCase()) {
+    case "APPROVED":
+      return <CheckCircleIcon fontSize="small" />;
+    case "REJECTED":
+      return <CancelIcon fontSize="small" />;
+    default:
+      return <PendingIcon fontSize="small" />;
+  }
+};
+
+const StatCard = ({ title, value, color, icon: Icon }) => (
+  <Card elevation={2} sx={{ borderLeft: `4px solid ${color}` }}>
+    <CardContent>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {title}
+          </Typography>
+          <Typography variant="h4" fontWeight={700} sx={{ color }}>
+            {value}
+          </Typography>
+        </Box>
+        <Icon sx={{ fontSize: 48, color, opacity: 0.3 }} />
+      </Stack>
+    </CardContent>
+  </Card>
+);
+
+// ==================== MAIN COMPONENT ====================
 
 const LeaveRequestsAdmin = () => {
-  const [requests, setRequests] = useState(mockLeaveRequests);
-  const [selectedRequest, setSelectedRequest] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  
-  // Filters
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [leaveTypeFilter, setLeaveTypeFilter] = useState("All");
-  
-  // Pagination
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Lấy departmentId từ user context hoặc hardcode tạm
+  const departmentId = 1; // TODO: Lấy từ auth context
 
-  const currentAdminId = 2;
+  const {
+    // Data
+    paginatedRequests,
+    filteredRequests,
+    selectedRequest,
+    stats,
+    leaveTypes,
 
-  const getEmployeeName = (emp_id) => {
-    const emp = mockEmployees.find((e) => e.id === emp_id);
-    return emp ? emp.full_name : "Unknown";
-  };
+    // Loading & Error states
+    loading,
+    error,
+    approving,
+    rejecting,
 
-  const getEmployeeAvatar = (emp_id) => {
-    const emp = mockEmployees.find((e) => e.id === emp_id);
-    return emp ? emp.full_name.charAt(0).toUpperCase() : "?";
-  };
+    // Dialog states
+    openRejectDialog,
+    openDetailDialog,
+    rejectReason,
+    setRejectReason,
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved":
-        return "success";
-      case "Rejected":
-        return "error";
-      default:
-        return "warning";
-    }
-  };
+    // Filter states
+    searchTerm,
+    statusFilter,
+    leaveTypeFilter,
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Approved":
-        return <CheckCircleIcon fontSize="small" />;
-      case "Rejected":
-        return <CancelIcon fontSize="small" />;
-      default:
-        return <PendingIcon fontSize="small" />;
-    }
-  };
+    // Pagination states
+    page,
+    rowsPerPage,
 
-  // Statistics
-  const stats = useMemo(() => {
-    const total = requests.length;
-    const pending = requests.filter((r) => r.status === "Pending").length;
-    const approved = requests.filter((r) => r.status === "Approved").length;
-    const rejected = requests.filter((r) => r.status === "Rejected").length;
-    return { total, pending, approved, rejected };
-  }, [requests]);
+    // Snackbar
+    snackbar,
 
-  // Filtered and searched requests
-  const filteredRequests = useMemo(() => {
-    return requests.filter((req) => {
-      const matchesSearch = getEmployeeName(req.emp_id)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-        req.reason.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === "All" || req.status === statusFilter;
-      const matchesLeaveType = leaveTypeFilter === "All" || req.leave_type === leaveTypeFilter;
-      
-      return matchesSearch && matchesStatus && matchesLeaveType;
-    });
-  }, [requests, searchTerm, statusFilter, leaveTypeFilter]);
+    // Helper functions
+    getEmployeeName,
+    getEmployeeAvatar,
+    formatLeaveType,
+    formatStatus,
+    formatDate,
+    calculateDuration,
+    getStatusColor,
 
-  // Paginated requests
-  const paginatedRequests = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredRequests.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredRequests, page, rowsPerPage]);
+    // Handlers
+    fetchData,
+    handleApprove,
+    handleRejectClick,
+    handleRejectConfirm,
+    handleRejectDialogClose,
+    handleViewDetails,
+    handleDetailDialogClose,
+    handleChangePage,
+    handleChangeRowsPerPage,
+    handleCloseSnackbar,
+    handleSearchChange,
+    handleStatusFilterChange,
+    handleLeaveTypeFilterChange,
+  } = useLeaveRequestsAdmin(departmentId);
 
-  const handleApprove = (reqId) => {
-    const updated = requests.map((r) =>
-      r.id === reqId
-        ? {
-            ...r,
-            status: "Approved",
-            approved_by: currentAdminId,
-            approved_date: new Date().toISOString().split("T")[0],
-            updated_at: new Date().toISOString(),
-          }
-        : r
+  // ==================== LOADING STATE ====================
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Stack alignItems="center" spacing={2}>
+          <CircularProgress size={60} />
+          <Typography color="text.secondary">Loading leave requests...</Typography>
+        </Stack>
+      </Box>
     );
-    setRequests(updated);
-  };
+  }
 
-  const handleRejectClick = (req) => {
-    setSelectedRequest(req);
-    setRejectReason("");
-    setOpenDialog(true);
-  };
-
-  const handleRejectConfirm = () => {
-    const updated = requests.map((r) =>
-      r.id === selectedRequest.id
-        ? {
-            ...r,
-            status: "Rejected",
-            reason: `${r.reason} (Rejected: ${rejectReason})`,
-            approved_by: currentAdminId,
-            approved_date: new Date().toISOString().split("T")[0],
-            updated_at: new Date().toISOString(),
+  // ==================== ERROR STATE ====================
+  if (error) {
+    return (
+      <Box p={3}>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" onClick={fetchData}>
+              Retry
+            </Button>
           }
-        : r
+        >
+          {error}
+        </Alert>
+      </Box>
     );
-    setRequests(updated);
-    setOpenDialog(false);
-    setSelectedRequest(null);
-  };
+  }
 
-  const handleViewDetails = (req) => {
-    setSelectedRequest(req);
-    setOpenDetailDialog(true);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const calculateDuration = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
-  };
-
+  // ==================== MAIN RENDER ====================
   return (
     <Box>
       {/* Header */}
-      <Box mb={3}>
-        <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
-          Leave Requests Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Manage and review employee leave requests
-        </Typography>
+      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+            Leave Requests Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manage and review employee leave requests
+          </Typography>
+        </Box>
+        <Tooltip title="Refresh">
+          <IconButton onClick={fetchData} color="primary" size="large">
+            <RefreshIcon />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Statistics Cards */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #1976d2" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Total Requests
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700}>
-                    {stats.total}
-                  </Typography>
-                </Box>
-                <EventNoteIcon sx={{ fontSize: 48, color: "#1976d2", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Total Requests"
+            value={stats.total}
+            color="#1976d2"
+            icon={EventNoteIcon}
+          />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #ed6c02" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Pending
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="warning.main">
-                    {stats.pending}
-                  </Typography>
-                </Box>
-                <PendingIcon sx={{ fontSize: 48, color: "#ed6c02", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <StatCard title="Pending" value={stats.pending} color="#ed6c02" icon={PendingIcon} />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #2e7d32" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Approved
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="success.main">
-                    {stats.approved}
-                  </Typography>
-                </Box>
-                <CheckCircleIcon sx={{ fontSize: 48, color: "#2e7d32", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Approved"
+            value={stats.approved}
+            color="#2e7d32"
+            icon={CheckCircleIcon}
+          />
         </Grid>
-
         <Grid item xs={12} sm={6} md={3}>
-          <Card elevation={2} sx={{ borderLeft: "4px solid #d32f2f" }}>
-            <CardContent>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Rejected
-                  </Typography>
-                  <Typography variant="h4" fontWeight={700} color="error.main">
-                    {stats.rejected}
-                  </Typography>
-                </Box>
-                <CancelIcon sx={{ fontSize: 48, color: "#d32f2f", opacity: 0.3 }} />
-              </Stack>
-            </CardContent>
-          </Card>
+          <StatCard title="Rejected" value={stats.rejected} color="#d32f2f" icon={CancelIcon} />
         </Grid>
       </Grid>
 
@@ -289,7 +233,7 @@ const LeaveRequestsAdmin = () => {
                 size="small"
                 placeholder="Search by employee or reason..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -305,12 +249,12 @@ const LeaveRequestsAdmin = () => {
                 <Select
                   value={statusFilter}
                   label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => handleStatusFilterChange(e.target.value)}
                 >
                   <MenuItem value="All">All Status</MenuItem>
-                  <MenuItem value="Pending">Pending</MenuItem>
-                  <MenuItem value="Approved">Approved</MenuItem>
-                  <MenuItem value="Rejected">Rejected</MenuItem>
+                  <MenuItem value="PENDING">Pending</MenuItem>
+                  <MenuItem value="APPROVED">Approved</MenuItem>
+                  <MenuItem value="REJECTED">Rejected</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -320,13 +264,14 @@ const LeaveRequestsAdmin = () => {
                 <Select
                   value={leaveTypeFilter}
                   label="Leave Type"
-                  onChange={(e) => setLeaveTypeFilter(e.target.value)}
+                  onChange={(e) => handleLeaveTypeFilterChange(e.target.value)}
                 >
                   <MenuItem value="All">All Types</MenuItem>
-                  <MenuItem value="Annual Leave">Annual Leave</MenuItem>
-                  <MenuItem value="Sick Leave">Sick Leave</MenuItem>
-                  <MenuItem value="Personal Leave">Personal Leave</MenuItem>
-                  <MenuItem value="Maternity Leave">Maternity Leave</MenuItem>
+                  {leaveTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {formatLeaveType(type)}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -347,42 +292,44 @@ const LeaveRequestsAdmin = () => {
                 <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Duration</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="center">Actions</TableCell>
+                <TableCell sx={{ fontWeight: 700 }} align="center">
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {paginatedRequests.length > 0 ? (
                 paginatedRequests.map((req, index) => (
-                  <TableRow 
-                    key={req.id} 
+                  <TableRow
+                    key={req.id}
                     hover
-                    sx={{ 
-                      '&:hover': { backgroundColor: '#f9f9f9' },
-                      transition: 'background-color 0.2s'
+                    sx={{
+                      "&:hover": { backgroundColor: "#f9f9f9" },
+                      transition: "background-color 0.2s",
                     }}
                   >
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar 
-                          sx={{ 
-                            width: 36, 
-                            height: 36, 
-                            bgcolor: 'primary.main',
-                            fontSize: '0.9rem'
+                        <Avatar
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: "primary.main",
+                            fontSize: "0.9rem",
                           }}
                         >
-                          {getEmployeeAvatar(req.emp_id)}
+                          {getEmployeeAvatar(req)}
                         </Avatar>
                         <Typography variant="body2" fontWeight={500}>
-                          {getEmployeeName(req.emp_id)}
+                          {getEmployeeName(req)}
                         </Typography>
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={req.leave_type} 
-                        size="small" 
+                      <Chip
+                        label={formatLeaveType(req.leaveType)}
+                        size="small"
                         variant="outlined"
                         color="primary"
                       />
@@ -390,26 +337,26 @@ const LeaveRequestsAdmin = () => {
                     <TableCell>
                       <Stack direction="row" spacing={0.5} alignItems="center">
                         <CalendarIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{req.start_date}</Typography>
+                        <Typography variant="body2">{formatDate(req.startDate)}</Typography>
                       </Stack>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.5} alignItems="center">
                         <CalendarIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{req.end_date}</Typography>
+                        <Typography variant="body2">{formatDate(req.endDate)}</Typography>
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={`${calculateDuration(req.start_date, req.end_date)} days`}
+                      <Chip
+                        label={`${calculateDuration(req.startDate, req.endDate)} days`}
                         size="small"
                         sx={{ fontWeight: 600 }}
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        icon={getStatusIcon(req.status)}
-                        label={req.status}
+                        icon={<StatusIcon status={req.status} />}
+                        label={formatStatus(req.status)}
                         color={getStatusColor(req.status)}
                         size="small"
                         sx={{ fontWeight: 600 }}
@@ -426,15 +373,20 @@ const LeaveRequestsAdmin = () => {
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {req.status === "Pending" && (
+                        {req.status?.toUpperCase() === "PENDING" && (
                           <>
                             <Tooltip title="Approve">
                               <IconButton
                                 size="small"
                                 color="success"
                                 onClick={() => handleApprove(req.id)}
+                                disabled={approving}
                               >
-                                <CheckCircleIcon fontSize="small" />
+                                {approving ? (
+                                  <CircularProgress size={18} />
+                                ) : (
+                                  <CheckCircleIcon fontSize="small" />
+                                )}
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Reject">
@@ -442,6 +394,7 @@ const LeaveRequestsAdmin = () => {
                                 size="small"
                                 color="error"
                                 onClick={() => handleRejectClick(req)}
+                                disabled={rejecting}
                               >
                                 <CancelIcon fontSize="small" />
                               </IconButton>
@@ -476,16 +429,14 @@ const LeaveRequestsAdmin = () => {
       </Card>
 
       {/* Reject Dialog */}
-      <Dialog 
-        open={openDialog} 
-        onClose={() => setOpenDialog(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={openRejectDialog}
+        onClose={handleRejectDialogClose}
+        maxWidth="sm"
         fullWidth
-        PaperProps={{
-          elevation: 5,
-        }}
+        PaperProps={{ elevation: 5 }}
       >
-        <DialogTitle sx={{ backgroundColor: '#f5f5f5', fontWeight: 700 }}>
+        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <CancelIcon color="error" />
             <Typography variant="h6" fontWeight={700}>
@@ -495,6 +446,22 @@ const LeaveRequestsAdmin = () => {
         </DialogTitle>
         <Divider />
         <DialogContent sx={{ mt: 2 }}>
+          {selectedRequest && (
+            <Box mb={2}>
+              <Typography variant="body2" color="text.secondary">
+                Employee: <strong>{getEmployeeName(selectedRequest)}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Leave Type: <strong>{formatLeaveType(selectedRequest.leaveType)}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Period:{" "}
+                <strong>
+                  {formatDate(selectedRequest.startDate)} - {formatDate(selectedRequest.endDate)}
+                </strong>
+              </Typography>
+            </Box>
+          )}
           <Typography variant="body2" color="text.secondary" mb={2}>
             Please provide a reason for rejecting this leave request:
           </Typography>
@@ -507,38 +474,34 @@ const LeaveRequestsAdmin = () => {
             placeholder="Enter detailed reason for rejection..."
             variant="outlined"
             autoFocus
+            disabled={rejecting}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={() => setOpenDialog(false)}
-            variant="outlined"
-          >
+          <Button onClick={handleRejectDialogClose} variant="outlined" disabled={rejecting}>
             Cancel
           </Button>
           <Button
             variant="contained"
             color="error"
             onClick={handleRejectConfirm}
-            disabled={!rejectReason.trim()}
-            startIcon={<CancelIcon />}
+            disabled={!rejectReason.trim() || rejecting}
+            startIcon={rejecting ? <CircularProgress size={18} color="inherit" /> : <CancelIcon />}
           >
-            Confirm Reject
+            {rejecting ? "Rejecting..." : "Confirm Reject"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Detail Dialog */}
-      <Dialog 
-        open={openDetailDialog} 
-        onClose={() => setOpenDetailDialog(false)} 
-        maxWidth="md" 
+      <Dialog
+        open={openDetailDialog}
+        onClose={handleDetailDialogClose}
+        maxWidth="md"
         fullWidth
-        PaperProps={{
-          elevation: 5,
-        }}
+        PaperProps={{ elevation: 5 }}
       >
-        <DialogTitle sx={{ backgroundColor: '#f5f5f5', fontWeight: 700 }}>
+        <DialogTitle sx={{ backgroundColor: "#f5f5f5", fontWeight: 700 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <VisibilityIcon color="primary" />
             <Typography variant="h6" fontWeight={700}>
@@ -555,11 +518,11 @@ const LeaveRequestsAdmin = () => {
                   Employee
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                    {getEmployeeAvatar(selectedRequest.emp_id)}
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
+                    {getEmployeeAvatar(selectedRequest)}
                   </Avatar>
                   <Typography variant="body1" fontWeight={600}>
-                    {getEmployeeName(selectedRequest.emp_id)}
+                    {getEmployeeName(selectedRequest)}
                   </Typography>
                 </Stack>
               </Grid>
@@ -569,7 +532,7 @@ const LeaveRequestsAdmin = () => {
                   Leave Type
                 </Typography>
                 <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.leave_type}
+                  {formatLeaveType(selectedRequest.leaveType)}
                 </Typography>
               </Grid>
 
@@ -578,7 +541,7 @@ const LeaveRequestsAdmin = () => {
                   Start Date
                 </Typography>
                 <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.start_date}
+                  {formatDate(selectedRequest.startDate)}
                 </Typography>
               </Grid>
 
@@ -587,7 +550,7 @@ const LeaveRequestsAdmin = () => {
                   End Date
                 </Typography>
                 <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {selectedRequest.end_date}
+                  {formatDate(selectedRequest.endDate)}
                 </Typography>
               </Grid>
 
@@ -596,7 +559,7 @@ const LeaveRequestsAdmin = () => {
                   Duration
                 </Typography>
                 <Typography variant="body1" fontWeight={600} mt={0.5}>
-                  {calculateDuration(selectedRequest.start_date, selectedRequest.end_date)} days
+                  {calculateDuration(selectedRequest.startDate, selectedRequest.endDate)} days
                 </Typography>
               </Grid>
 
@@ -606,8 +569,8 @@ const LeaveRequestsAdmin = () => {
                 </Typography>
                 <Box mt={0.5}>
                   <Chip
-                    icon={getStatusIcon(selectedRequest.status)}
-                    label={selectedRequest.status}
+                    icon={<StatusIcon status={selectedRequest.status} />}
+                    label={formatStatus(selectedRequest.status)}
                     color={getStatusColor(selectedRequest.status)}
                     sx={{ fontWeight: 600 }}
                   />
@@ -618,35 +581,64 @@ const LeaveRequestsAdmin = () => {
                 <Typography variant="caption" color="text.secondary">
                   Reason
                 </Typography>
-                <Paper sx={{ p: 2, mt: 0.5, backgroundColor: '#f9f9f9' }}>
+                <Paper sx={{ p: 2, mt: 0.5, backgroundColor: "#f9f9f9" }}>
                   <Typography variant="body2">
-                    {selectedRequest.reason}
+                    {selectedRequest.reason || "No reason provided"}
                   </Typography>
                 </Paper>
               </Grid>
 
-              {selectedRequest.approved_date && (
+              {selectedRequest.rejectReason && (
                 <Grid item xs={12}>
-                  <Typography variant="caption" color="text.secondary">
-                    Processed Date
+                  <Typography variant="caption" color="error">
+                    Reject Reason
                   </Typography>
-                  <Typography variant="body2" mt={0.5}>
-                    {selectedRequest.approved_date}
-                  </Typography>
+                  <Paper
+                    sx={{
+                      p: 2,
+                      mt: 0.5,
+                      backgroundColor: "#fff5f5",
+                      border: "1px solid #ffcdd2",
+                    }}
+                  >
+                    <Typography variant="body2" color="error">
+                      {selectedRequest.rejectReason}
+                    </Typography>
+                  </Paper>
                 </Grid>
               )}
+
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary">
+                  Created At
+                </Typography>
+                <Typography variant="body2" mt={0.5}>
+                  {selectedRequest.createdAt
+                    ? new Date(selectedRequest.createdAt).toLocaleString()
+                    : "-"}
+                </Typography>
+              </Grid>
             </Grid>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button 
-            onClick={() => setOpenDetailDialog(false)}
-            variant="contained"
-          >
+          <Button onClick={handleDetailDialogClose} variant="contained">
             Close
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
