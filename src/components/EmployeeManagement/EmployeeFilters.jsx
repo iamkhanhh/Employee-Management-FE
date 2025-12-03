@@ -1,83 +1,50 @@
-import React from 'react';
-import { TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import React from "react";
+import { Paper, TextField, FormControl, InputLabel, Select, MenuItem, Button, Box } from "@mui/material";
 
-export default function EmployeeFilters({
-  query,
-  setQuery,
-  department,
-  setDepartment,
-  departments,
-  position,
-  setPosition,
-  jobLevel,
-  setJobLevel,
-  nationality,
-  setNationality,
-  workStatus,
-  setWorkStatus,
-  onCreate,
-  onSearch,
-}) {
+export default function EmployeeFilters({ filters, setFilters, departments, onCreate, onSearch }) {
   return (
-    <>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+    <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+      <Box className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <TextField
           label="Employee"
           placeholder="Search employees"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={filters.query}
+          onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
           size="small"
         />
         <FormControl size="small">
-          <InputLabel>Position</InputLabel>
-          <Select label="Position" value={position} onChange={(e) => setPosition(e.target.value)}>
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="staff">Staff</MenuItem>
-            <MenuItem value="manager">Manager</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small">
-          <InputLabel>Work location</InputLabel>
-          <Select label="Work location" value={jobLevel} onChange={(e) => setJobLevel(e.target.value)}>
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="office">Office</MenuItem>
-            <MenuItem value="remote">Remote</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small">
           <InputLabel>Department</InputLabel>
-          <Select label="Department" value={department} onChange={(e) => setDepartment(e.target.value)}>
+          <Select
+            value={filters.department}
+            onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+          >
             <MenuItem value="all">All</MenuItem>
             {departments.map((dept) => (
-              <MenuItem key={dept.id} value={dept.name}>
-                {dept.name}
-              </MenuItem>
+              <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
         <FormControl size="small">
-          <InputLabel>Nationality</InputLabel>
-          <Select label="Nationality" value={nationality} onChange={(e) => setNationality(e.target.value)}>
+          <InputLabel>Work Status</InputLabel>
+          <Select
+            value={filters.workStatus}
+            onChange={(e) => setFilters(prev => ({ ...prev, workStatus: e.target.value }))}
+          >
             <MenuItem value="all">All</MenuItem>
-            <MenuItem value="vn">Viet Nam</MenuItem>
-            <MenuItem value="other">Other</MenuItem>
+            <MenuItem value="ACTIVE">Active</MenuItem>
+            <MenuItem value="INACTIVE">Inactive</MenuItem>
+            <MenuItem value="INTERN">Intern</MenuItem>
+            <MenuItem value="ON_LEAVE">On Leave</MenuItem>
+            <MenuItem value="TERMINATED">Terminated</MenuItem>
           </Select>
         </FormControl>
-        <FormControl size="small" className="md:col-span-2">
-          <InputLabel>Work status</InputLabel>
-          <Select label="Work status" value={workStatus} onChange={(e) => setWorkStatus(e.target.value)}>
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="working">Working</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-      </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 pb-6">
-        <Button variant="outlined" className="normal-case" onClick={onSearch}>Search</Button>
-        <Button variant="contained" className="normal-case" onClick={onCreate}>+ Add employee</Button>
-        <Button variant="outlined" className="normal-case">📄 Excel report</Button>
-      </div>
-    </>
+        {/* Bạn có thể thêm khoảng trống hoặc các filter khác ở đây */}
+      </Box>
+
+      <Box className="flex flex-wrap items-center gap-3 mt-4">
+      <Button variant="contained" onClick={onCreate}>+ Add employee</Button>
+      </Box>
+    </Paper>
   );
 }

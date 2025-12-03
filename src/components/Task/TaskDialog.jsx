@@ -1,6 +1,5 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, Checkbox, ListItemText } from '@mui/material';
-import moment from 'moment';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel } from '@mui/material';
 
 export default function TaskDialog({ open, onClose, currentTask, onChange, onSave, onDelete, editMode, employees }) {
   return (
@@ -8,6 +7,7 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {editMode ? 'Edit Task' : 'Add New Task'}
       </DialogTitle>
+
       <DialogContent dividers>
         <TextField
           label="Task Title"
@@ -17,26 +17,7 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
           value={currentTask.title}
           onChange={onChange}
         />
-        <TextField
-          label="Start Date"
-          name="start"
-          type="datetime-local"
-          fullWidth
-          margin="normal"
-          InputLabelProps={{ shrink: true }}
-          value={currentTask.start}
-          onChange={onChange}
-        />
-        <TextField
-          label="End Date"
-          name="end"
-          type="datetime-local"
-          fullWidth
-          margin="normal"
-          InputLabelProps={{ shrink: true }}
-          value={currentTask.end}
-          onChange={onChange}
-        />
+
         <TextField
           label="Description"
           name="description"
@@ -47,11 +28,21 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
           value={currentTask.description}
           onChange={onChange}
         />
+        <TextField
+          label="Due Date"
+          type="date"
+          name="dueDate"
+          fullWidth
+          margin="normal"
+          InputLabelProps={{ shrink: true }}
+          value={currentTask.dueDate || ""}
+          onChange={onChange}
+        />
 
         <Select
           multiple
-          name="assignees"
-          value={currentTask.assignees}
+          name="assignments"
+          value={currentTask.assignments}
           onChange={onChange}
           renderValue={(selected) => (Array.isArray(selected) ? selected.join(', ') : '')}
           fullWidth
@@ -59,11 +50,26 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
         >
           {employees.map((emp) => (
             <MenuItem key={emp} value={emp}>
-              <Checkbox checked={currentTask.assignees.indexOf(emp) > -1} />
+              <Checkbox checked={currentTask.assignments.indexOf(emp) > -1} />
               <ListItemText primary={emp} />
             </MenuItem>
           ))}
         </Select>
+
+        {editMode && (
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Status</InputLabel>
+            <Select
+              name="status"
+              value={currentTask.status || 'Undone'}
+              onChange={onChange}
+              label="Status"
+            >
+              <MenuItem value="Undone">Undone</MenuItem>
+              <MenuItem value="Done">Done</MenuItem>
+            </Select>
+          </FormControl>
+        )}
       </DialogContent>
 
       <DialogActions>
@@ -73,7 +79,10 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
             Delete
           </Button>
         )}
-        <Button variant="contained" onClick={onSave}>
+        <Button
+          variant="contained"
+          onClick={onSave}
+        >
           {editMode ? 'Update' : 'Save'}
         </Button>
       </DialogActions>

@@ -54,5 +54,13 @@ export const payrollService = {
   deletePayroll: async (id) => {
     return axiosInstance.delete(`/payrolls/${id}`);
   },
+
+  calculatePayroll: async (payrollData) => {
+    return axiosInstance.post('/payrolls/calculate', payrollData);
+  },
+
+  updatePayrollBonusPenalty: async (id, data) => {
+    return axiosInstance.put(`/payrolls/${id}/bonus-penalty`, data);
+  },
 };
 

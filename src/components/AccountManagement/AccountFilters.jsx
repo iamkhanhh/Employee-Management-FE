@@ -1,50 +1,70 @@
 import React from 'react';
-import { TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { Paper, Box, TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 
-export default function AccountFilters({
-  query,
-  setQuery,
-  filterRole,
-  setFilterRole,
-  filterStatus,
-  setFilterStatus,
-  onCreate,
-}) {
+export default function AccountFilters({ filters, setFilters, departments, onSearch, onCreate }) {
   return (
-    <div>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+    <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+      <Box className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        {/* Search */}
         <TextField
           label="Search"
-          placeholder="Search by name, email, username"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name, username, email"
+          value={filters.search}
+          onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
           size="small"
-          className="md:col-span-3"
+          className="md:col-span-2"
         />
+
+        {/* Department */}
         <FormControl size="small">
-          <InputLabel>Role</InputLabel>
-          <Select label="Role" value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
-            <MenuItem value="all">All Roles</MenuItem>
-            <MenuItem value="Admin">Admin</MenuItem>
-            <MenuItem value="User">User</MenuItem>
+          <InputLabel>Department</InputLabel>
+          <Select
+            label="Department"
+            value={filters.deptId}
+            onChange={(e) => setFilters(prev => ({ ...prev, deptId: e.target.value }))}
+          >
+            <MenuItem value="all">All Departments</MenuItem>
+            {departments.map((dept) => (
+              <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
+            ))}
           </Select>
         </FormControl>
+
+        {/* Status */}
         <FormControl size="small">
           <InputLabel>Status</InputLabel>
-          <Select label="Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          
+          <Select
+            value={filters.status}
+            label="Status"
+            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+          >
             <MenuItem value="all">All Statuses</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="locked">Locked</MenuItem>
+            <MenuItem value="ACTIVE">Active</MenuItem>
+            <MenuItem value="DELETED">Deleted</MenuItem>
+            <MenuItem value="DISABLED">Disabled</MenuItem>
+            <MenuItem value="PENDING">Pending</MenuItem>
           </Select>
         </FormControl>
-      </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 pb-6">
-        <Button variant="contained" className="normal-case" onClick={onCreate} startIcon={<AddIcon />}>
+        {/* Date of Birth */}
+        <TextField
+          label="Date of Birth"
+          type="date"
+          value={filters.dob}
+          onChange={(e) => setFilters(prev => ({ ...prev, dob: e.target.value }))}
+          size="small"
+          InputLabelProps={{ shrink: true }}
+        />
+      </Box>
+
+      {/* Buttons */}
+      <Box className="flex flex-wrap items-center gap-3 mt-4">
+        <Button variant="contained" startIcon={<AddIcon />} onClick={onCreate}>
           Create Account
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Paper>
   );
 }

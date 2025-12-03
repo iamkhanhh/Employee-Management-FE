@@ -172,15 +172,6 @@ export default function Login() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Remember me */}
-                    <div className="pt-1">
-                      <FormControlLabel
-                        control={<Checkbox color="primary" />}
-                        label={<span className="text-sm text-gray-700">Remember me</span>}
-                      />
-                    </div>
-
                     {/* Submit */}
                     <Button
                       type="submit"
@@ -190,13 +181,6 @@ export default function Login() {
                     >
                       Sign in
                     </Button>
-
-                    <p className="mt-2 text-center text-sm text-gray-600">
-                      Don't have an account?{" "}
-                      <a href="#" className="font-medium text-gray-900 hover:underline">
-                        Sign up
-                      </a>
-                    </p>
                   </form>
                 </div>
               </div>

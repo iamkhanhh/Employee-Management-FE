@@ -12,13 +12,16 @@ const columns = (handleEdit, handleDelete) => [
     headerName: 'Assignees',
     width: 200,
     renderCell: (params) => (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
         {params.value?.map((assignee, index) => (
-          <Chip key={index} label={assignee} size="small" />
+          <span key={index} style={{ padding: "2px 4px" }}>
+            {assignee}
+          </span>
         ))}
       </div>
     ),
   },
+
   { field: 'start', headerName: 'Start Date', width: 160 },
   { field: 'end', headerName: 'End Date', width: 160 },
   {
@@ -31,15 +34,15 @@ const columns = (handleEdit, handleDelete) => [
         size="small"
         sx={{
           backgroundColor:
-            params.value === 'completed'
+            params.value === 'COMPLETED'
               ? '#d1fae5'
-              : params.value === 'in-progress'
+              : params.value === 'IN_PROGRESS'
               ? '#dbeafe'
               : '#fee2e2',
           color:
-            params.value === 'completed'
+            params.value === 'COMPLETED'
               ? '#065f46'
-              : params.value === 'in-progress'
+              : params.value === 'IN_PROGRESS'
               ? '#1e40af'
               : '#991b1b',
           fontWeight: 500,

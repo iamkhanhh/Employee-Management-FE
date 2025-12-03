@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Paper, CircularProgress, Box, Alert } from "@mui/material";
+import { Typography } from "@mui/material";
 import AccountFilters from '../../components/AccountManagement/AccountFilters';
 import AccountTable from '../../components/AccountManagement/AccountTable';
 import { CreateEditDialog, DeleteDialog, ResetPasswordDialog } from '../../components/AccountManagement/AccountDialogs';
 import { accountService } from '../../services/accountService';
+import { useDepartments } from "../../hooks/useDepartments";
+
 import toast from 'react-hot-toast';
 
-export default function AccountManager() {
+export default function AccountManagement() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,27 +20,44 @@ export default function AccountManager() {
   const [editingAccount, setEditingAccount] = useState(null);
   const [deleteAccount, setDeleteAccount] = useState(null);
   const [resetAccount, setResetAccount] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const { fetchDepartments, departments: deptList } = useDepartments();
+  
+  
 
   // Filter state
-  const [query, setQuery] = useState("");
-  const [filterRole, setFilterRole] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterCreatedAt, setFilterCreatedAt] = useState("all");
+  const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });
+
+  const [filters, setFilters] = useState({
+    search: '',
+    deptId: 'all',
+    status: 'all',
+    dob: '',
+  });
 
   // Form state
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    role: 'User',
+    role: '',
     password: '',
     confirmPassword: '', 
-    status: 'pending',
+    status: '',
   });
 
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const response = await accountService.getAccounts();
+      const params = {
+        page: pagination.page, 
+        limit: pagination.pageSize,
+        search: filters.search || undefined,
+        deptId: filters.deptId !== 'all' ? filters.deptId : undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        dob: filters.dob || undefined,
+      };
+      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+      const response = await accountService.getAccounts(params);
       // Lấy mảng content từ response.data
       const users = Array.isArray(response.data.data.content) ? response.data.data.content : [];
       setAccounts(users);
@@ -50,19 +70,30 @@ export default function AccountManager() {
       setLoading(false);
     }
   };
+  const loadDepartments = async () => {
+      const data = await fetchDepartments();
+      if (Array.isArray(data)) {
+        const formatted = data.map(d => ({ id: d.id, name: d.deptName }));
+        setDepartments(formatted);
+      }
+    };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchAccounts(filters);
+  }, [filters]);
+
+  useEffect(() => {
+    loadDepartments();
   }, []);
 
   const resetForm = () => {
     setFormData({
       username: '',
       email: '',
-      role: 'User',
+      role: '',
       password: '',
       confirmPassword: '', 
-      status: 'pending',
+      status: '',
     });
     setEditingAccount(null);
   };
@@ -185,40 +216,26 @@ export default function AccountManager() {
   };
 
 
-  // Filtered rows for DataGrid
-  const rows = accounts
-    .filter((acc) => {
-      const queryLower = query.toLowerCase();
-      const matchesQuery =
-        (acc.email && acc.email.toLowerCase().includes(queryLower)) ||
-        (acc.userName && acc.username.toLowerCase().includes(queryLower) ||
-        (acc.createdAt && acc.createdAt.toLowerCase().includes(queryLower))
-      );
-      
-      const matchesRole = filterRole === 'all' || acc.role === filterRole;
-      const matchesStatus = filterStatus === 'all' || acc.status === filterStatus;
 
-      return matchesQuery && matchesRole && matchesStatus;
-    });
 
   return (
     <div className="min-h-screen flex bg-linear-to-br from-white via-gray-50 to-white">
       <div className="flex-1 flex items-start justify-center">
         <div className="mx-auto w-full max-w-6xl my-6">
           <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb' }}>
-            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Account Management</h1>
-            <p className="mt-2 text-sm text-gray-600">Manage user accounts, roles, and permissions.</p>
-
+            <Box mb={3}>
+              <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+                Employye List
+              </Typography>
+            </Box>
             {/* Filters + Actions */}
             <AccountFilters
-              query={query}
-              setQuery={setQuery}
-              filterRole={filterRole}
-              setFilterRole={setFilterRole}
-              filterStatus={filterStatus}
-              setFilterStatus={setFilterStatus}
+              filters={filters}
+              setFilters={setFilters}
+              departments={departments || []}
               onCreate={handleOpenCreate}
-            />
+              onSearch={() => {}}
+            />  
 
             {/* Table */}
             {loading ? (
@@ -228,7 +245,7 @@ export default function AccountManager() {
             ) : error ? (
               <Alert severity="error" sx={{ my: 4 }}>{error}</Alert>
             ) : (
-              <AccountTable rows={rows} onEdit={handleEdit} onDelete={handleDelete} onToggleLock={handleToggleLock} onResetPassword={handleResetPassword} />
+              <AccountTable rows={accounts} onEdit={handleEdit} onDelete={handleDelete} onToggleLock={handleToggleLock} onResetPassword={handleResetPassword} />
             )}
           </Paper>
         </div>

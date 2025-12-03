@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 // Map role → trang mặc định
 const DEFAULT_REDIRECT_BY_ROLE = {
   ADMIN: '/admin',
+  HR: '/admin',
   USER: '/profile',
 };
 

@@ -5,8 +5,11 @@ import { Box, Typography } from "@mui/material";
 import PayrollFilters from '../../components/PayrollManagement/PayrollFilters';
 import PayrollTable from '../../components/PayrollManagement/PayrollTable';
 import { AddPayrollDialog, DeletePayrollDialog } from '../../components/PayrollManagement/PayrollDialogs';
+import CalculatePayrollDialog from '../../components/PayrollManagement/CalculatePayrollDialog';
+import EditPayrollDialog from '../../components/PayrollManagement/EditPayrollDialog';
 import { payrollService } from "../../services/payrollService";
 import { employeeService } from "../../services/employeeService";
+import { useDepartments } from "../../hooks/useDepartments";
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -30,16 +33,37 @@ export default function PayrollList() {
   const [status, setStatus] = useState("all");
   const [month, setMonth] = useState("all");
   const [year, setYear] = useState("all");
+  const [department, setDepartment] = useState("all");
+  const [departments, setDepartments] = useState([]);
+  const { fetchDepartments, departments: deptList } = useDepartments();
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
-  // State cho dialog
   const [openAdd, setOpenAdd] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [openCalculate, setOpenCalculate] = useState(false);
+  const [bonusPenalty, setBonusPenalty] = useState({});
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editingPayroll, setEditingPayroll] = useState(null);
 
   // --- Handlers ---
   const handleEdit = (payroll) => {
-    // navigate(`/admin/payrolls/${payroll.id}`);
-    console.log("Edit payroll:", payroll);
+    setEditingPayroll(payroll);
+    setOpenEdit(true);
+  };
+
+  const handleSaveBonusPenalty = async (id, data) => {
+    const loadingToast = toast.loading("Updating payroll...");
+    try {
+      await payrollService.updatePayrollBonusPenalty(id, data);
+      toast.dismiss(loadingToast);
+      toast.success(`Payroll updated successfully!`);
+      setOpenEdit(false);
+      fetchPayrolls();
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      console.error("Failed to update payroll:", err);
+      toast.error(err.response?.data?.message || `Failed to update payroll. Please try again!`);
+    }
   };
 
   const handleDelete = (payroll) => {
@@ -58,6 +82,54 @@ export default function PayrollList() {
     } catch (err) {
       console.error("Failed to delete payroll:", err);
       toast.error(err.response?.data?.message || `Không thể xóa bảng lương. Vui lòng thử lại!`);
+    }
+  };
+
+  const handleCalculate = async () => {
+    if (department === 'all') {
+      toast.error('Please select a department to calculate payroll.');
+      return;
+    }
+    try {
+      const response = await employeeService.getEmployeesByDepartment(department, { page: 1, limit: 1000 });
+      if (response.data?.data?.content) {
+        setEmployees(response.data.data.content);
+        setOpenCalculate(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch employees:", err);
+      toast.error(err.response?.data?.message || `Failed to fetch employees. Please try again!`);
+    }
+  };
+
+  const handleConfirmCalculate = async () => {
+    const payrollData = employees.map(employee => ({
+      employeeId: employee.id,
+      bonus: bonusPenalty[employee.id]?.bonus || 0,
+      deduction: bonusPenalty[employee.id]?.penalty || 0,
+      month: month,
+      year: year,
+    }));
+
+    const loadingToast = toast.loading("Calculating payroll...");
+    try {
+      await payrollService.calculatePayroll(payrollData);
+      toast.dismiss(loadingToast);
+      toast.success(`Payroll calculated successfully!`);
+      setOpenCalculate(false);
+      fetchPayrolls();
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      console.error("Failed to calculate payroll:", err);
+      toast.error(err.response?.data?.message || `Failed to calculate payroll. Please try again!`);
+    }
+  };
+  
+  const loadDepartments = async () => {
+    const data = await fetchDepartments();
+    if (Array.isArray(data)) {
+      const formatted = data.map(d => ({ id: d.id, name: d.deptName }));
+      setDepartments(formatted);
     }
   };
 
@@ -186,6 +258,7 @@ export default function PayrollList() {
         status: status !== 'all' ? status : undefined,
         month: month !== 'all' ? month : undefined,
         year: year !== 'all' ? year : undefined,
+        departmentId: department !== 'all' ? department : undefined,
       };
       // Xóa các param undefined
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
@@ -216,18 +289,19 @@ export default function PayrollList() {
     } finally {
       setLoading(false);
     }
-  }, [paginationModel, query, status, month, year]);
+  }, [paginationModel, query, status, month, year, department]);
 
   // Gọi API khi component mount hoặc khi bộ lọc/phân trang thay đổi
   useEffect(() => {
     fetchPayrolls();
   }, [fetchPayrolls]);
 
-  // Load danh sách nhân viên khi mở dialog
+  // Load danh sách nhân viên và phòng ban khi component mount
   useEffect(() => {
     if (openAdd) {
       fetchEmployees();
     }
+    loadDepartments();
   }, [openAdd, fetchEmployees]);
 
   const [formState, setFormState] = useState({
@@ -302,9 +376,11 @@ export default function PayrollList() {
       <div className="flex-1 flex items-start justify-center">
         <div className="mx-auto w-full max-w-6xl my-6">
           <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb', backgroundColor: 'white' }}>
-          
-            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Payroll Management</h1>
-
+            <Box mb={3}>
+              <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+                Payroll Management
+              </Typography>
+            </Box>
             <PayrollFilters
               query={query}
               setQuery={setQuery}
@@ -314,8 +390,12 @@ export default function PayrollList() {
               setMonth={setMonth}
               year={year}
               setYear={setYear}
+              departments={departments}
+              department={department}
+              setDepartment={setDepartment}
               onCreate={() => setOpenAdd(true)}
               onSearch={fetchPayrolls}
+              onCalculate={handleCalculate}
             />
 
             {error && <Typography color="error" sx={{ my: 2 }}>{error}</Typography>}
@@ -350,6 +430,22 @@ export default function PayrollList() {
         onClose={() => setOpenDeleteDialog(false)}
         onConfirm={handleConfirmDelete}
         payrollInfo={payrollToDelete}
+      />
+
+      <CalculatePayrollDialog
+        open={openCalculate}
+        onClose={() => setOpenCalculate(false)}
+        employees={employees}
+        onCalculate={handleConfirmCalculate}
+        bonusPenalty={bonusPenalty}
+        setBonusPenalty={setBonusPenalty}
+      />
+
+      <EditPayrollDialog
+        open={openEdit}
+        onClose={() => setOpenEdit(false)}
+        onSave={handleSaveBonusPenalty}
+        payroll={editingPayroll}
       />
     </div>
   );

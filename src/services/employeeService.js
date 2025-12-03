@@ -20,6 +20,11 @@ export const employeeService = {
     return axiosInstance.get(`/employees/${id}`);
   },
 
+  getEmployeesByDepartment: async (departmentId, params) => {
+    const queryString = new URLSearchParams(params).toString();
+    return axiosInstance.get(`/employees/department/${departmentId}?${queryString}`);
+  },
+
   /**
    * @param {FormData} employeeData 
    * @returns {Promise<object>} 

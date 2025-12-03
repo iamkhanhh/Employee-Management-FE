@@ -1,9 +1,9 @@
 import {axiosInstance} from "../lib/axios";
 
 export const accountService = {
-  getAccounts: async () => {
+  getAccounts: async (params) => {
     try {
-      const response = await axiosInstance.get('/users');
+      const response = await axiosInstance.get('/users', { params });
       return response;
     } catch (error) {
       throw error;

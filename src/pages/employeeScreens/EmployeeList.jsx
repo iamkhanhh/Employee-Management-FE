@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Paper from '@mui/material/Paper';
-import { useNavigate } from 'react-router-dom';
 import { Box, Typography } from "@mui/material";
-import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters';
 import EmployeeTable from '../../components/EmployeeManagement/EmployeeTable';
-import { AddEmployeeDialog, DeleteEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
+import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters';
+import { AddEmployeeDialog, DeleteEmployeeDialog, EditEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
 import { useDepartments } from "../../hooks/useDepartments";
 import { employeeService } from "../../services/employeeService";
+import moment from 'moment';
 
 import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
@@ -14,36 +14,60 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import toast from 'react-hot-toast';
 
 export default function EmployeeList() {
-  const navigate = useNavigate();
-
-  // State cho dữ liệu và UI
+  // State for data and UI
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [totalRows, setTotalRows] = useState(0);
 
-  // State cho việc xóa
+  // State for deletion
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
 
-  // State cho bộ lọc và phân trang
-  const [query, setQuery] = useState("");
-  const [department, setDepartment] = useState("all");
-  const [position, setPosition] = useState("all");
-  const [workStatus, setWorkStatus] = useState("all");
+  // State for filtering and pagination
+  const [filters, setFilters] = useState({ query: '', department: 'all', position: 'all', workStatus: 'all' });
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
-  // State cho dialog
+  // State for dialogs
   const [openAdd, setOpenAdd] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const { fetchDepartments, departments: deptList } = useDepartments();
 
   const [departments, setDepartments] = useState([]);
 
+    const [formState, setFormState] = useState({
+    id: "",
+    department: "",
+    fullName: "",
+    gender: "",
+    dob: "",
+    phoneNumber: "",
+    address: "",
+    hireDate: "",
+    status: "",
+    roleInDept: ""
+  });
+
+  const resetForm = () => {
+    setFormState({
+      id: "",
+      department: "",
+      fullName: "",
+      gender: "",
+      dob: "",
+      phoneNumber: "",
+      address: "",
+      hireDate: "",
+      status: "",
+      roleInDept: ""
+    });
+  };
+
   useEffect(() => {
     const loadDepartments = async () => {
-      const data = await fetchDepartments(); // trả về data đã filter nếu có
+      const data = await fetchDepartments();
       if (Array.isArray(data)) {
         const formatted = data.map(d => ({ id: d.id, name: d.deptName }));
         setDepartments(formatted);
@@ -54,7 +78,82 @@ export default function EmployeeList() {
 
   // --- Handlers ---
   const handleEdit = (employee) => {
-    navigate(`/admin/employees/${employee.id}`);
+    employeeService.getEmployeeById(employee.id)
+      .then((res) => {
+        const emp = res.data.data;
+
+        setFormState({
+          id: emp.id,
+          userId: emp.username,   // hoặc emp.userId nếu API trả
+          fullName: emp.fullName,
+          phoneNumber: emp.phoneNumber,
+          address: emp.address,
+
+          // Fix Department mapping
+          deptId: departments.find(d => d.name === emp.department)?.id || "",
+
+          // Fix Gender
+          gender:
+            emp.gender === "MALE"
+              ? "Male"
+              : emp.gender === "FEMALE"
+              ? "Female"
+              : "Other",
+
+          // Fix Status
+          status: emp.status.toLowerCase(),
+
+          // Fix Role in dept
+          roleInDept: emp.roleInDept === "STAFF" ? "Staff" : "Head",
+
+          // Fix date format
+          dob: moment(emp.dob, "DD/MM/YYYY").format("YYYY-MM-DD"),
+          hireDate: moment(emp.hireDate, "DD/MM/YYYY").format("YYYY-MM-DD"),
+        });
+
+        setOpenEditDialog(true);
+      });
+  };
+
+
+  
+  const handleUpdateEmployee = async (e) => {
+    e.preventDefault();
+    if (!formState.fullName || !formState.deptId) {
+        toast.error("Please fill in all required fields: Name, Department");
+        return;
+    }
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        if (moment(dateString, 'YYYY-MM-DD', true).isValid()) {
+            return moment(dateString).format('DD/MM/YYYY');
+        }
+        return dateString;
+    };
+    
+    const payload = {
+        ...formState,
+        gender: formState.gender.toUpperCase(),
+        status: formState.status.toUpperCase(),
+        roleInDept: formState.roleInDept.toUpperCase(),
+        dob: formatDate(formState.dob),
+        hireDate: formatDate(formState.hireDate),
+    };
+    
+    const loadingToast = toast.loading("Updating employee...");
+    try {
+        await employeeService.updateEmployee(formState.id, payload);
+        console.log("Updated employee:", payload);
+        toast.dismiss(loadingToast);
+        toast.success(`Successfully updated employee "${formState.fullName}"!`);
+        setOpenEditDialog(false);
+        fetchEmployees(); // Refresh list
+    } catch (err) {
+        toast.dismiss(loadingToast);
+        console.error("Failed to update employee:", err);
+        toast.error(err.response?.data?.message || "Could not update employee. Please try again!");
+    }
   };
 
   const handleDelete = (employee) => {
@@ -78,22 +177,21 @@ export default function EmployeeList() {
 
   // --- Columns Definition ---
   const columns = [
-    { field: 'id', headerName: 'ID', width: 90, type: 'number' },
+    { field: 'id', headerName: 'ID', width: 30, type: 'number' },
     {
       field: 'fullName',
       headerName: 'Full name',
       width: 200,
       renderCell: (params) => (
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
+          {/* <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
             {params.row.fullName?.charAt(0)?.toUpperCase?.()}
-          </span>
+          </span> */}
           <div className="text-gray-900 font-medium">{params.row.fullName}</div>
         </div>
       ),
     },
     { field: 'gender', headerName: 'Gender', width: 110 },
-    { field: 'phoneNumber', headerName: 'Phone', width: 140 },
     { field: 'department', headerName: 'Department', width: 150 },
     { field: 'roleInDept', headerName: 'Position', width: 150 },
     { field: 'hireDate', headerName: 'Hire date', width: 130 },
@@ -102,7 +200,7 @@ export default function EmployeeList() {
       headerName: 'Status',
       width: 120,
       renderCell: (params) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${params.value === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${params.value === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {params.value}
         </span>
       ),
@@ -122,99 +220,80 @@ export default function EmployeeList() {
     },
   ];
 
-  // Hàm gọi API lấy danh sách nhân viên
+  // API call to get employee list
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
-        page: paginationModel.page + 1, 
+        page: paginationModel.page, 
         limit: paginationModel.pageSize,
-        search: query,
-        department: department !== 'all' ? department : undefined,
-        position: position !== 'all' ? position : undefined,
-        status: workStatus !== 'all' ? workStatus : undefined,
+        search: filters.query,
+        department: filters.department !== 'all' ? filters.department : undefined,
+        position: filters.position !== 'all' ? filters.position : undefined,
+        status: filters.workStatus !== 'all' ? filters.workStatus : undefined,
       };
-      // Xóa các param undefined
       Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
 
       const response = await employeeService.getAllEmployees(params);
-      console.log("Employee API response:", response);
-      // Sửa lỗi: Lấy dữ liệu từ response.data.content
       const formattedData = response.data.data.content.map(emp => ({
         ...emp,
         hireDate: emp.hireDate ? new Date(emp.hireDate).toLocaleDateString() : '',
       }));
       setEmployees(formattedData);
-      setTotalRows(response.data.totalElements || 0); // Sửa lỗi: Lấy tổng số dòng từ API
+      setTotalRows(response.data.data.totalElements || 0);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch employees:", err);
-      setError("Không thể tải danh sách nhân viên.");
-      toast.error("Không thể tải danh sách nhân viên. Vui lòng thử lại!");
+      setError("Could not load employee list.");
+      toast.error("Could not load employee list. Please try again!");
     } finally {
       setLoading(false);
     }
-  }, [paginationModel, query, department, position, workStatus]);
+  }, [paginationModel, filters]);
 
-  // Gọi API khi component mount hoặc khi bộ lọc/phân trang thay đổi
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  const [formState, setFormState] = useState({
-    userId: 0,
-    deptId: 0,
-    fullName: "",
-    gender: "",
-    dob: "",
-    phoneNumber: "",
-    address: "",
-    hireDate: "",
-    status: "ACTIVE",
-    roleInDept: ""
-  });
 
-  const resetForm = () => {
-    setFormState({
-      userId: 0,
-      deptId: 0,
-      fullName: "",
-      gender: "",
-      dob: "",
-      phoneNumber: "",
-      address: "",
-      hireDate: "",
-      status: "ACTIVE",
-      roleInDept: ""
-    });
-  };
 
   const handleSaveEmployee = async (e) => {
     e.preventDefault();
+
     if (!formState.fullName || !formState.userId || !formState.deptId) {
-      toast.error("Vui lòng điền đầy đủ các trường bắt buộc: Tên, User ID, Phòng ban");
+      toast.error("Please fill in all required fields: Name, User ID, Department");
       return;
     }
 
-    // Chuyển đổi state của form thành FormData để gửi đi
-    const formData = new FormData();
-    Object.keys(formState).forEach(key => {
-      formData.append(key, formState[key]);
-    });
-    console.log("Submitting new employee:", formState);
-    
-    const loadingToast = toast.loading("Đang thêm nhân viên...");
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const d = new Date(dateString);
+      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    };
+
+    const payload = {
+      ...formState,
+      gender: formState.gender.toUpperCase(),
+      status: formState.status.toUpperCase(),
+      roleInDept: formState.roleInDept.toUpperCase(),
+      dob: formatDate(formState.dob),
+      hireDate: formatDate(formState.hireDate),
+    };
+
+    const loadingToast = toast.loading("Adding employee...");
+
     try {
-      const response = await employeeService.createEmployee(formData);
+      await employeeService.createEmployee(payload);
       toast.dismiss(loadingToast);
-      toast.success(`Đã thêm nhân viên "${formState.fullName}" thành công!`);
+      toast.success(`Successfully added employee "${formState.fullName}"!`);
+      
       setOpenAdd(false);
       resetForm();
-      fetchEmployees(); // Tải lại danh sách sau khi thêm thành công
+      fetchEmployees();
     } catch (err) {
       toast.dismiss(loadingToast);
       console.error("Failed to create employee:", err);
-      toast.error(err.response?.data?.message || `Không thể thêm nhân viên. Vui lòng thử lại!`);
+      toast.error(err.response?.data?.message || "Could not add employee. Please try again!");
     }
   };
 
@@ -224,25 +303,20 @@ export default function EmployeeList() {
 
   return (
       <div className="min-h-screen flex bg-linear-to-br from-white via-gray-50 to-white">
-        {/* Main content */}
         <div className="flex-1 flex items-start justify-center">
           <div className="mx-auto w-full max-w-6xl my-6">
             <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb', backgroundColor: 'white' }}>
-          
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">Employee List</h1>
-
+            <Box mb={3}>
+              <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+                Employye List
+              </Typography>
+            </Box>
           <EmployeeFilters
-            query={query}
-            setQuery={setQuery}
-            department={department}
-            setDepartment={setDepartment}
-            departments={departments}
-            position={position}
-            setPosition={setPosition}
-            workStatus={workStatus}
-            setWorkStatus={setWorkStatus}
-            onCreate={() => setOpenAdd(true)}
-            onSearch={fetchEmployees} // Nút search sẽ trigger việc fetch lại
+            filters={filters}
+            setFilters={setFilters}
+            departments={departments || []}
+            onCreate={() => toast("Add Employee Clicked")}
+            onSearch={() => setPaginationModel(prev => ({ ...prev, page: 0 }))}
           />
 
           {error && <Typography color="error" sx={{ my: 2 }}>{error}</Typography>}
@@ -266,6 +340,15 @@ export default function EmployeeList() {
         </div>
 
        <AddEmployeeDialog open={openAdd} onClose={() => { setOpenAdd(false); resetForm(); }} onSubmit={handleSaveEmployee} formState={formState} setFormState={setFormState} departments={departments} />
+
+       <EditEmployeeDialog 
+        open={openEditDialog} 
+        onClose={() => setOpenEditDialog(false)} 
+        onSubmit={handleUpdateEmployee} 
+        formState={formState} 
+        setFormState={setFormState} 
+        departments={departments} 
+       />
 
        <DeleteEmployeeDialog
         open={openDeleteDialog}

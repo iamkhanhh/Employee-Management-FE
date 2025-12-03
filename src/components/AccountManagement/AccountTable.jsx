@@ -30,18 +30,51 @@ const columns = (handleEdit, handleDelete, handleToggleLock, handleResetPassword
   {
     field: 'status',
     headerName: 'Status',
-    width: 120,
-    renderCell: (params) => (
-      <Chip
-        label={params.value === 'active' ? 'Active' : 'Locked'}
-        size="small"
-        sx={{
-          backgroundColor: params.value === 'active' ? '#d1fae5' : '#fee2e2',
-          color: params.value === 'active' ? '#065f46' : '#991b1b',
-          fontWeight: 500,
-        }}
-      />
-    ),
+    width: 140,
+    renderCell: (params) => {
+      let label = '';
+      let bgColor = '';
+      let color = '';
+
+      switch (params.value) {
+        case 'ACTIVE':
+          label = 'Active';
+          bgColor = '#d1fae5';
+          color = '#065f46';
+          break;
+        case 'DELETED':
+          label = 'Deleted';
+          bgColor = '#f3f4f6';
+          color = '#374151';
+          break;
+        case 'DISABLED':
+          label = 'Disabled';
+          bgColor = '#fee2e2';
+          color = '#991b1b';
+          break;
+        case 'PENDING':
+          label = 'Pending';
+          bgColor = '#fef9c3';
+          color = '#78350f';
+          break;
+        default:
+          label = params.value || 'Unknown';
+          bgColor = '#e5e7eb';
+          color = '#111827';
+      }
+
+      return (
+        <Chip
+          label={label}
+          size="small"
+          sx={{
+            backgroundColor: bgColor,
+            color: color,
+            fontWeight: 500,
+          }}
+        />
+      );
+    },
   },
   { field: 'createdAt', headerName: 'Created At', width: 160 },
   {
@@ -54,11 +87,6 @@ const columns = (handleEdit, handleDelete, handleToggleLock, handleResetPassword
         <Tooltip title="Edit">
           <IconButton size="small" onClick={() => handleEdit(params.row)} sx={{ color: '#3b82f6', '&:hover': { backgroundColor: '#eff6ff' } }}>
             <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={params.row.status === 'active' ? 'Lock' : 'Unlock'}>
-          <IconButton size="small" onClick={() => handleToggleLock(params.row)} sx={{ color: params.row.status === 'active' ? '#f59e0b' : '#10b981', '&:hover': { backgroundColor: params.row.status === 'active' ? '#fef3c7' : '#d1fae5' } }}>
-            {params.row.status === 'active' ? <LockIcon fontSize="small" /> : <LockOpenIcon fontSize="small" />}
           </IconButton>
         </Tooltip>
         <Tooltip title="Reset Password">

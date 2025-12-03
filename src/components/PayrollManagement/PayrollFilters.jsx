@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { Paper,TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
 
 export default function PayrollFilters({
   query,
@@ -10,8 +10,12 @@ export default function PayrollFilters({
   setMonth,
   year,
   setYear,
+  departments,
+  department,
+  setDepartment,
   onCreate,
   onSearch,
+  onCalculate,
 }) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -32,7 +36,8 @@ export default function PayrollFilters({
   ];
 
   return (
-    <>
+    <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
+
       <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
         <TextField
           label="Employee"
@@ -68,14 +73,21 @@ export default function PayrollFilters({
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small">
+          <InputLabel>Department</InputLabel>
+          <Select label="Department" value={department} onChange={(e) => setDepartment(e.target.value)}>
+            <MenuItem value="all">All</MenuItem>
+            {departments.map((d) => (
+              <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3 pb-6">
         <Button variant="outlined" className="normal-case" onClick={onSearch}>Search</Button>
-        <Button variant="contained" className="normal-case" onClick={onCreate}>+ Add Payroll</Button>
-        <Button variant="outlined" className="normal-case">📄 Excel report</Button>
-      </div>
-    </>
+        <Button variant="contained" color="secondary" className="normal-case" onClick={onCalculate}>Calculate Payroll</Button>
+     </div>
+    </Paper>
   );
 }
-

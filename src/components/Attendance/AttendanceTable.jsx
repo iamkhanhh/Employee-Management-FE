@@ -19,25 +19,12 @@ export default function AttendanceTable({ records, employees, onEdit, onDelete, 
   }));
 
   const columns = [
-    { field: 'employeeName', headerName: 'Nhân viên', width: 180 },
-    { field: 'date', headerName: 'Ngày', width: 120 },
-    { field: 'timeIn', headerName: 'Giờ vào', width: 120 },
-    { field: 'timeOut', headerName: 'Giờ ra', width: 120 },
-    { field: 'hoursWorked', headerName: 'Giờ công', width: 120 },
-    { field: 'overtimeHours', headerName: 'OT (h)', width: 120 },
-    { field: 'type', headerName: 'Loại', width: 120 },
-    { field: 'note', headerName: 'Ghi chú', width: 240 },
-    {
-      field: 'actions',
-      headerName: 'Hành động',
-      width: 160,
-      renderCell: (params) => (
-        <Box>
-          {isAdmin && <Button size="small" startIcon={<EditIcon />} onClick={() => onEdit(params.row.id)}>Sửa</Button>}
-          {isAdmin && <Button size="small" color="error" startIcon={<DeleteIcon />} onClick={() => onDelete(params.row.id)}>Xóa</Button>}
-        </Box>
-      )
-    }
+  { field: 'employeeName', headerName: 'Nhân viên', flex: 2, minWidth: 150 },
+  { field: 'date', headerName: 'Ngày', flex: 1, minWidth: 100 },
+  { field: 'timeIn', headerName: 'Giờ vào', flex: 1, minWidth: 100 },
+  { field: 'timeOut', headerName: 'Giờ ra', flex: 1, minWidth: 100 },
+  { field: 'hoursWorked', headerName: 'Giờ công', flex: 1, minWidth: 100 },
+  { field: 'overtimeHours', headerName: 'OT (h)', flex: 1, minWidth: 100 },
   ];
 
   return (
@@ -52,9 +39,16 @@ export default function AttendanceTable({ records, employees, onEdit, onDelete, 
           <Typography variant="subtitle2">Your attendance records</Typography>
         )}
       </Box>
-      <div style={{ height: 520, width: '100%' }}>
-        <DataGrid rows={rows} columns={columns} pageSize={10} rowsPerPageOptions={[10]} disableSelectionOnClick />
-      </div>
+        <div style={{ height: '520px', width: '100%', overflowX: 'auto' }}>
+          <DataGrid 
+            rows={rows} 
+            columns={columns} 
+            pageSize={10} 
+            rowsPerPageOptions={[10]} 
+            disableSelectionOnClick 
+            autoHeight={false}
+          />
+        </div>
     </Box>
   );
 }

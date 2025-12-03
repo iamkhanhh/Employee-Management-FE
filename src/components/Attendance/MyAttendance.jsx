@@ -1,7 +1,7 @@
 // src/components/MyAttendance.jsx
 import React, { useState, useEffect } from "react";
 import AttendanceCalendar from "./AttendanceCalendar";
-import { Box, Button, Stack, Typography, Paper, CircularProgress } from "@mui/material";
+import { Box, Button, Stack, Typography, Paper, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import moment from "moment";
 import { attendanceService } from "../../services/attendanceService";
 
@@ -53,22 +53,28 @@ export default function MyAttendance() {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+
+  const [currentMonth, setCurrentMonth] = useState(moment().month() + 1);
+  const [currentYear, setCurrentYear] = useState(moment().year());
 
   // -------- Load attendance từ server -------------
-  const loadMyAttendance = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await attendanceService.getMyRecords();
-      const records = res?.data?.data ?? [];
-      setAttendance(records);
-    } catch (err) {
-      console.error(err);
-      setError("Lỗi tải dữ liệu");
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadMyAttendance = async (month = currentMonth, year = currentYear) => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const res = await attendanceService.getMyRecords({ month, year });
+    const records = res?.data?.data ?? [];
+    setAttendance(records);
+  } catch (err) {
+    console.error(err);
+    setError("Lỗi tải dữ liệu");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     loadMyAttendance();
@@ -97,13 +103,15 @@ export default function MyAttendance() {
       const record = res?.data?.data;
 
       if (record) {
-        setAttendanceToday(record);
+        //setAttendanceToday(record);
         setAttendance((prev) => {
           const exists = prev.some((r) => r.id === record.id);
           if (!exists) return [...prev, record];
           return prev.map((r) => (r.id === record.id ? record : r));
         });
       }
+      console.log("Check-in successful:", record);
+      console.log("Updated attendanceToday:", attendanceToday);
     } catch (err) {
       console.error(err);
       setError("Check-in thất bại");
@@ -124,7 +132,7 @@ export default function MyAttendance() {
       const record = res?.data?.data;
 
       if (record) {
-        setAttendanceToday(record);
+        //setAttendanceToday(record);
         setAttendance((prev) =>
           prev.map((r) => (r.id === record.id ? record : r))
         );
@@ -136,8 +144,16 @@ export default function MyAttendance() {
       setCheckOutLoading(false);
     }
   };
+  
+  const promptCheckout = () => {
+    setOpenCheckoutDialog(true);
+  };
 
-  // ---------------- Event style -----------------------
+  const confirmCheckout = () => {
+    handleCheckOut();
+    setOpenCheckoutDialog(false);
+  }
+
   const eventStyleGetter = (event) => ({
     style: {
       backgroundColor: event.bgColor,
@@ -148,8 +164,17 @@ export default function MyAttendance() {
       fontSize: 12,
     },
   });
+    const handleNavigate = (newDate) => {
+    const m = moment(newDate).month() + 1;   // 1–12
+    const y = moment(newDate).year();
 
-  // ================= UI ==============================
+    setCurrentMonth(m);
+    setCurrentYear(y);
+
+    loadMyAttendance(m, y);
+  };
+
+
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom>
@@ -169,7 +194,7 @@ export default function MyAttendance() {
         <Button
           variant="contained"
           color="secondary"
-          onClick={handleCheckOut}
+          onClick={promptCheckout}
           disabled={!attendanceToday?.checkIn || !!attendanceToday?.checkOut || checkOutLoading}
         >
           {checkOutLoading ? <CircularProgress size={20} color="inherit" /> : "Check Out"}
@@ -186,8 +211,32 @@ export default function MyAttendance() {
         setDate={setDate}
         views={["month"]}
         eventStyleGetter={eventStyleGetter}
-        components={{ event: EventItem }} // hiển thị title + giờ
+        components={{ event: EventItem }} 
+        onNavigate={handleNavigate}
+
       />
+      
+      <Dialog
+        open={openCheckoutDialog}
+        onClose={() => setOpenCheckoutDialog(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Xác nhận Check-out"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Bạn có chắc chắn muốn thực hiện check-out không?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCheckoutDialog(false)}>Hủy</Button>
+          <Button onClick={confirmCheckout} autoFocus>
+            Xác nhận
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }
