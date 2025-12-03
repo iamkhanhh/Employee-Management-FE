@@ -24,6 +24,8 @@ import {
   Logout as LogoutIcon,
   AccessTime as AccessTimeIcon,
   EventBusy as EventBusyIcon,
+  Assessment as AssessmentIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 
 // DÙNG HOOK useAuth ĐÃ CÓ SẴN → CHUẨN NHẤT!
@@ -52,35 +54,20 @@ const ClientLayout = () => {
   };
 
   const getPageTitle = (path) => {
-    if (path.startsWith("/profile")) {
-        return "My Profile";
-    }
-    switch (path) {
-        case "/my-attendance":
-            return "My Attendance";
-        case "/leave-requests":
-            return "Leave Requests";
-        default:
-            return "";
-    }
+    const titles = {
+      "/profile": "My Profile",
+      "/my-attendance": "My Attendance",
+      "/leave-requests": "Leave Requests",
+      "/my-kpi": "My KPI",
+    };
+    return titles[path] || "Dashboard";
   };
 
-  const navItems = [
-    {
-      text: "My Profile",
-      icon: <PersonIcon />,
-      path: "/profile",
-    },
-    {
-      text: "My Attendance",
-      icon: <AccessTimeIcon />,
-      path: "/my-attendance",
-    },
-    {
-      text: "Leave Requests",
-      icon: <EventBusyIcon />,
-      path: "/leave-requests",
-    },
+  const baseNavItems = [
+    { text: "My Profile", icon: <PersonIcon />, path: "/profile" },
+    { text: "My Attendance", icon: <AccessTimeIcon />, path: "/my-attendance" },
+    { text: "Leave Requests", icon: <EventBusyIcon />, path: "/leave-requests" },
+    { text: "My KPI", icon: <AssessmentIcon />, path: "/my-kpi" },
   ];
 
   // CHỈ THÊM MENU ADMIN NẾU LÀ ADMIN HOẶC HR

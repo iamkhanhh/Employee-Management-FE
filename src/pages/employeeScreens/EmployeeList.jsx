@@ -315,7 +315,7 @@ export default function EmployeeList() {
             filters={filters}
             setFilters={setFilters}
             departments={departments || []}
-            onCreate={() => toast("Add Employee Clicked")}
+            onCreate={() => setOpenAdd(true)}
             onSearch={() => setPaginationModel(prev => ({ ...prev, page: 0 }))}
           />
 
