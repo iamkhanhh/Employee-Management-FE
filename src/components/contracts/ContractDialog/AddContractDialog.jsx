@@ -226,7 +226,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
 
           {/* Employee Search */}
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 6, md: 4 }}>
               <Autocomplete
                 options={employees}
                 value={selectedEmployee}
@@ -268,16 +268,8 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               />
             </Grid>
 
-            {/* Contract Details Title */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography variant="h6" fontWeight={700} color="primary.main">
-                Contract Details
-              </Typography>
-              <Divider sx={{ mt: 1 }} />
-            </Grid>
-
             {/* Hàng 1: Contract Type + Status */}
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 6, md: 2 }}>
               <TextField
                 select fullWidth required
                 label="Contract Type"
@@ -293,7 +285,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               </TextField>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 6, md: 3 }}>
               <TextField
                 select fullWidth required
                 label="Status"
@@ -352,7 +344,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
             </Grid>
 
             {/* File Upload */}
-            <Grid item xs={12}>
+            <Grid size={{ xs: 6, md: 6 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
                 Contract Document (PDF) - Optional
               </Typography>
@@ -360,7 +352,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                 variant="outlined"
                 onClick={handleFileBoxClick}
                 sx={{
-                  p: 4,
+                  p: 1,
                   borderStyle: 'dashed',
                   borderColor: formData.fileName ? 'primary.main' : 'grey.400',
                   bgcolor: formData.fileName ? 'primary.50' : 'grey.50',
@@ -374,12 +366,9 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                   }
                 }}
               >
-                <UploadFileIcon sx={{ fontSize: 56, color: formData.fileName ? 'primary.main' : 'grey.500', mb: 1 }} />
+                <UploadFileIcon sx={{ fontSize: 25, color: formData.fileName ? 'primary.main' : 'grey.500', mb: 1 }} />
                 <Typography variant="h6" fontWeight={600} color={formData.fileName ? 'primary.main' : 'text.primary'}>
-                  {formData.fileName || 'Click to upload contract file'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {formData.fileName ? 'Click to replace • PDF only' : 'PDF only • Max 10MB'}
+                  {formData.fileName || 'upload'}
                 </Typography>
               </Paper>
 

@@ -72,7 +72,7 @@ const ClientLayout = () => {
 
   // CHỈ THÊM MENU ADMIN NẾU LÀ ADMIN HOẶC HR
   const navItems = isAdmin 
-    ? [...baseNavItems, { text: "Admin Panel", icon: <AdminPanelSettingsIcon />, path: "/admin/dashboard" }]
+    ? [...baseNavItems]
     : baseNavItems;
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
+  OutlinedInput,
   Container,
   Box,
   Typography,
@@ -54,7 +55,8 @@ import {
   CalendarToday as CalendarTodayIcon,
   EventBusy as EventBusyIcon,
 } from "@mui/icons-material";
-
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import CloseIcon from '@mui/icons-material/Close';
 import { axiosInstance } from "../../../lib/axios";
 import { useAuth } from "../../../hooks/useAuth";
 import {
@@ -1097,138 +1099,161 @@ const LeaveRequestContent = ({ user }) => {
       <Dialog
         open={openDetail}
         onClose={() => setOpenDetail(false)}
-        maxWidth="md"
-        PaperProps={{ sx: { borderRadius: 4 } }}
+        maxWidth="lg"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+              overflow: "hidden",
+            },
+          },
+        }}
       >
-        <DialogTitle sx={{ bgcolor: "primary.main", color: "white", py: 3 }}>
-          <Stack direction="row" spacing={2} alignItems="center">
+        {/* Header giống hệt Create */}
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            py: 2,
+            px: 3,
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <VisibilityIcon />
-            <Typography variant="h6" fontWeight={600}>
+            <Typography variant="h6" fontWeight="bold" component="span">
               Leave Request Details
             </Typography>
           </Stack>
         </DialogTitle>
 
-        <DialogContent sx={{ bgcolor: "#f9fafb", p: 5 }}>
-          {selectedRequest && (
-            <Grid container spacing={4}>
-              {/* Row 1 */}
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Leave Type
-                </Typography>
-                <Typography variant="h6" fontWeight={600}>
-                  {getLeaveTypeLabel(selectedRequest.leaveType)}
-                </Typography>
-              </Grid>
+        {/* Content giống hệt Create */}
+        <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ p: 3 }}>
+            <Grid container spacing={2.5}>
+              {/* Row 1: Leave Type | From Date | To Date */}
+              <Grid container spacing={2}>
+                {/* Leave Type */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <FormControl fullWidth>
+                    <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5 }}>
+                    Leave Type
+                  </Typography>
+                    <OutlinedInput
+                      readOnly
+                      value={
+                        LEAVE_TYPES.find((t) => t.value === selectedRequest?.leaveType)?.label ||
+                        "N/A"
+                      }
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <EventNoteIcon color="action" />
+                        </InputAdornment>
+                      }
+                    />
+                  </FormControl>
+                </Grid>
 
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Status
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  {getStatusChip(selectedRequest.status)}
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Total Days
-                </Typography>
-                <Typography variant="h4" fontWeight={700} color="primary.main">
-                  {calculateDaysBetween(selectedRequest.startDate, selectedRequest.endDate)}
-                </Typography>
-              </Grid>
-
-              {/* Row 2 */}
-              <Grid item xs={12} md={6}>
-                <Box sx={{ bgcolor: "white", p: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {/* From Date */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <FormControl fullWidth>
+                    <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5 }}>
                     From Date
                   </Typography>
-                  <Typography variant="h5" fontWeight={600} color="success.dark">
-                    {formatDate(selectedRequest.startDate)}
-                  </Typography>
-                </Box>
-              </Grid>
+                    <OutlinedInput
+                      readOnly
+                      value={selectedRequest?.startDate || "N/A"}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <EventNoteIcon color="action" />
+                        </InputAdornment>
+                      }
+                    />
+                  </FormControl>
+                </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Box sx={{ bgcolor: "white", p: 3, borderRadius: 3, border: "1px solid #e2e8f0" }}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                {/* To Date */}
+                <Grid size={{ xs: 6, md: 4 }}>
+                  <FormControl fullWidth>
+                    <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5 }}>
                     To Date
                   </Typography>
-                  <Typography variant="h5" fontWeight={600} color="error.dark">
-                    {formatDate(selectedRequest.endDate)}
-                  </Typography>
-                </Box>
-              </Grid>
-
-              {/* Row 3 */}
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom fontWeight={500}>
-                  Reason
-                </Typography>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 4,
-                    bgcolor: "white",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 3,
-                    minHeight: 100
-                  }}
-                >
-                  <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
-                    {selectedRequest.reason || "No reason provided"}
-                  </Typography>
-                </Paper>
-              </Grid>
-
-              {/* Rejection Reason */}
-              {selectedRequest.status === "REJECTED" && selectedRequest.rejectReason && (
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="error.main" gutterBottom fontWeight={500}>
-                    Rejection Reason
-                  </Typography>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 4,
-                      bgcolor: "#fff5f5",
-                      border: "1px solid #fca5a5",
-                      borderRadius: 3
-                    }}
-                  >
-                    <Typography color="error.main" sx={{ lineHeight: 1.8 }}>
-                      {selectedRequest.rejectReason}
-                    </Typography>
-                  </Paper>
+                    <OutlinedInput
+                      readOnly
+                      value={selectedRequest?.endDate || "N/A"}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <EventNoteIcon color="action" />
+                        </InputAdornment>
+                      }
+                    />
+                  </FormControl>
                 </Grid>
-              )}
+              </Grid>
 
-              {/* Employee Name (for HEAD view) */}
-              {isViewingDepartment && (
-                <Grid item xs={12}>
-                  <Box sx={{ textAlign: "center", pt: 2, mt: 2, borderTop: "1px dashed #cbd5e1" }}>
-                    <Typography variant="caption" color="text.secondary">
-                      Employee:
-                    </Typography>
-                    <Typography variant="body1" fontWeight={600} color="primary.main" component="span" sx={{ ml: 1 }}>
-                      {selectedRequest.employeeName || selectedRequest.fullName || `Employee #${selectedRequest.empId}`}
-                    </Typography>
-                  </Box>
+              {/* Status */}
+              <Grid size={{ xs: 6, md: 1 }}>
+                <FormControl >
+                  <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5 }}>
+                    Status
+                  </Typography>
+                  <OutlinedInput
+                    readOnly
+                    startAdornment={
+                      <InputAdornment position="start">
+                        {getStatusChip(selectedRequest?.status)}
+                      </InputAdornment>
+                    }
+                  />
+                </FormControl>
+              </Grid>
+
+
+              {/* Reason */}
+              <Grid size={{ xs: 6, md: 6 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Reason"
+                  value={selectedRequest?.reason || "No reason provided"}
+                  InputProps={{ readOnly: true }}
+                />
+              </Grid>
+
+              {/* Reject Reason */}
+              {selectedRequest?.status === "REJECTED" && selectedRequest?.rejectReason && (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Rejection Reason"
+                    value={selectedRequest.rejectReason}
+                    InputProps={{ readOnly: true }}
+                    error
+                  />
                 </Grid>
               )}
             </Grid>
-          )}
+          </Box>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, bgcolor: "white", borderTop: "1px solid #e2e8f0" }}>
+        {/* Footer giống hệt form Create */}
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            bgcolor: "grey.50",
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <Button
-            onClick={() => setOpenDetail(false)}
             variant="contained"
-            size="large"
-            sx={{ minWidth: 140, height: 48, fontWeight: 600 }}
+            onClick={() => setOpenDetail(false)}
+            startIcon={<CloseIcon />}
+            sx={{ minWidth: 120 }}
           >
             Close
           </Button>

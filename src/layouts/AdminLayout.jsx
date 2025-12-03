@@ -13,6 +13,9 @@ import {
     Box,
     Collapse,
     Divider,
+    Menu,
+    MenuItem,
+    Avatar,
 } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
 import PeopleIcon from '@mui/icons-material/People';
@@ -39,6 +42,10 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MenuIcon from '@mui/icons-material/Menu';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import PersonIcon from '@mui/icons-material/Person';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 export default function AdminLayout() {
     const [open, setOpen] = useState(true);
@@ -54,7 +61,25 @@ export default function AdminLayout() {
     const [openComms, setOpenComms] = useState(false);
     const [openReports, setOpenReports] = useState(false);
 
+    // User Menu State
+    const [anchorElUser, setAnchorElUser] = useState(null);
+
+    const isAdmin = true; 
+
+    // User Menu Handlers
+    const handleOpenUserMenu = (event) => {
+        setAnchorElUser(event.currentTarget);
+    };
+
+    const handleCloseUserMenu = () => {
+        setAnchorElUser(null);
+    };
+
     const handleLogout = () => {
+        handleCloseUserMenu();
+        // Thêm logic logout ở đây
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         navigate("/login");
     };
 
@@ -84,7 +109,9 @@ export default function AdminLayout() {
             case "/admin/departments":
                 return "Department Management";
             case "/admin/leave-requests":
-                return "leave-requests";
+                return "Leave Requests";
+            case "/admin/profile":
+                return "My Profile";
             default:
                 return "Home";
         }
@@ -235,8 +262,6 @@ export default function AdminLayout() {
                                 <ListItemIcon><FolderOpenIcon /></ListItemIcon>
                                 <ListItemText primary="Employee documents" />
                             </ListItemButton>
-
-
                         </List>
                     </Collapse>
 
@@ -436,10 +461,123 @@ export default function AdminLayout() {
                             Human Resources Management System
                         </Typography>
                         <Box sx={{ flexGrow: 1 }} />
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                                Admin User
-                            </Typography>
+                        
+                        {/* User Menu Section */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        
+                            
+                            <IconButton
+                                onClick={handleOpenUserMenu}
+                                sx={{
+                                    p: 0.5,
+                                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                        border: '2px solid rgba(255, 255, 255, 0.5)',
+                                    },
+                                }}
+                            >
+                                <Avatar 
+                                    sx={{ 
+                                        width: 40, 
+                                        height: 40,
+                                        bgcolor: '#4f46e5',
+                                        cursor: 'pointer',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                </Avatar>
+                            </IconButton>
+                            
+                            {/* User Dropdown Menu */}
+                            <Menu
+                                anchorEl={anchorElUser}
+                                open={Boolean(anchorElUser)}
+                                onClose={handleCloseUserMenu}
+                                anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'right',
+                                }}
+                                transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'right',
+                                }}
+                                PaperProps={{
+                                    elevation: 0,
+                                    sx: {
+                                        overflow: 'visible',
+                                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
+                                        mt: 1.5,
+                                        minWidth: 220,
+                                        borderRadius: 2,
+                                        '&:before': {
+                                            content: '""',
+                                            display: 'block',
+                                            position: 'absolute',
+                                            top: 0,
+                                            right: 20,
+                                            width: 10,
+                                            height: 10,
+                                            bgcolor: 'background.paper',
+                                            transform: 'translateY(-50%) rotate(45deg)',
+                                            zIndex: 0,
+                                        },
+                                    },
+                                }}
+                            >
+                                <MenuItem 
+                                    onClick={() => { 
+                                        handleCloseUserMenu(); 
+                                        navigate('/profile'); 
+                                    }}
+                                    sx={{ 
+                                        py: 1.5,
+                                        '&:hover': {
+                                            backgroundColor: '#f3f4f6',
+                                        },
+                                    }}
+                                >
+                                    <PersonIcon fontSize="small" sx={{ mr: 1.5, color: '#6366f1' }} />
+                                    <Typography variant="body2">My Profile</Typography>
+                                </MenuItem>
+
+
+                                {isAdmin && (
+                                    <MenuItem 
+                                        onClick={() => { 
+                                            handleCloseUserMenu(); 
+                                            navigate('/admin/dashboard'); 
+                                        }}
+                                        sx={{ 
+                                            py: 1.5,
+                                            '&:hover': {
+                                                backgroundColor: '#f3f4f6',
+                                            },
+                                        }}
+                                    >
+                                        <AdminPanelSettingsIcon fontSize="small" sx={{ mr: 1.5, color: '#f59e0b' }} />
+                                        <Typography variant="body2">Admin Dashboard</Typography>
+                                    </MenuItem>
+                                )}
+
+                                <Divider sx={{ my: 1 }} />
+                                
+                                <MenuItem 
+                                    onClick={handleLogout}
+                                    sx={{ 
+                                        py: 1.5,
+                                        '&:hover': {
+                                            backgroundColor: '#fef2f2',
+                                        },
+                                    }}
+                                >
+                                    <LogoutIcon fontSize="small" sx={{ mr: 1.5, color: '#ef4444' }} />
+                                    <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 500 }}>
+                                        Logout
+                                    </Typography>
+                                </MenuItem>
+                            </Menu>
                         </Box>
                     </Toolbar>
                 </AppBar>
