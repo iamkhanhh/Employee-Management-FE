@@ -83,14 +83,17 @@ const loadMyAttendance = async (month = currentMonth, year = currentYear) => {
   // -------- Sync events + attendanceToday -------------
   useEffect(() => {
     const formattedEvents = attendance.map(formatAttendanceToEvent);
+    console.log(attendance)
     setEvents(formattedEvents);
-
-    const today = attendance.find((r) =>
-      moment(r.createdAt, "DD/MM/YYYY HH:mm:ss").startOf("day").isSame(moment().startOf("day"))
-    ) || null;
+    const today =
+      attendance.find((r) =>
+        moment(r.checkIn, "DD/MM/YYYY HH:mm:ss")
+          .startOf("day")
+          .isSame(moment().startOf("day"))
+      ) || null;
     setAttendanceToday(today);
+    console.log("Today's attendance:", today);
   }, [attendance]);
-
   // ================== CHECK IN ========================
   const handleCheckIn = async () => {
     if (checkInLoading) return;

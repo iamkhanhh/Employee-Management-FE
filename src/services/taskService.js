@@ -45,16 +45,28 @@ export const taskService = {
   // 7. UPDATE STATUS
   updateStatus: async (taskId, status) => {
     try {
-      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`, { status });
+      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`,{status});
+      console.log("Update status response:", response);
       return response;
     } catch (error) {
       throw error;
     }
   },
 
-  getMyTasks: async () => {
+  getMyTasks: async (params) => {
+    const cleanParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          cleanParams.append(key, value);
+        }
+      });
+    }
+    const queryString = cleanParams.toString();
+    const url = queryString ? `${TASK_API}/me?${queryString}` : `${TASK_API}/me`;
+
     try {
-      const response = await axiosInstance.get(`${TASK_API}/me`);
+      const response = await axiosInstance.get(url);
       return response;
     } catch (error) {
       throw error;

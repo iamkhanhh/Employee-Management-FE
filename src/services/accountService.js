@@ -37,12 +37,13 @@ export const accountService = {
     }
   },
 
-  toggleAccountLock: async (id) => {
+  getAccountsUnlink: async (id) => {
     try {
-      const response = await axiosInstance.put(`/users/${id}/toggle-lock`);
+      const response = await axiosInstance.get(`/users/unlinked`);
       return response;
     } catch (error) {
       throw error;
     }
   },
+
 };

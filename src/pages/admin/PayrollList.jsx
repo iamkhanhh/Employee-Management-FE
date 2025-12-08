@@ -1,452 +1,316 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Paper from '@mui/material/Paper';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Button, TextField, IconButton } from "@mui/material";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
+// Custom Hooks
+import { usePayroll } from "../../hooks/usePayroll";
+import { useDepartments } from "../../hooks/useDepartments";
+
+// Components
 import PayrollFilters from '../../components/PayrollManagement/PayrollFilters';
 import PayrollTable from '../../components/PayrollManagement/PayrollTable';
-import { AddPayrollDialog, DeletePayrollDialog } from '../../components/PayrollManagement/PayrollDialogs';
-import CalculatePayrollDialog from '../../components/PayrollManagement/CalculatePayrollDialog';
+import DepartmentTable from '../../components/PayrollManagement/DepartmentTable'; // Import DepartmentTable
 import EditPayrollDialog from '../../components/PayrollManagement/EditPayrollDialog';
+
+// Services
 import { payrollService } from "../../services/payrollService";
 import { employeeService } from "../../services/employeeService";
-import { useDepartments } from "../../hooks/useDepartments";
-import IconButton from '@mui/material/IconButton';
+
+// UI
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import toast from 'react-hot-toast';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 
 export default function PayrollList() {
   const navigate = useNavigate();
 
-  // State cho dữ liệu và UI
-  const [payrolls, setPayrolls] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [totalRows, setTotalRows] = useState(0);
+  const { payrolls, totalRows, loading, error, fetchPayrolls } = usePayroll();
+  const { fetchDepartments: fetchDeptList, departments: deptList, loading: deptLoading } = useDepartments();
 
-  // State cho việc xóa
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [payrollToDelete, setPayrollToDelete] = useState(null);
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editingPayroll, setEditingPayroll] = useState(null);
+  const [openConfirmCalculate, setOpenConfirmCalculate] = useState(false);
 
-  // State cho bộ lọc và phân trang
+  // New state for department selection
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+
+  // Filters
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [month, setMonth] = useState("all");
   const [year, setYear] = useState("all");
-  const [department, setDepartment] = useState("all");
-  const [departments, setDepartments] = useState([]);
-  const { fetchDepartments, departments: deptList } = useDepartments();
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 });
 
-  const [openAdd, setOpenAdd] = useState(false);
+  // Pagination
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [deptPagination, setDeptPagination] = useState({
+    page: 0,
+    rowsPerPage: 10,
+  });
+
   const [employees, setEmployees] = useState([]);
-  const [openCalculate, setOpenCalculate] = useState(false);
   const [bonusPenalty, setBonusPenalty] = useState({});
-  const [openEdit, setOpenEdit] = useState(false);
-  const [editingPayroll, setEditingPayroll] = useState(null);
+  const [savedAdjustments, setSavedAdjustments] = useState([]);
 
-  // --- Handlers ---
-  const handleEdit = (payroll) => {
-    setEditingPayroll(payroll);
-    setOpenEdit(true);
-  };
+  // Fetch departments on initial load
+  useEffect(() => {
+    fetchDeptList();
+  }, [fetchDeptList]);
 
-  const handleSaveBonusPenalty = async (id, data) => {
-    const loadingToast = toast.loading("Updating payroll...");
-    try {
-      await payrollService.updatePayrollBonusPenalty(id, data);
-      toast.dismiss(loadingToast);
-      toast.success(`Payroll updated successfully!`);
-      setOpenEdit(false);
-      fetchPayrolls();
-    } catch (err) {
-      toast.dismiss(loadingToast);
-      console.error("Failed to update payroll:", err);
-      toast.error(err.response?.data?.message || `Failed to update payroll. Please try again!`);
+  // Fetch employees when a department is selected
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (selectedDepartment) {
+        try {
+          const response = await employeeService.getAllEmployees({ deptId: selectedDepartment.id, page: 0, limit: 1000 });
+          setEmployees(response.data?.data?.content || []);
+        } catch (err) {
+          console.error("Failed to fetch employees:", err);
+          setEmployees([]);
+        }
+      } else {
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, [selectedDepartment]);
+  
+  // Fetch payrolls when filters change (for the payroll view)
+  const getPayrolls = useCallback(() => {
+    if (selectedDepartment) {
+      const params = { deptId: selectedDepartment.id };
+      if (status !== "all") params.status = status;
+      if (month !== "all") params.month = month;
+      if (year !== "all") params.year = year;
+      fetchPayrolls(params);
     }
-  };
+  }, [selectedDepartment, status, month, year, fetchPayrolls]);
 
-  const handleDelete = (payroll) => {
-    setPayrollToDelete(payroll);
-    setOpenDeleteDialog(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!payrollToDelete) return;
-    try {
-      await payrollService.deletePayroll(payrollToDelete.id);
-      setOpenDeleteDialog(false);
-      setPayrollToDelete(null);
-      toast.success(`Đã xóa bảng lương thành công!`);
-      fetchPayrolls(); // Tải lại danh sách
-    } catch (err) {
-      console.error("Failed to delete payroll:", err);
-      toast.error(err.response?.data?.message || `Không thể xóa bảng lương. Vui lòng thử lại!`);
+  useEffect(() => {
+    if (selectedDepartment) {
+      getPayrolls();
     }
-  };
+  }, [selectedDepartment, getPayrolls]);
 
-  const handleCalculate = async () => {
-    if (department === 'all') {
-      toast.error('Please select a department to calculate payroll.');
+
+  const handleCalculate = () => {
+    if (!selectedDepartment) {
+      toast.error("Please select a department.");
       return;
     }
-    try {
-      const response = await employeeService.getEmployeesByDepartment(department, { page: 1, limit: 1000 });
-      if (response.data?.data?.content) {
-        setEmployees(response.data.data.content);
-        setOpenCalculate(true);
-      }
-    } catch (err) {
-      console.error("Failed to fetch employees:", err);
-      toast.error(err.response?.data?.message || `Failed to fetch employees. Please try again!`);
-    }
+    setOpenConfirmCalculate(true);
   };
 
   const handleConfirmCalculate = async () => {
-    const payrollData = employees.map(employee => ({
-      employeeId: employee.id,
-      bonus: bonusPenalty[employee.id]?.bonus || 0,
-      deduction: bonusPenalty[employee.id]?.penalty || 0,
-      month: month,
-      year: year,
-    }));
-
-    const loadingToast = toast.loading("Calculating payroll...");
-    try {
-      await payrollService.calculatePayroll(payrollData);
-      toast.dismiss(loadingToast);
-      toast.success(`Payroll calculated successfully!`);
-      setOpenCalculate(false);
-      fetchPayrolls();
-    } catch (err) {
-      toast.dismiss(loadingToast);
-      console.error("Failed to calculate payroll:", err);
-      toast.error(err.response?.data?.message || `Failed to calculate payroll. Please try again!`);
-    }
-  };
-  
-  const loadDepartments = async () => {
-    const data = await fetchDepartments();
-    if (Array.isArray(data)) {
-      const formatted = data.map(d => ({ id: d.id, name: d.deptName }));
-      setDepartments(formatted);
-    }
-  };
-
-  // --- Columns Definition ---
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 90, type: 'number' },
-    {
-      field: 'fullName',
-      headerName: 'Full name',
-      width: 200,
-      renderCell: (params) => (
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
-            {params.row.fullName?.charAt(0)?.toUpperCase?.()}
-          </span>
-          <div className="text-gray-900 font-medium">{params.row.fullName}</div>
-        </div>
-      ),
-    },
-    { field: 'employeeId', headerName: 'Employee ID', width: 130 },
-    { field: 'basicSalary', headerName: 'Basic Salary', width: 140, type: 'number', 
-      renderCell: (params) => (
-        <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>
-      )
-    },
-    { field: 'allowance', headerName: 'Allowance', width: 130, type: 'number',
-      renderCell: (params) => (
-        <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>
-      )
-    },
-    { field: 'bonus', headerName: 'Bonus', width: 130, type: 'number',
-      renderCell: (params) => (
-        <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>
-      )
-    },
-    { field: 'deduction', headerName: 'Deduction', width: 130, type: 'number',
-      renderCell: (params) => (
-        <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>
-      )
-    },
-    { field: 'netSalary', headerName: 'Net Salary', width: 150, type: 'number',
-      renderCell: (params) => (
-        <span className="font-semibold text-green-600">
-          {params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}
-        </span>
-      )
-    },
-    {
-      field: 'fileUrl',
-      headerName: 'File',
-      width: 120,
-      renderCell: (params) => (
-        params.value ? (
-          <a 
-            href={params.value} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            View File
-          </a>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )
-      ),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: 130,
-      renderCell: (params) => {
-        const statusColors = {
-          'pending': 'bg-yellow-100 text-yellow-800',
-          'approved': 'bg-blue-100 text-blue-800',
-          'paid': 'bg-green-100 text-green-800',
-          'cancelled': 'bg-red-100 text-red-800',
-        };
-        const statusColor = statusColors[params.value?.toLowerCase()] || 'bg-gray-100 text-gray-800';
-        return (
-          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
-            {params.value}
-          </span>
-        );
-      },
-    },
-    {
-      field: 'action',
-      headerName: 'Action',
-      width: 130,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => (
-        <div className="flex gap-2">
-          <IconButton color="primary" onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton color="error" onClick={(e) => { e.stopPropagation(); handleDelete(params.row); }}>
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </div>
-      ),
-    },
-  ];
-
-  // Hàm gọi API lấy danh sách nhân viên (để dùng trong dialog)
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const response = await employeeService.getAllEmployees({ page: 1, limit: 1000 });
-      if (response.data?.data?.content) {
-        setEmployees(response.data.data.content);
-      }
-    } catch (err) {
-      console.error("Failed to fetch employees:", err);
-    }
-  }, []);
-
-  // Hàm gọi API lấy danh sách bảng lương
-  const fetchPayrolls = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = {
-        page: paginationModel.page + 1, 
-        limit: paginationModel.pageSize,
-        search: query,
-        status: status !== 'all' ? status : undefined,
-        month: month !== 'all' ? month : undefined,
-        year: year !== 'all' ? year : undefined,
-        departmentId: department !== 'all' ? department : undefined,
-      };
-      // Xóa các param undefined
-      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-
-      const response = await payrollService.getAllPayrolls(params);
-      console.log("Payroll API response:", response);
-      
-      // Format dữ liệu từ API
-      const formattedData = (response.data?.data?.content || []).map((payroll, index) => ({
-        ...payroll,
-        // Đảm bảo có id hợp lệ
-        id: payroll.id || payroll.payrollId || index,
-        // Đảm bảo các trường số được parse đúng
-        basicSalary: payroll.basicSalary ? parseFloat(payroll.basicSalary) : 0,
-        allowance: payroll.allowance ? parseFloat(payroll.allowance) : 0,
-        bonus: payroll.bonus ? parseFloat(payroll.bonus) : 0,
-        deduction: payroll.deduction ? parseFloat(payroll.deduction) : 0,
-        netSalary: payroll.netSalary ? parseFloat(payroll.netSalary) : 0,
-      }));
-      
-      setPayrolls(formattedData);
-      setTotalRows(response.data?.totalElements || response.data?.data?.totalElements || 0);
-      setError(null);
-    } catch (err) {
-      console.error("Failed to fetch payrolls:", err);
-      setError("Không thể tải danh sách bảng lương.");
-      toast.error("Không thể tải danh sách bảng lương. Vui lòng thử lại!");
-    } finally {
-      setLoading(false);
-    }
-  }, [paginationModel, query, status, month, year, department]);
-
-  // Gọi API khi component mount hoặc khi bộ lọc/phân trang thay đổi
-  useEffect(() => {
-    fetchPayrolls();
-  }, [fetchPayrolls]);
-
-  // Load danh sách nhân viên và phòng ban khi component mount
-  useEffect(() => {
-    if (openAdd) {
-      fetchEmployees();
-    }
-    loadDepartments();
-  }, [openAdd, fetchEmployees]);
-
-  const [formState, setFormState] = useState({
-    employeeId: "",
-    basicSalary: "",
-    allowance: "",
-    bonus: "",
-    deduction: "",
-    month: "",
-    status: "pending",
-  });
-
-  const resetForm = () => {
-    setFormState({
-      employeeId: "",
-      basicSalary: "",
-      allowance: "",
-      bonus: "",
-      deduction: "",
-      month: "",
-      status: "pending",
-    });
-  };
-
-  const handleSavePayroll = async (e) => {
-    e.preventDefault();
-    if (!formState.employeeId || !formState.basicSalary || !formState.month) {
-      toast.error("Vui lòng điền đầy đủ các trường bắt buộc: Nhân viên, Lương cơ bản, Tháng");
+    if (savedAdjustments.length === 0) {
+      toast.error("No adjustments have been saved. Please save adjustments for at least one employee.");
       return;
     }
 
-    // Tính toán net salary
-    const basicSalary = parseFloat(formState.basicSalary) || 0;
-    const allowance = parseFloat(formState.allowance) || 0;
-    const bonus = parseFloat(formState.bonus) || 0;
-    const deduction = parseFloat(formState.deduction) || 0;
-    const netSalary = basicSalary + allowance + bonus - deduction;
-
-    const payrollData = {
-      ...formState,
-      basicSalary: basicSalary,
-      allowance: allowance,
-      bonus: bonus,
-      deduction: deduction,
-      netSalary: netSalary,
-    };
-
-    console.log("Submitting new payroll:", payrollData);
-    
-    const loadingToast = toast.loading("Đang thêm bảng lương...");
+    const loadingToast = toast.loading("Calculating payroll...");
     try {
-      const response = await payrollService.createPayroll(payrollData);
+      const adjustments = savedAdjustments.map(adj => ({
+        employeeId: adj.empId,
+        allowance: adj.allowance,
+        bonus: adj.bonus,
+        deduction: adj.deduction
+      }));
+
+      await payrollService.createPayrollForDepartment(selectedDepartment.id, adjustments);
       toast.dismiss(loadingToast);
-      toast.success(`Đã thêm bảng lương thành công!`);
-      setOpenAdd(false);
-      resetForm();
-      fetchPayrolls(); // Tải lại danh sách sau khi thêm thành công
+      toast.success("Payroll calculated successfully!");
+      setOpenConfirmCalculate(false);
+      setSavedAdjustments([]); // Clear saved adjustments after successful calculation
+      getPayrolls();
     } catch (err) {
       toast.dismiss(loadingToast);
-      console.error("Failed to create payroll:", err);
-      toast.error(err.response?.data?.message || `Không thể thêm bảng lương. Vui lòng thử lại!`);
+      console.error("Failed to calculate payroll:", err);
+      toast.error(err.response?.data?.message || "Failed to calculate payroll.");
     }
   };
 
-  const handleRowClick = (params) => {
-    // navigate(`/admin/payrolls/${params.row.id}`);
+  const handleEdit = (row) => {
+    setEditingPayroll(row);
+    setOpenEdit(true);
+  };
+
+  const handleBonusPenaltyChange = (employeeId, field, value) => {
+    setBonusPenalty(prev => ({
+      ...prev,
+      [employeeId]: {
+        ...prev[employeeId],
+        [field]: parseFloat(value) || 0
+      }
+    }));
+  };
+
+  const handleSaveAdjustment = (employeeId) => {
+    const adjustment = bonusPenalty[employeeId];
+    if (!adjustment) {
+      toast.error("No adjustments to save.");
+      return;
+    }
+
+    const newAdjustment = {
+      empId: employeeId,
+      allowance: adjustment.allowance || 0,
+      bonus: adjustment.bonus || 0,
+      deduction: adjustment.deduction || 0,
+    };
+    console.log("Saving adjustment:", newAdjustment);
+
+    setSavedAdjustments(prev => {
+      const existingIndex = prev.findIndex(item => item.empId === employeeId);
+      if (existingIndex > -1) {
+        const updatedAdjustments = [...prev];
+        updatedAdjustments[existingIndex] = newAdjustment;
+        return updatedAdjustments;
+      } else {
+        return [...prev, newAdjustment];
+      }
+    });
+    console.log("Current saved adjustments:", savedAdjustments);
+    toast.success(`Saved adjustments for employee ID: ${employeeId}`);
+  };
+
+  const employeeColumns = [
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'fullName', headerName: 'Full name', width: 200, renderCell: (params) => <span className="font-medium">{params.row.fullName}</span> },
+    { field: 'empId', headerName: 'Employee ID', width: 130,renderCell: (params) => <span className="font-medium">{params.row.id}</span>  },
+    { field: 'allowance', headerName: 'Allowance', width: 150, renderCell: (params) => (
+        <TextField type="number" size="small" value={bonusPenalty[params.row.id]?.allowance || ''} onChange={(e) => handleBonusPenaltyChange(params.row.id, 'allowance', e.target.value)} />
+    )},
+    { field: 'bonus', headerName: 'Bonus', width: 150, renderCell: (params) => (
+        <TextField type="number" size="small" value={bonusPenalty[params.row.id]?.bonus || ''} onChange={(e) => handleBonusPenaltyChange(params.row.id, 'bonus', e.target.value)} />
+    )},
+    { field: 'penalty', headerName: 'Deduction', width: 150, renderCell: (params) => (
+        <TextField type="number" size="small" value={bonusPenalty[params.row.id]?.deduction || ''} onChange={(e) => handleBonusPenaltyChange(params.row.id, 'deduction', e.target.value)} />
+    )},
+    {
+      field: 'action',
+      headerName: 'Action',
+      width: 100,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <IconButton color="success" onClick={() => handleSaveAdjustment(params.row.id)}>
+          <CheckCircleIcon />
+        </IconButton>
+      ),
+    }
+  ];
+
+  const payrollColumns = [
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'fullName', headerName: 'Full name', width: 200, renderCell: (params) => <span className="font-medium">{params.row.fullName}</span> },
+    { field: 'empId', headerName: 'Employee ID', width: 130 },
+    { field: 'basicSalary', headerName: 'Basic Salary', width: 140 },
+    { field: 'allowance', headerName: 'Allowance', width: 130 },
+    { field: 'bonus', headerName: 'Bonus', width: 130, renderCell: (params) => (<span className="text-green-600">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.value)}</span>) },
+    { field: 'deduction', headerName: 'Deduction', width: 130, renderCell: (params) => (<span className="text-red-600">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.value)}</span>) },
+    { field: 'netSalary', headerName: 'Net Salary', width: 150, renderCell: (params) => (<span className="font-semibold text-green-600">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(params.value)}</span>) },
+    { field: 'status', headerName: 'Status', width: 130, renderCell: (params) => {
+        const statusColors = { 'pending': 'bg-yellow-100 text-yellow-800', 'approved': 'bg-blue-100 text-blue-800', 'paid': 'bg-green-100 text-green-800', 'cancelled': 'bg-red-100 text-red-800' };
+        const statusColor = statusColors[params.value?.toLowerCase()] || 'bg-gray-100 text-gray-800';
+        return (<span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}>{params.value}</span>);
+    }},
+    { field: 'action', headerName: 'Action', width: 130, sortable: false, filterable: false, renderCell: (params) => (
+        <div className="flex gap-2">
+          <IconButton color="primary" onClick={(e) => { e.stopPropagation(); handleEdit(params.row); }}><EditIcon fontSize="small" /></IconButton>
+        </div>
+    )},
+  ];
+
+  const renderContent = () => {
+    if (!selectedDepartment) {
+      return (
+        <DepartmentTable
+          departments={deptList}
+          loading={deptLoading}
+          onRowClick={(dept) => setSelectedDepartment(dept)}
+          page={deptPagination.page}
+          rowsPerPage={deptPagination.rowsPerPage}
+          onPageChange={(e, newPage) => setDeptPagination(prev => ({ ...prev, page: newPage }))}
+          onRowsPerPageChange={(e) => setDeptPagination({ page: 0, rowsPerPage: parseInt(e.target.value, 10) })}
+        />
+      );
+    }
+
+    return (
+      <>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Button
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+                onClick={() => setSelectedDepartment(null)}
+            >
+                Back to Departments
+            </Button>
+            <Typography variant="h5" fontWeight={600}>{selectedDepartment.deptName} - Payroll</Typography>
+        </Box>
+
+        <PayrollFilters
+          query={query} setQuery={setQuery}
+          status={status} setStatus={setStatus}
+          month={month} setMonth={setMonth}
+          year={year} setYear={setYear}
+          onCalculate={handleCalculate}
+        />
+        
+        {error && <Typography color="error">{error}</Typography>}
+
+        <Box mt={4}>
+            <Typography variant="h6">Enter Bonus/Penalty</Typography>
+            <PayrollTable
+            rows={employees}
+            columns={employeeColumns}
+            loading={loading}
+            onRowClick={() => {}}
+            rowCount={employees.length}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            paginationMode="client"
+            bonusPenalty={bonusPenalty}
+            setBonusPenalty={setBonusPenalty}
+            />
+        </Box>
+      </>
+    );
   };
 
   return (
-    <div className="min-h-screen flex bg-linear-to-br from-white via-gray-50 to-white">
-      {/* Main content */}
-      <div className="flex-1 flex items-start justify-center">
-        <div className="mx-auto w-full max-w-6xl my-6">
-          <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb', backgroundColor: 'white' }}>
+    <div className="min-h-screen flex bg-gray-50">
+      <div className="flex-1 flex items-start justify-center p-4 sm:p-6">
+        <div className="w-full max-w-7xl">
+          <Paper className="p-4 sm:p-6 md:p-8" elevation={0} sx={{ borderRadius: "16px", border: "1px solid #e5e7eb" }}>
             <Box mb={3}>
-              <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
+              <Typography variant="h4" fontWeight={700} color="primary.main">
                 Payroll Management
               </Typography>
             </Box>
-            <PayrollFilters
-              query={query}
-              setQuery={setQuery}
-              status={status}
-              setStatus={setStatus}
-              month={month}
-              setMonth={setMonth}
-              year={year}
-              setYear={setYear}
-              departments={departments}
-              department={department}
-              setDepartment={setDepartment}
-              onCreate={() => setOpenAdd(true)}
-              onSearch={fetchPayrolls}
-              onCalculate={handleCalculate}
-            />
-
-            {error && <Typography color="error" sx={{ my: 2 }}>{error}</Typography>}
-
-            <Box sx={{ mt: 4 }}>
-              <PayrollTable
-                rows={payrolls}
-                columns={columns}
-                onRowClick={handleRowClick}
-                loading={loading}
-                rowCount={totalRows}
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                paginationMode="server"
-              />
-            </Box>
+            {renderContent()}
           </Paper>
         </div>
       </div>
-
-      <AddPayrollDialog 
-        open={openAdd} 
-        onClose={() => { setOpenAdd(false); resetForm(); }} 
-        onSubmit={handleSavePayroll} 
-        formState={formState} 
-        setFormState={setFormState} 
-        employees={employees} 
-      />
-
-      <DeletePayrollDialog
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
-        onConfirm={handleConfirmDelete}
-        payrollInfo={payrollToDelete}
-      />
-
-      <CalculatePayrollDialog
-        open={openCalculate}
-        onClose={() => setOpenCalculate(false)}
-        employees={employees}
-        onCalculate={handleConfirmCalculate}
-        bonusPenalty={bonusPenalty}
-        setBonusPenalty={setBonusPenalty}
-      />
-
-      <EditPayrollDialog
-        open={openEdit}
-        onClose={() => setOpenEdit(false)}
-        onSave={handleSaveBonusPenalty}
-        payroll={editingPayroll}
-      />
+      <EditPayrollDialog open={openEdit} onClose={() => setOpenEdit(false)} payroll={editingPayroll} onSuccess={getPayrolls} />
+      <Dialog open={openConfirmCalculate} onClose={() => setOpenConfirmCalculate(false)}>
+        <DialogTitle>Confirm Payroll Calculation</DialogTitle>
+        <DialogContent>Are you sure you want to calculate payroll for this department?</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenConfirmCalculate(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleConfirmCalculate}>Confirm</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

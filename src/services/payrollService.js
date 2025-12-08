@@ -1,66 +1,59 @@
-import {axiosInstance} from "../lib/axios";
+import { axiosInstance } from "../lib/axios";
 
 /**
  * Service để quản lý các API liên quan đến Bảng lương.
+ * Cập nhật dựa trên Swagger UI: /payrolls
  */
 export const payrollService = {
   /**
-   * Lấy danh sách bảng lương với phân trang và bộ lọc
-   * @param {object} params - Các tham số tìm kiếm và phân trang
+   * [GET /payrolls]
+   * Lấy danh sách bảng lương có lọc (Filter payrolls)
+   * @param {object} params - Các tham số tìm kiếm (tháng, năm, v.v.)
    * @returns {Promise<object>} Danh sách bảng lương
    */
   getAllPayrolls: async (params) => {
+    // Tự động chuyển object params thành query string (vd: ?month=10&year=2023)
     const queryString = new URLSearchParams(params).toString();
     return axiosInstance.get(`/payrolls?${queryString}`);
   },
 
   /**
-   * Lấy chi tiết một bảng lương theo ID
-   * @param {string|number} id - ID của bảng lương
-   * @returns {Promise<object>} Dữ liệu chi tiết của bảng lương
+   * [POST /payrolls]
+   * Tạo bảng lương cho cả phòng ban (Create payroll for department)
+   * @param {object} data - Dữ liệu tạo lương (thường gồm deptId, month, year)
+   * @returns {Promise<object>} Kết quả tạo
    */
-  getPayrollById: async (id) => {
-    return axiosInstance.get(`/payrolls/${id}`);
+  createPayrollForDepartment: async (deptId, data) => {
+    return axiosInstance.post(`/payrolls?deptId=${deptId}`, data);
   },
 
   /**
-   * Tạo mới một bảng lương
-   * @param {FormData|object} payrollData - Dữ liệu bảng lương
-   * @returns {Promise<object>} Dữ liệu bảng lương vừa tạo
+   * [POST /payrolls/single]
+   * Tạo bảng lương đơn lẻ (Create single payroll)
+   * @param {object} data - Dữ liệu tạo lương (thường gồm empId, month, year)
+   * @returns {Promise<object>} Kết quả tạo
    */
-  createPayroll: async (payrollData) => {
-    return axiosInstance.post('/payrolls', payrollData);
+  createSinglePayroll: async (data) => {
+    return axiosInstance.post('/payrolls/single', data);
   },
 
   /**
-   * Cập nhật một bảng lương
-   * @param {string|number} id - ID của bảng lương
-   * @param {object|FormData} payrollData - Dữ liệu bảng lương cần cập nhật
-   * @returns {Promise<object>} Dữ liệu của bảng lương sau khi cập nhật
+   * [GET /payrolls/employee/{empId}]
+   * Lấy lịch sử bảng lương của một nhân viên
+   * @param {string|number} empId - ID của nhân viên
+   * @returns {Promise<object>} Danh sách lương của nhân viên đó
    */
-  updatePayroll: async (id, payrollData) => {
-    if (payrollData instanceof FormData) {
-      payrollData.append('_method', 'PUT');
-      return axiosInstance.post(`/payrolls/${id}`, payrollData);
-    }
-    return axiosInstance.put(`/payrolls/${id}`, payrollData);
+  getPayrollsByEmployee: async (empId) => {
+    return axiosInstance.get(`/payrolls/employee/${empId}`);
   },
 
   /**
-   * Xóa một bảng lương
-   * @param {string|number} id - ID của bảng lương cần xóa
-   * @returns {Promise<object>} Thông báo thành công từ API
+   * [GET /payrolls/department/{deptId}]
+   * Lấy danh sách bảng lương theo phòng ban
+   * @param {string|number} deptId - ID của phòng ban
+   * @returns {Promise<object>} Danh sách lương thuộc phòng ban đó
    */
-  deletePayroll: async (id) => {
-    return axiosInstance.delete(`/payrolls/${id}`);
-  },
-
-  calculatePayroll: async (payrollData) => {
-    return axiosInstance.post('/payrolls/calculate', payrollData);
-  },
-
-  updatePayrollBonusPenalty: async (id, data) => {
-    return axiosInstance.put(`/payrolls/${id}/bonus-penalty`, data);
+  getPayrollsByDepartment: async (deptId) => {
+    return axiosInstance.get(`/payrolls/department/${deptId}`);
   },
 };
-

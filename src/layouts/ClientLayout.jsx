@@ -59,6 +59,7 @@ const ClientLayout = () => {
       "/my-attendance": "My Attendance",
       "/leave-requests": "Leave Requests",
       "/my-kpi": "My KPI",
+      "/my-tasks": "My Tasks",
     };
     return titles[path] || "Dashboard";
   };
@@ -68,6 +69,7 @@ const ClientLayout = () => {
     { text: "My Attendance", icon: <AccessTimeIcon />, path: "/my-attendance" },
     { text: "Leave Requests", icon: <EventBusyIcon />, path: "/leave-requests" },
     { text: "My KPI", icon: <AssessmentIcon />, path: "/my-kpi" },
+    { text: "My Tasks", icon: <AssessmentIcon />, path: "/my-tasks" },
   ];
 
   // CHỈ THÊM MENU ADMIN NẾU LÀ ADMIN HOẶC HR

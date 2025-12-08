@@ -225,7 +225,7 @@ export default function AccountManagement() {
           <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb' }}>
             <Box mb={3}>
               <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
-                Employye List
+                Account Management
               </Typography>
             </Box>
             {/* Filters + Actions */}

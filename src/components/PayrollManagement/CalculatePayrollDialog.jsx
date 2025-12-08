@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -22,7 +22,10 @@ export default function CalculatePayrollDialog({
   onCalculate,
   bonusPenalty,
   setBonusPenalty,
+  onRecalculate,
+  isRecalculate = false,
 }) {
+
   const handleBonusChange = (employeeId, value) => {
     setBonusPenalty((prev) => ({
       ...prev,
@@ -84,9 +87,15 @@ export default function CalculatePayrollDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onCalculate} variant="contained">
-          Calculate
-        </Button>
+        {isRecalculate ? (
+          <Button onClick={onRecalculate} variant="contained">
+            Recalculate
+          </Button>
+        ) : (
+          <Button onClick={onCalculate} variant="contained">
+            Calculate
+          </Button>
+        )}
       </DialogActions>
     </Dialog>
   );

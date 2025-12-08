@@ -1,16 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
+import moment from 'moment';
 import { taskService } from '../services/taskService';
 
 export const useMyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ searchTerm: '', status: '' });
+  const [filters, setFilters] = useState({ year: '', month: '', status: '' });
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (currentFilters) => {
     try {
       setLoading(true);
-      const response = await taskService.getMyTasks();
+      const response = await taskService.getMyTasks(currentFilters);
       setTasks(response.data.data);
     } catch (err) {
       setError(err);
@@ -20,8 +21,8 @@ export const useMyTasks = () => {
   };
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    fetchTasks(filters);
+  }, [filters]);
 
   const handleFilterChange = (filterName, value) => {
     setFilters((prevFilters) => ({
@@ -33,28 +34,19 @@ export const useMyTasks = () => {
   const updateTaskStatus = async (taskId, status) => {
     try {
       await taskService.updateStatus(taskId, status);
-      await fetchTasks(); // Refetch tasks to get the updated list
+      await fetchTasks(filters);
     } catch (err) {
       console.error('Failed to update task status', err);
-      // Optionally, show an error message to the user
     }
   };
 
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      const searchTermMatch = task.title.toLowerCase().includes(filters.searchTerm.toLowerCase());
-      const statusMatch = filters.status ? task.status === filters.status : true;
-      return searchTermMatch && statusMatch;
-    });
-  }, [tasks, filters]);
-
   return {
-    tasks: filteredTasks,
+    tasks: tasks,
     loading,
     error,
     filters,
     onFilterChange: handleFilterChange,
     updateTaskStatus,
-    refetch: fetchTasks,
+    refetch: () => fetchTasks(filters),
   };
 };
