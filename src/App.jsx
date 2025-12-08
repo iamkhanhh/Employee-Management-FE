@@ -25,6 +25,7 @@ import KpiReviewPage from "./pages/admin/KpiReviewPage";
 import MyProfile from "./pages/profile/MyProfile";
 import MyAttendance from "./components/Attendance/MyAttendance";
 import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
+import MyTasks from "./pages/employeeScreens/MyTasks";
 
 // Auth
 import Login from "./pages/auth/LoginPage";
@@ -54,6 +55,7 @@ function App() {
             <Route path="/my-attendance" element={<MyAttendance />} />
             <Route path="/leave-requests" element={<LeaveRequestPage />} />
             <Route path="/my-kpi" element={<KpiReviewPage />} /> {/* USER xem KPI cá nhân */}
+            <Route path="/my-tasks" element={<MyTasks />} />
           </Route>
         </Route>
 
