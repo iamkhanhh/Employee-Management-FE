@@ -135,7 +135,7 @@ const ContractDetailDialog = ({
           <Grid container spacing={3}>
 
             {/* === PHẦN TRÊN: Employee Name, ID, Contract Type, Created At === */}
-            <Grid item xs={12} md={6}>
+            <Grid size={3}>
               <Typography variant="caption" color="text.secondary">
                 Employee Name
               </Typography>
@@ -147,14 +147,14 @@ const ContractDetailDialog = ({
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={3}>
               <Typography variant="caption" color="text.secondary">
                 Employee ID
               </Typography>
               <Typography fontWeight={600}>{contract.empId}</Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={3}>
               <Typography variant="caption" color="text.secondary">
                 Contract Type
               </Typography>
@@ -163,35 +163,54 @@ const ContractDetailDialog = ({
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary">
-                Created At
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <CalendarIcon fontSize="small" color="action" />
-                <Typography fontWeight={600}>
-                  {formatDate(contract.createdAt)}
-                </Typography>
-              </Stack>
-            </Grid>
 
-            <Grid item xs={12}><Divider /></Grid>
+
 
             {/* === DƯỚI CÙNG: Start Date + End Date + Contract Document === */}
 
-            {/* Contract Document - nằm cuối cùng */}
+
+            {/* Start Date */}
+            <Grid size={4}>
+              <Typography variant="caption" color="text.secondary">
+                Start Date
+              </Typography>
+              <Paper sx={{ p: 2, mt: 0.5, background: '#e3f2fd' }}>
+                <Stack direction="row" spacing={1}>
+                  <CalendarIcon color="primary" />
+                  <Typography fontWeight={600} color="primary">
+                    {formatDate(contract.startDate)}
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+
+            {/* End Date */}
+            <Grid size={4}>
+              <Typography variant="caption" color="text.secondary">
+                End Date
+              </Typography>
+              <Paper sx={{ p: 2, mt: 0.5, background: '#ffebee' }}>
+                <Stack direction="row" spacing={1}>
+                  <CalendarIcon color="error" />
+                  <Typography fontWeight={600} color="error">
+                    {formatDate(contract.endDate)}
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+
             {contract.fileUrl && (
               <Grid item xs={12}>
                 <Typography variant="caption" color="text.secondary">
                   Contract Document
                 </Typography>
 
-                <Paper sx={{ p: 2, mt: 1 }}>
+                <Paper sx={{ p: 1.5, mt: 1 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" spacing={1} alignItems="center">
                       <DescriptionIcon />
-                      <Typography fontSize="14px">
-                        {contract.fileUrl.split("/").pop()}
+                      <Typography fontSize="10px">
+
                       </Typography>
                     </Stack>
 
@@ -207,36 +226,6 @@ const ContractDetailDialog = ({
                 </Paper>
               </Grid>
             )}
-
-            {/* Start Date */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary">
-                Start Date
-              </Typography>
-              <Paper sx={{ p: 2, mt: 0.5, background: '#e3f2fd' }}>
-                <Stack direction="row" spacing={1}>
-                  <CalendarIcon color="primary" />
-                  <Typography fontWeight={600} color="primary">
-                    {formatDate(contract.startDate)}
-                  </Typography>
-                </Stack>
-              </Paper>
-            </Grid>
-
-            {/* End Date */}
-            <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary">
-                End Date
-              </Typography>
-              <Paper sx={{ p: 2, mt: 0.5, background: '#ffebee' }}>
-                <Stack direction="row" spacing={1}>
-                  <CalendarIcon color="error" />
-                  <Typography fontWeight={600} color="error">
-                    {formatDate(contract.endDate)}
-                  </Typography>
-                </Stack>
-              </Paper>
-            </Grid>
 
           </Grid>
         )}

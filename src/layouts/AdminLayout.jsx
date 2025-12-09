@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { styled } from '@mui/material/styles';
 import {
     Drawer,
     List,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    AppBar,
+    AppBar as MuiAppBar,
     Toolbar,
     IconButton,
     Typography,
@@ -16,6 +17,8 @@ import {
     Menu,
     MenuItem,
     Avatar,
+    CssBaseline,
+    Tooltip,
 } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
 import PeopleIcon from '@mui/icons-material/People';
@@ -37,22 +40,64 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import MarkunreadIcon from '@mui/icons-material/Markunread';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
-import KeyIcon from '@mui/icons-material/Key';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MenuIcon from '@mui/icons-material/Menu';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import SettingsIcon from '@mui/icons-material/Settings';
+import BusinessIcon from '@mui/icons-material/Business';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+
+const drawerWidth = 280;
+const collapsedDrawerWidth = 72;
+
+// Màu chủ đạo
+const primaryGradient = 'linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%)';
+const headerGradient = 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)';
+
+// Common styles for menu items
+const menuItemStyles = {
+    mx: 1,
+    borderRadius: '10px',
+    mb: 0.5,
+    '&.Mui-selected': {
+        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+        '& .MuiListItemIcon-root': { color: '#ffffff' },
+        '& .MuiListItemText-primary': { color: '#ffffff', fontWeight: 600 },
+        '&:hover': { background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' },
+    },
+    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+    '& .MuiListItemIcon-root': { color: '#94a3b8', minWidth: 40 },
+    '& .MuiListItemText-primary': { color: '#e2e8f0', fontSize: '0.9rem' },
+};
+
+const subMenuItemStyles = {
+    ...menuItemStyles,
+    pl: 4,
+    py: 0.8,
+    '& .MuiListItemText-primary': { color: '#cbd5e1', fontSize: '0.85rem' },
+};
+
+const disabledMenuStyles = {
+    ...subMenuItemStyles,
+    opacity: 0.4,
+};
+
+const categoryHeaderStyles = {
+    mx: 1,
+    borderRadius: '10px',
+    mb: 0.5,
+    '& .MuiListItemIcon-root': { color: '#60a5fa', minWidth: 40 },
+    '& .MuiListItemText-primary': { color: '#f1f5f9', fontWeight: 600, fontSize: '0.95rem' },
+    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+};
 
 export default function AdminLayout() {
     const [open, setOpen] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
-
-    const drawerWidth = 260;
 
     const [openHR, setOpenHR] = useState(true);
     const [openTimekeeping, setOpenTimekeeping] = useState(false);
@@ -61,577 +106,436 @@ export default function AdminLayout() {
     const [openComms, setOpenComms] = useState(false);
     const [openReports, setOpenReports] = useState(false);
 
-    // User Menu State
     const [anchorElUser, setAnchorElUser] = useState(null);
+    const isAdmin = true;
 
-    const isAdmin = true; 
+    const currentDrawerWidth = open ? drawerWidth : collapsedDrawerWidth;
 
-    // User Menu Handlers
-    const handleOpenUserMenu = (event) => {
-        setAnchorElUser(event.currentTarget);
-    };
-
-    const handleCloseUserMenu = () => {
-        setAnchorElUser(null);
-    };
+    const handleDrawerToggle = () => setOpen(!open);
+    const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
+    const handleCloseUserMenu = () => setAnchorElUser(null);
 
     const handleLogout = () => {
         handleCloseUserMenu();
-        // Thêm logic logout ở đây
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate("/login");
     };
 
-    // Get page title from path
-    const getPageTitle = (path) => {
-        if (path.startsWith("/admin/employees/") && path !== "/admin/employees") {
-            return "Employee Information";
-        }
-        switch (path) {
-            case "/admin/dashboard":
-            case "/admin":
-                return "Home";
-            case "/admin/account-management":
-                return "Account Management";
-            case "/admin/employees":
-                return "Employee List";
-            case "/admin/contracts":
-                return "Contract Management";
-            case "/admin/attendance":
-                return "Attendance Management";
-            case "/admin/payroll":
-                return "Payroll";
-            case "/admin/kpi":
-                return "KPI";
-            case "/admin/tasks":
-                return "Task Management";
-            case "/admin/departments":
-                return "Department Management";
-            case "/admin/leave-requests":
-                return "Leave Requests";
-            case "/admin/profile":
-                return "My Profile";
-            default:
-                return "Home";
-        }
-    };
+
 
     return (
-        <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc" }}>
+        <Box sx={{ display: "flex", minHeight: '100vh' }}>
+            <CssBaseline />
+
+            {/* AppBar */}
+            <MuiAppBar
+                position="fixed"
+                sx={{
+                    background: primaryGradient,
+                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                }}
+            >
+                <Toolbar sx={{ minHeight: '70px !important', px: { xs: 2, sm: 3 } }}>
+                    {/* Logo Section */}
+                    <Box
+                        sx={{
+                            width: currentDrawerWidth - 24,
+                            display: 'flex',
+                            alignItems: 'center',
+                            transition: 'width 0.3s ease',
+                            flexShrink: 0,
+                        }}
+                    >
+                        {/* Toggle Button */}
+                        <Tooltip title={open ? "Thu gọn menu" : "Mở rộng menu"}>
+                            <IconButton
+                                color="inherit"
+                                onClick={handleDrawerToggle}
+                                sx={{
+                                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' },
+                                }}
+                            >
+                                {open ? <MenuOpenIcon /> : <MenuIcon />}
+                            </IconButton>
+                        </Tooltip>
+                        {open && (
+                            <Typography
+                                variant="h6"
+                                noWrap
+                                sx={{
+                                    fontWeight: 700,
+                                    fontSize: '1.1rem',
+                                    background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                }}
+                            >
+                                HR System
+                            </Typography>
+                        )}
+                    </Box>
+
+
+
+
+                 
+
+                    <Box sx={{ flexGrow: 1 }} />
+
+                    {/* User Info */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <Typography variant="body2" sx={{ color: '#f1f5f9', fontWeight: 600 }}>Admin User</Typography>
+                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>Administrator</Typography>
+                        </Box>
+
+                        <IconButton
+                            onClick={handleOpenUserMenu}
+                            sx={{
+                                p: 0.5,
+                                border: '2px solid rgba(96, 165, 250, 0.5)',
+                                '&:hover': { border: '2px solid #60a5fa', transform: 'scale(1.05)' },
+                            }}
+                        >
+                            <Avatar sx={{ width: 40, height: 40, background: headerGradient, fontWeight: 600 }}>A</Avatar>
+                        </IconButton>
+
+                        <Menu
+                            anchorEl={anchorElUser}
+                            open={Boolean(anchorElUser)}
+                            onClose={handleCloseUserMenu}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                            PaperProps={{
+                                elevation: 0,
+                                sx: {
+                                    overflow: 'visible',
+                                    filter: 'drop-shadow(0px 4px 20px rgba(0,0,0,0.15))',
+                                    mt: 1.5,
+                                    minWidth: 220,
+                                    borderRadius: 3,
+                                    '&:before': {
+                                        content: '""',
+                                        display: 'block',
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 20,
+                                        width: 12,
+                                        height: 12,
+                                        bgcolor: 'background.paper',
+                                        transform: 'translateY(-50%) rotate(45deg)',
+                                    },
+                                },
+                            }}
+                        >
+                            <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Admin User</Typography>
+                                <Typography variant="caption" sx={{ color: '#64748b' }}>admin@company.com</Typography>
+                            </Box>
+                            <MenuItem onClick={() => { handleCloseUserMenu(); navigate('/profile'); }} sx={{ py: 1.5, mt: 1 }}>
+                                <PersonIcon fontSize="small" sx={{ mr: 1.5, color: '#6366f1' }} />
+                                <Typography variant="body2">My Profile</Typography>
+                            </MenuItem>
+                            {isAdmin && (
+                                <MenuItem onClick={() => { handleCloseUserMenu(); navigate('/admin/dashboard'); }} sx={{ py: 1.5 }}>
+                                    <AdminPanelSettingsIcon fontSize="small" sx={{ mr: 1.5, color: '#f59e0b' }} />
+                                    <Typography variant="body2">Admin Dashboard</Typography>
+                                </MenuItem>
+                            )}
+                            <Divider sx={{ my: 1 }} />
+                            <MenuItem onClick={handleLogout} sx={{ py: 1.5, '&:hover': { backgroundColor: '#fef2f2' } }}>
+                                <LogoutIcon fontSize="small" sx={{ mr: 1.5, color: '#ef4444' }} />
+                                <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 500 }}>Logout</Typography>
+                            </MenuItem>
+                        </Menu>
+                    </Box>
+                </Toolbar>
+            </MuiAppBar>
+
             {/* Sidebar */}
             <Drawer
-                variant="persistent"
-                open={open}
+                variant="permanent"
                 sx={{
-                    width: drawerWidth,
+                    width: currentDrawerWidth,
                     flexShrink: 0,
-                    "& .MuiDrawer-paper": {
-                        width: drawerWidth,
-                        boxSizing: "border-box",
-                        backgroundColor: "#ffffff",
-                        color: "#1e293b",
-                        borderRight: "1px solid #e5e7eb",
-                        boxShadow: '2px 0 8px rgba(0, 0, 0, 0.05)',
+                    '& .MuiDrawer-paper': {
+                        width: currentDrawerWidth,
+                        boxSizing: 'border-box',
+                        background: primaryGradient,
+                        borderRight: 'none',
+                        transition: 'width 0.3s ease',
+                        overflowX: 'hidden',
                     },
                 }}
             >
-                <Toolbar sx={{ justifyContent: "center", background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)", minHeight: "70px !important" }}>
-                    <Typography variant="h6" noWrap sx={{ fontWeight: "bold", color: "#ffffff", fontSize: "1.1rem", letterSpacing: "0.5px" }}>
-                        HR MANAGEMENT
-                    </Typography>
-                </Toolbar>
-                <Divider />
+                <Toolbar sx={{ minHeight: '70px !important' }} />
 
-                <List component="nav" sx={{ width: '100%', bgcolor: 'background.paper', pt: 1 }}>
-                    <ListItemButton
-                        component={NavLink}
-                        to="/admin/dashboard"
-                        selected={location.pathname === '/admin/dashboard' || location.pathname === '/admin'}
-                        sx={{
-                            '&.Mui-selected': {
-                                backgroundColor: '#eff6ff',
-                                borderLeft: '4px solid #2563eb',
-                                '& .MuiListItemIcon-root': {
-                                    color: '#2563eb',
-                                },
-                                '& .MuiListItemText-primary': {
-                                    color: '#2563eb',
-                                    fontWeight: 600,
-                                },
-                            },
-                            '&:hover': {
-                                backgroundColor: '#f3f4f6',
-                            },
-                        }}
-                    >
-                        <ListItemIcon><HomeIcon /></ListItemIcon>
-                        <ListItemText primary="Home" />
-                    </ListItemButton>
-                    <Divider sx={{ my: 1 }} />
-
-                    {/* Account Management */}
-                    <ListItemButton
-                        component={NavLink}
-                        to="/admin/account-management"
-                        selected={location.pathname === '/admin/account-management'}
-                        sx={{
-                            '&.Mui-selected': {
-                                backgroundColor: '#eff6ff',
-                                borderLeft: '4px solid #2563eb',
-                                '& .MuiListItemIcon-root': {
-                                    color: '#2563eb',
-                                },
-                                '& .MuiListItemText-primary': {
-                                    color: '#2563eb',
-                                    fontWeight: 600,
-                                },
-                            },
-                            '&:hover': {
-                                backgroundColor: '#f3f4f6',
-                            },
-                        }}
-                    >
-                        <ListItemIcon><ManageAccountsIcon /></ListItemIcon>
-                        <ListItemText primary="Account Management" />
-                    </ListItemButton>
-                    <Divider sx={{ my: 1 }} />
-
-                    {/* HR Management */}
-                    <ListItemButton
-                        onClick={() => setOpenHR(!openHR)}
-                        sx={{
-                            '&:hover': {
-                                backgroundColor: '#f3f4f6',
-                            },
-                        }}
-                    >
-                        <ListItemIcon><PeopleIcon /></ListItemIcon>
-                        <ListItemText primary="HR management" />
-                        {openHR ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openHR} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
+                <Box sx={{ overflowY: 'auto', overflowX: 'hidden', py: 2, flex: 1 }}>
+                    <List component="nav">
+                        {/* Home */}
+                        <Tooltip title={!open ? "Home" : ""} placement="right">
                             <ListItemButton
-                                sx={{ pl: 4 }}
                                 component={NavLink}
-                                to="/admin/employees"
-                                selected={location.pathname.startsWith('/admin/employees')}
-                                className={location.pathname.startsWith('/admin/employees') ? 'selected' : ''}
+                                to="/admin/dashboard"
+                                selected={location.pathname === '/admin/dashboard' || location.pathname === '/admin'}
+                                sx={menuItemStyles}
                             >
-                                <ListItemIcon><PeopleIcon /></ListItemIcon>
-                                <ListItemText primary="Employee list" />
+                                <ListItemIcon><HomeIcon /></ListItemIcon>
+                                {open && <ListItemText primary="Home" />}
                             </ListItemButton>
+                        </Tooltip>
 
+                        {/* Account Management */}
+                        <Tooltip title={!open ? "Account Management" : ""} placement="right">
                             <ListItemButton
-                                sx={{ pl: 4 }}
                                 component={NavLink}
-                                to="/admin/departments"
-                                selected={location.pathname.startsWith('/admin/departments')}
+                                to="/admin/account-management"
+                                selected={location.pathname === '/admin/account-management'}
+                                sx={menuItemStyles}
                             >
-                                <ListItemIcon><AccountTreeIcon /></ListItemIcon>
-                                <ListItemText primary="Department management" />
+                                <ListItemIcon><ManageAccountsIcon /></ListItemIcon>
+                                {open && <ListItemText primary="Account Management" />}
                             </ListItemButton>
+                        </Tooltip>
 
-                            <ListItemButton
-                                sx={{ pl: 4 }}
-                                component={NavLink}
-                                to="/admin/contracts"
-                                selected={location.pathname.startsWith('/admin/contracts')}
+                        {open && (
+                            <Typography
+                                variant="overline"
+                                sx={{ px: 2, py: 1.5, display: 'block', color: '#64748b', fontSize: '0.7rem', fontWeight: 700 }}
                             >
-                                <ListItemIcon><SummarizeIcon /></ListItemIcon>
-                                <ListItemText primary="Contract management" />
-                            </ListItemButton>
+                                MAIN MENU
+                            </Typography>
+                        )}
 
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><BadgeIcon /></ListItemIcon>
-                                <ListItemText primary="Position management" />
-                            </ListItemButton>
+                        {/* HR Management */}
+                        <ListItemButton onClick={() => setOpenHR(!openHR)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><PeopleIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="HR Management" />
+                                    {openHR ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openHR} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/employees" selected={location.pathname.startsWith('/admin/employees')}>
+                                        <ListItemIcon><PeopleIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Employee List" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/departments" selected={location.pathname.startsWith('/admin/departments')}>
+                                        <ListItemIcon><AccountTreeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Department" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/contracts" selected={location.pathname.startsWith('/admin/contracts')}>
+                                        <ListItemIcon><SummarizeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Contract" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><BadgeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Position" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><WorkHistoryIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Assignments" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><ImportExportIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Import/Export" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><FolderOpenIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Documents" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
 
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><WorkHistoryIcon /></ListItemIcon>
-                                <ListItemText primary="Assign employees to departments" />
-                            </ListItemButton>
+                        {/* Timekeeping */}
+                        <ListItemButton onClick={() => setOpenTimekeeping(!openTimekeeping)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><AccessTimeIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="Timekeeping" />
+                                    {openTimekeeping ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openTimekeeping} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/tasks">
+                                        <ListItemIcon><ListAltIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Task List" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/attendance" selected={location.pathname.startsWith('/admin/attendance')}>
+                                        <ListItemIcon><AccessTimeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Attendance" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/leave-requests">
+                                        <ListItemIcon><EventBusyIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Leave Requests" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><CheckCircleIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Approve Leaves" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><SummarizeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Leave Reports" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
 
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><ImportExportIcon /></ListItemIcon>
-                                <ListItemText primary="Import/Export employees" />
-                            </ListItemButton>
+                        {/* Payroll */}
+                        <ListItemButton onClick={() => setOpenPayroll(!openPayroll)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><PaidIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="Payroll" />
+                                    {openPayroll ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openPayroll} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/payroll" selected={location.pathname.startsWith('/admin/payroll')}>
+                                        <ListItemIcon><PaidIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Payroll Management" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><ReceiptLongIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Payslips" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><TrendingUpIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Salary Summary" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
 
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><FolderOpenIcon /></ListItemIcon>
-                                <ListItemText primary="Employee documents" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
+                        {/* Performance */}
+                        <ListItemButton onClick={() => setOpenPerformance(!openPerformance)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><TimelineIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="Performance" />
+                                    {openPerformance ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openPerformance} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/kpi" selected={location.pathname.startsWith('/admin/kpi')}>
+                                        <ListItemIcon><TaskAltIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Evaluations" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><CheckCircleIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Recognition" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
 
-                    {/* Timekeeping */}
-                    <ListItemButton onClick={() => setOpenTimekeeping(!openTimekeeping)}>
-                        <ListItemIcon><AccessTimeIcon /></ListItemIcon>
-                        <ListItemText primary="Timekeeping" />
-                        {openTimekeeping ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openTimekeeping} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            <ListItemButton
-                                sx={{ pl: 4 }}
-                                component={NavLink}
-                                to="/admin/tasks"
-                            >
-                                <ListItemIcon><ListAltIcon /></ListItemIcon>
-                                <ListItemText primary="Task list" />
-                            </ListItemButton>
+                        {/* Communication */}
+                        <ListItemButton onClick={() => setOpenComms(!openComms)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><MarkunreadIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="Communication" />
+                                    {openComms ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openComms} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/notification" selected={location.pathname.startsWith('/admin/notification')}>
+                                        <ListItemIcon><MarkunreadIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Internal News" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><MarkunreadIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Email Notifications" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
 
-                            <ListItemButton
-                                sx={{ pl: 4 }}
-                                component={NavLink}
-                                to="/admin/attendance"
-                                selected={location.pathname.startsWith('/admin/attendance')}
-                            >
-                                <ListItemIcon><AccessTimeIcon /></ListItemIcon>
-                                <ListItemText primary="Attendance" />
-                            </ListItemButton>
+                        {/* Reports */}
+                        <ListItemButton onClick={() => setOpenReports(!openReports)} sx={categoryHeaderStyles}>
+                            <ListItemIcon><DashboardIcon /></ListItemIcon>
+                            {open && (
+                                <>
+                                    <ListItemText primary="Reports" />
+                                    {openReports ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+                                </>
+                            )}
+                        </ListItemButton>
+                        {open && (
+                            <Collapse in={openReports} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><DashboardIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Overview Dashboard" />
+                                    </ListItemButton>
+                                    <ListItemButton sx={disabledMenuStyles} disabled>
+                                        <ListItemIcon><DescriptionIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                        <ListItemText primary="Export PDF/Excel" />
+                                    </ListItemButton>
+                                </List>
+                            </Collapse>
+                        )}
+                    </List>
+                </Box>
 
-                            <ListItemButton sx={{ pl: 4 }} component={NavLink} to="/admin/leave-requests">
-                                <ListItemIcon><EventBusyIcon /></ListItemIcon>
-                                <ListItemText primary="Leave requests" />
-                            </ListItemButton>
-
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><CheckCircleIcon /></ListItemIcon>
-                                <ListItemText primary="Approve leaves" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><SummarizeIcon /></ListItemIcon>
-                                <ListItemText primary="Leave reports" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-
-                    {/* Payroll */}
-                    <ListItemButton onClick={() => setOpenPayroll(!openPayroll)}>
-                        <ListItemIcon><PaidIcon /></ListItemIcon>
-                        <ListItemText primary="Payroll" />
-                        {openPayroll ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openPayroll} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            <ListItemButton 
-                                sx={{ 
-                                    pl: 4,
-                                    '&.Mui-selected': {
-                                        backgroundColor: '#eff6ff',
-                                        borderLeft: '4px solid #2563eb',
-                                        '& .MuiListItemIcon-root': {
-                                            color: '#2563eb',
-                                        },
-                                        '& .MuiListItemText-primary': {
-                                            color: '#2563eb',
-                                            fontWeight: 600,
-                                        },
-                                    },
-                                    '&:hover': {
-                                        backgroundColor: '#f3f4f6',
-                                    },
-                                }} 
-                                component={NavLink} 
-                                to="/admin/payroll" 
-                                selected={location.pathname.startsWith('/admin/payroll')}
-                            >
-                                <ListItemIcon><PaidIcon /></ListItemIcon>
-                                <ListItemText primary="Payroll Management" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><ReceiptLongIcon /></ListItemIcon>
-                                <ListItemText primary="Payslips" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><TrendingUpIcon /></ListItemIcon>
-                                <ListItemText primary="Salary summary" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-
-                    {/* Performance */}
-                    <ListItemButton onClick={() => setOpenPerformance(!openPerformance)}>
-                        <ListItemIcon><TimelineIcon /></ListItemIcon>
-                        <ListItemText primary="Performance" />
-                        {openPerformance ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openPerformance} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            <ListItemButton sx={{ pl: 4 }} component={NavLink} to="/admin/kpi" selected={location.pathname.startsWith('/admin/kpi')}>
-                                <ListItemIcon><TaskAltIcon /></ListItemIcon>
-                                <ListItemText primary="Evaluations" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><CheckCircleIcon /></ListItemIcon>
-                                <ListItemText primary="Recognition" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-
-                    {/* Communication */}
-                    <ListItemButton onClick={() => setOpenComms(!openComms)}>
-                        <ListItemIcon><MarkunreadIcon /></ListItemIcon>
-                        <ListItemText primary="Communication" />
-                        {openComms ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openComms} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><MarkunreadIcon /></ListItemIcon>
-                                <ListItemText primary="Internal news" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><MarkunreadIcon /></ListItemIcon>
-                                <ListItemText primary="Email notifications" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-
-                    {/* Dashboard & Reports */}
-                    <ListItemButton onClick={() => setOpenReports(!openReports)}>
-                        <ListItemIcon><DashboardIcon /></ListItemIcon>
-                        <ListItemText primary="Dashboard & Reports" />
-                        {openReports ? <ExpandLess /> : <ExpandMore />}
-                    </ListItemButton>
-                    <Collapse in={openReports} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><DashboardIcon /></ListItemIcon>
-                                <ListItemText primary="Overview dashboard" />
-                            </ListItemButton>
-                            <ListItemButton sx={{ pl: 4 }} disabled>
-                                <ListItemIcon><DescriptionIcon /></ListItemIcon>
-                                <ListItemText primary="Export PDF/Excel" />
-                            </ListItemButton>
-                        </List>
-                    </Collapse>
-                    <Divider sx={{ my: 1 }} />
-                    <ListItemButton
-                        component={NavLink}
-                        to="/login"
-                        sx={{
-                            mt: 1,
-                            '&:hover': {
-                                backgroundColor: '#fee2e2',
-                            },
-                            '& .MuiListItemIcon-root': {
-                                color: '#ef4444',
-                            },
-                            '& .MuiListItemText-primary': {
-                                color: '#ef4444',
-                                fontWeight: 500,
-                            },
-                        }}
-                    >
-                        <ListItemIcon><KeyIcon /></ListItemIcon>
-                        <ListItemText primary="Logout" />
-                    </ListItemButton>
-                </List>
+                {/* Logout Button */}
+                {open && (
+                    <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <ListItemButton
+                            onClick={handleLogout}
+                            sx={{
+                                borderRadius: '10px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                '&:hover': { background: 'rgba(239, 68, 68, 0.2)' },
+                                '& .MuiListItemIcon-root': { color: '#f87171', minWidth: 40 },
+                                '& .MuiListItemText-primary': { color: '#f87171', fontWeight: 600 },
+                            }}
+                        >
+                            <ListItemIcon><LogoutIcon /></ListItemIcon>
+                            <ListItemText primary="Logout" />
+                        </ListItemButton>
+                    </Box>
+                )}
             </Drawer>
 
-            {/* Main content */}
-            <Box sx={{ flexGrow: 1 }}>
-                {/* Topbar */}
-                <AppBar
-                    position="fixed"
-                    sx={{
-                        zIndex: (theme) => theme.zIndex.drawer + 1,
-                        background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    }}
-                >
-                    <Toolbar sx={{ minHeight: '70px !important' }}>
-                        <IconButton
-                            color="inherit"
-                            edge="start"
-                            onClick={() => setOpen(!open)}
-                            sx={{
-                                mr: 2,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                },
-                            }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 500, letterSpacing: '0.3px' }}>
-                            Human Resources Management System
-                        </Typography>
-                        <Box sx={{ flexGrow: 1 }} />
-                        
-                        {/* User Menu Section */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        
-                            
-                            <IconButton
-                                onClick={handleOpenUserMenu}
-                                sx={{
-                                    p: 0.5,
-                                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                        border: '2px solid rgba(255, 255, 255, 0.5)',
-                                    },
-                                }}
-                            >
-                                <Avatar 
-                                    sx={{ 
-                                        width: 40, 
-                                        height: 40,
-                                        bgcolor: '#4f46e5',
-                                        cursor: 'pointer',
-                                        fontSize: '1rem',
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                </Avatar>
-                            </IconButton>
-                            
-                            {/* User Dropdown Menu */}
-                            <Menu
-                                anchorEl={anchorElUser}
-                                open={Boolean(anchorElUser)}
-                                onClose={handleCloseUserMenu}
-                                anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'right',
-                                }}
-                                transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                }}
-                                PaperProps={{
-                                    elevation: 0,
-                                    sx: {
-                                        overflow: 'visible',
-                                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.15))',
-                                        mt: 1.5,
-                                        minWidth: 220,
-                                        borderRadius: 2,
-                                        '&:before': {
-                                            content: '""',
-                                            display: 'block',
-                                            position: 'absolute',
-                                            top: 0,
-                                            right: 20,
-                                            width: 10,
-                                            height: 10,
-                                            bgcolor: 'background.paper',
-                                            transform: 'translateY(-50%) rotate(45deg)',
-                                            zIndex: 0,
-                                        },
-                                    },
-                                }}
-                            >
-                                <MenuItem 
-                                    onClick={() => { 
-                                        handleCloseUserMenu(); 
-                                        navigate('/profile'); 
-                                    }}
-                                    sx={{ 
-                                        py: 1.5,
-                                        '&:hover': {
-                                            backgroundColor: '#f3f4f6',
-                                        },
-                                    }}
-                                >
-                                    <PersonIcon fontSize="small" sx={{ mr: 1.5, color: '#6366f1' }} />
-                                    <Typography variant="body2">My Profile</Typography>
-                                </MenuItem>
+            {/* Main Content - SÁT SIDEBAR */}
+            <Box
+                component="main"
+                sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                    minHeight: '100vh',
+                    width: `calc(100% - ${currentDrawerWidth}px)`,
+                    transition: 'width 0.3s ease',
+                }}
+            >
+                <Toolbar sx={{ minHeight: '70px !important' }} />
 
 
-                                {isAdmin && (
-                                    <MenuItem 
-                                        onClick={() => { 
-                                            handleCloseUserMenu(); 
-                                            navigate('/admin/dashboard'); 
-                                        }}
-                                        sx={{ 
-                                            py: 1.5,
-                                            '&:hover': {
-                                                backgroundColor: '#f3f4f6',
-                                            },
-                                        }}
-                                    >
-                                        <AdminPanelSettingsIcon fontSize="small" sx={{ mr: 1.5, color: '#f59e0b' }} />
-                                        <Typography variant="body2">Admin Dashboard</Typography>
-                                    </MenuItem>
-                                )}
-
-                                <Divider sx={{ my: 1 }} />
-                                
-                                <MenuItem 
-                                    onClick={handleLogout}
-                                    sx={{ 
-                                        py: 1.5,
-                                        '&:hover': {
-                                            backgroundColor: '#fef2f2',
-                                        },
-                                    }}
-                                >
-                                    <LogoutIcon fontSize="small" sx={{ mr: 1.5, color: '#ef4444' }} />
-                                    <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 500 }}>
-                                        Logout
-                                    </Typography>
-                                </MenuItem>
-                            </Menu>
-                        </Box>
-                    </Toolbar>
-                </AppBar>
-
-                {/* Main content */}
-                <Toolbar />
-                <Box
-                    component="main"
-                    sx={{
-                        p: 3,
-                        background: 'linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%)',
-                        minHeight: 'calc(100vh - 70px)',
-                    }}
-                >
-                    {/* Breadcrumb */}
-                    <Box
-                        sx={{
-                            mb: 3,
-                            display: "flex",
-                            alignItems: "center",
-                            p: 2,
-                            backgroundColor: 'white',
-                            borderRadius: '12px',
-                            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                        }}
-                    >
-                        <Typography
-                            variant="body1"
-                            sx={{
-                                cursor: "pointer",
-                                fontWeight: 600,
-                                color: '#2563eb',
-                                '&:hover': {
-                                    color: '#1d4ed8',
-                                    textDecoration: 'underline',
-                                },
-                            }}
-                            onClick={() => navigate("/admin/dashboard")}
-                        >
-                            Home
-                        </Typography>
-
-                        <Typography variant="body1" sx={{ mx: 1.5, color: '#9ca3af' }}>
-                            /
-                        </Typography>
-
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: '#1f2937' }}>
-                            {getPageTitle(location.pathname)}
-                        </Typography>
-                    </Box>
-
-                    {/* Outlet - Nội dung trang con */}
-                    <Outlet />
-                </Box>
+                {/* Page Content */}
+                <Outlet />
             </Box>
         </Box>
     );

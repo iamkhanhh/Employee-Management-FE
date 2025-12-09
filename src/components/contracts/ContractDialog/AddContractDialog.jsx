@@ -91,6 +91,40 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
       setLoadingEmployees(false);
     }
   }, []);
+  
+  const uploadContract = useCallback(async (contractData) => {
+    setLoading(true);
+
+    try {
+      const formatDateToArray = (dateStr) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return [year, month, day];
+      };
+
+      const payload = {
+        fileName: contractData.fileName,
+        userId: contractData.userId,
+        folderType: contractData.folderType
+      };
+
+      const res = await axiosInstance.post('/generate-presigned-url', payload);
+
+      if (res.data?.code === 0) {
+        return { success: true, data: res.data.data };
+      } else {
+        throw new Error(res.data?.message || 'Failed to create contract');
+      }
+    } catch (error) {
+      console.error('Error creating contract:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -178,9 +212,12 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
         file: formData.file || undefined
       };
 
+      
+
       const result = await onSubmit(payload);
-      if (result?.success) handleClose();
+      if (result?.success) handleClose(); 
       else setSubmitError(result?.error || 'Failed to create contract');
+      console.log(payload);
     } catch (err) {
       setSubmitError('An unexpected error occurred');
     } finally {
@@ -222,7 +259,7 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
         </DialogTitle>
 
         <DialogContent sx={{ mt: 4 }}>   {/* <<< THÊM DÒNG NÀY */}
-         <br></br>
+          <br></br>
 
           {/* Employee Search */}
           <Grid container spacing={3}>
@@ -268,10 +305,11 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
               />
             </Grid>
 
-            {/* Hàng 1: Contract Type + Status */}
-            <Grid size={{ xs: 6, md: 2 }}>
+
+            {/* Contract Type */}
+            <Grid size={{ xs: 6, md: 3 }}>
               <TextField
-                select fullWidth required
+                fullWidth select required
                 label="Contract Type"
                 name="contractType"
                 value={formData.contractType}
@@ -279,7 +317,6 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                 error={!!errors.contractType}
                 helperText={errors.contractType}
                 disabled={loading}
-                InputProps={{ startAdornment: <CategoryIcon sx={{ mr: 1, color: 'action.active' }} /> }}
               >
                 {CONTRACT_TYPES.map(o => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
               </TextField>
@@ -300,7 +337,6 @@ const AddContractDialog = ({ open, onClose, onSubmit }) => {
                 {CONTRACT_STATUSES.map(o => (
                   <MenuItem key={o.value} value={o.value}>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: o.color }} />
                       {o.label}
                     </Stack>
                   </MenuItem>

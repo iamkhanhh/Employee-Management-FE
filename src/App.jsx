@@ -20,14 +20,16 @@ import AttendanceManager from "./pages/admin/AttendanceManager";
 import ContractManagement from "./pages/contractScreens/ContractManagement";
 import DepartmentManagement from "./pages/departmentScreens/DepartmentManagement";
 import KpiReviewPage from "./pages/admin/KpiReviewPage";
+import NotificationPage from "./pages/admin/NotificationPage";
 
 // Pages - Client (tất cả USER, ADMIN, HR đều vào được)
 import MyProfile from "./pages/profile/MyProfile";
 import MyAttendance from "./components/Attendance/MyAttendance";
 import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
-
+import NotificationClientPage from "./components/profile/NotificationPage/NotificationClientPage";
 // Auth
 import Login from "./pages/auth/LoginPage";
+
 
 function App() {
   return (
@@ -54,6 +56,7 @@ function App() {
             <Route path="/my-attendance" element={<MyAttendance />} />
             <Route path="/leave-requests" element={<LeaveRequestPage />} />
             <Route path="/my-kpi" element={<KpiReviewPage />} /> {/* USER xem KPI cá nhân */}
+            <Route path="/notifications" element={<NotificationClientPage />} />
           </Route>
         </Route>
 
@@ -72,6 +75,7 @@ function App() {
             <Route path="payroll" element={<PayrollList />} />
             <Route path="account-management" element={<AccountManagementPage />} />
             <Route path="kpi-review" element={<KpiReviewPage />} /> {/* HR/ADMIN duyệt KPI */}
+            <Route path="notification" element={<NotificationPage/>} />
           </Route>
         </Route>
 

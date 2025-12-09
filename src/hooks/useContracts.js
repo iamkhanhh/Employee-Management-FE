@@ -77,6 +77,10 @@ export const useContracts = () => {
     }
   }, []);
 
+
+  // call url upload
+
+
   // ============================================
   // FETCH CONTRACT DETAIL
   // ============================================
@@ -303,6 +307,27 @@ export const useContracts = () => {
     }
   }, [contracts]);
 
+
+  // ============================================
+  // upload CONTRACTS
+  // ============================================
+  const uploadContract = useCallback(async (contractData) => {
+    setLoading(true);
+      const payload = {
+        fileName: contractData.fileName,
+        userId: contractData.userId,
+        folderType: contractData.folderType
+      };
+
+      const res = await axiosInstance.post('/generate-presigned-url', payload);
+
+      if (res.data?.code === 0) {
+        return { success: true, data: res.data.data };
+      } else {
+        throw new Error(res.data?.message || 'Failed to create contract');
+      }
+  }, []);
+
   return {
     contracts,
     pagination,
@@ -314,6 +339,7 @@ export const useContracts = () => {
     deleteContract,
     deleteMultipleContracts,
     downloadFile,
+    uploadContract,
     exportContracts
   };
 };

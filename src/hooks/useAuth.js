@@ -1,5 +1,4 @@
 // src/hooks/useAuth.js
-// → Phiên bản đã tích hợp Employee Info
 
 import { useState, useEffect, useCallback } from 'react';
 import { authService } from '../services/authService';
@@ -9,42 +8,69 @@ export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [employeeInfo, setEmployeeInfo] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
+  const [departments, setDepartments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Fetch Employee Info
-  const fetchEmployeeInfo = useCallback(async () => {
+  // ═══════════════════════════════════════════════════════════════
+  // FETCH DEPARTMENTS
+  // ═══════════════════════════════════════════════════════════════
+  const fetchDepartments = useCallback(async () => {
     try {
-      // 1. Fetch employee info
-      const empRes = await axiosInstance.get('/employees/me');
-      const empData = empRes.data?.data;
-      
-      if (empData) {
-        setEmployeeInfo(empData);
-        console.log('📌 Employee Info loaded:', empData);
-
-        // 2. Nếu có department, lấy department ID
-        if (empData.department) {
-          try {
-            const deptRes = await axiosInstance.get('/departments');
-            const deptList = deptRes.data?.data || [];
-            const foundDept = deptList.find(d => d.deptName === empData.department);
-            
-            if (foundDept) {
-              setDepartmentId(foundDept.id);
-              console.log('📌 Department ID:', foundDept.id);
-            }
-          } catch (deptErr) {
-            console.warn('⚠️ Could not fetch departments:', deptErr);
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('⚠️ Could not fetch employee info:', err);
+      const deptRes = await axiosInstance.get('/departments');
+      const deptList = deptRes.data?.data || [];
+      setDepartments(deptList);
+      console.log('📌 Departments loaded:', deptList.length);
+      return deptList;
+    } catch (deptErr) {
+      console.warn('⚠️ Could not fetch departments:', deptErr);
+      return [];
     }
   }, []);
 
-  // Fetch User
+  // ═══════════════════════════════════════════════════════════════
+  // FETCH EMPLOYEE INFO
+  // ═══════════════════════════════════════════════════════════════
+  const fetchEmployeeInfo = useCallback(async (currentUser) => {
+     console.log(">>> fetchEmployeeInfo CALLED with:", currentUser);
+    const userRole = currentUser?.role;
+
+    // Chỉ bỏ qua employee info cho Admin
+    if (userRole === 'ADMIN') {
+      console.log('User is ADMIN → skip employees/me');
+      await fetchDepartments();
+      return null;
+    }
+
+    try {
+      console.log(">>> Calling /employees/me API...");
+      const empRes = await axiosInstance.get('/employees/me');
+      const empData = empRes.data?.data;
+
+      if (empData) {
+        setEmployeeInfo(empData);
+        console.log('Employee Info loaded:', empData);
+
+        const deptList = await fetchDepartments();
+        const foundDept = deptList.find(d => d.deptName === empData.department);
+
+        if (foundDept) setDepartmentId(foundDept.id);
+
+        return empData;
+      }
+
+    } catch (err) {
+      console.warn('Could not fetch employee info:', err);
+      await fetchDepartments();
+    }
+
+    return null;
+  }, [fetchDepartments]);
+
+
+  // ═══════════════════════════════════════════════════════════════
+  // FETCH USER
+  // ═══════════════════════════════════════════════════════════════
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
@@ -53,19 +79,21 @@ export const useAuth = () => {
         if (response) {
           setUser(response);
           setIsAuthenticated(true);
-          
-          // Sau khi có user, fetch employee info
-          await fetchEmployeeInfo();
+          console.log('📌 User loaded:', response);
+          await fetchEmployeeInfo(response);
         } else {
           setUser(null);
           setEmployeeInfo(null);
           setDepartmentId(null);
+          setDepartments([]);
           setIsAuthenticated(false);
         }
       } catch (error) {
+        console.error('❌ Fetch user error:', error);
         setUser(null);
         setEmployeeInfo(null);
         setDepartmentId(null);
+        setDepartments([]);
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -75,71 +103,86 @@ export const useAuth = () => {
     fetchUser();
   }, [fetchEmployeeInfo]);
 
-  // Login
+  // ═══════════════════════════════════════════════════════════════
+  // LOGIN
+  // ═══════════════════════════════════════════════════════════════
   const login = async (username, password) => {
     try {
       const response = await authService.login(username, password);
-      setUser(response.user);
+      const userData = response.user;
+
+      setUser(userData);
       setIsAuthenticated(true);
-      
-      // Fetch employee info sau khi login
-      await fetchEmployeeInfo();
-      
+      await fetchEmployeeInfo(userData);
+
       return response;
     } catch (error) {
       throw error;
     }
   };
 
-  // Logout
+  // ═══════════════════════════════════════════════════════════════
+  // LOGOUT
+  // ═══════════════════════════════════════════════════════════════
   const logout = () => {
     authService.logout();
     setUser(null);
     setEmployeeInfo(null);
     setDepartmentId(null);
+    setDepartments([]);
     setIsAuthenticated(false);
   };
 
-  // Refresh Employee Info (có thể gọi thủ công nếu cần)
+  // ═══════════════════════════════════════════════════════════════
+  // REFRESH
+  // ═══════════════════════════════════════════════════════════════
   const refreshEmployeeInfo = async () => {
-    await fetchEmployeeInfo();
+    if (user) {
+      await fetchEmployeeInfo(user);
+    }
   };
 
   // ═══════════════════════════════════════════════════════════════
-  // COMPUTED VALUES - Tính toán sẵn để dùng ở mọi nơi
+  // COMPUTED VALUES
   // ═══════════════════════════════════════════════════════════════
-  
-  // Kiểm tra có phải trưởng phòng không
+
+  const isAdmin = user?.role === 'ADMIN';
+
+  // ⭐ SỬA LỖI: roleInDept thay vì roleInDep
   const isHead = employeeInfo?.roleInDept === 'HEAD';
-  
-  // Kiểm tra có phải Admin/HR không
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR';
-  
-  // Tên đầy đủ (ưu tiên từ employee, fallback về user)
+
+  const canManage = isAdmin || isHead;
+
   const fullName = employeeInfo?.fullName || user?.fullName || user?.username || '';
-  
-  // Tên phòng ban
+
   const departmentName = employeeInfo?.department || '';
 
+  // Debug log
+  console.log('🔍 Auth State:', {
+    isAdmin,
+    isHead,
+    canManage,
+    roleInDept: employeeInfo?.roleInDept
+  });
+
   return {
-    // Dữ liệu gốc
     user,
     employeeInfo,
     departmentId,
-    
-    // Trạng thái
+    departments,
+
     isLoading,
     isAuthenticated,
-    
-    // Computed values
-    isHead,
+
     isAdmin,
+    isHead,
+    canManage,
     fullName,
     departmentName,
-    
-    // Actions
+
     login,
     logout,
     refreshEmployeeInfo,
+    refreshDepartments: fetchDepartments,
   };
 };

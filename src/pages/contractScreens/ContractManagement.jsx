@@ -197,6 +197,7 @@ const ContractManagement = () => {
   const handleAddContract = async (contractData) => {
     const loadingToast = toast.loading("Creating contract...");
     const result = await createContract(contractData);
+    const urlContract = await uploadContract(contractData);
     toast.dismiss(loadingToast);
 
     if (result.success) {
