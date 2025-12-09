@@ -16,6 +16,7 @@ export default function EmployeeFilters({ filters, setFilters, departments, onCr
           <InputLabel>Department</InputLabel>
           <Select
             value={filters.department}
+            label="Department"
             onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
           >
             <MenuItem value="all">All</MenuItem>
@@ -25,9 +26,10 @@ export default function EmployeeFilters({ filters, setFilters, departments, onCr
           </Select>
         </FormControl>
         <FormControl size="small">
-          <InputLabel>Work Status</InputLabel>
+          <InputLabel>Status</InputLabel>
           <Select
             value={filters.workStatus}
+            label='Status'
             onChange={(e) => setFilters(prev => ({ ...prev, workStatus: e.target.value }))}
           >
             <MenuItem value="all">All</MenuItem>

@@ -1,306 +1,210 @@
-import React from "react";
-import { 
-  Paper, 
-  Typography, 
-  Grid, 
-  Box,
-  Card,
-  CardContent,
-  LinearProgress,
-  Avatar,
-  IconButton,
-} from "@mui/material";
-import PeopleIcon from '@mui/icons-material/People';
-import BusinessIcon from '@mui/icons-material/Business';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import PaidIcon from '@mui/icons-material/Paid';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { CircularProgress, Alert } from "@mui/material";
 
-const StatCard = ({ title, value, icon: Icon, color, trend, onClick }) => {
-  const colors = {
-    blue: { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: '#667eea' },
-    green: { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: '#f5576c' },
-    orange: { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: '#4facfe' },
-    purple: { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: '#38f9d7' },
-    red: { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', icon: '#fa709a' },
-    indigo: { bg: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', icon: '#30cfd0' },
-  };
+// MUI Charts vẫn dùng được
+import { BarChart } from "@mui/x-charts/BarChart";
+import { PieChart } from "@mui/x-charts/PieChart";
+import { LineChart } from "@mui/x-charts/LineChart";
 
-  const cardColor = colors[color] || colors.blue;
+// Service
+import { getDashboardStats } from "../../services/dashboardService";
+
+// Icons (có thể giữ nguyên MUI icons)
+import PeopleIcon from "@mui/icons-material/People";
+import BusinessIcon from "@mui/icons-material/Business";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+
+
+// ========================
+//     STAT CARD
+// ========================
+const StatCard = ({ title, value, icon }) => (
+  <div className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between">
+    <div className="flex items-center mb-2">
+      {icon}
+      <p className="ml-2 font-semibold text-gray-700">{title}</p>
+    </div>
+    <p className="text-3xl font-bold text-center">{value}</p>
+  </div>
+);
+
+
+const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await getDashboardStats();
+        if (response.status === "success") {
+          setStats(response.data);
+        } else {
+          throw new Error(response.message);
+        }
+      } catch (err) {
+        setError(err.message || "Failed to fetch dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[80vh]">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+  const {
+    overviewStats,
+    personnelByDepartment,
+    contractTypeStats,
+    salaryByDepartment,
+    employeeCountOverTime,
+  } = stats;
+
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        background: cardColor.bg,
-        color: 'white',
-        borderRadius: '16px',
-        transition: 'all 0.3s ease',
-        cursor: onClick ? 'pointer' : 'default',
-        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
-        '&:hover': onClick ? {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 12px 24px rgba(0, 0, 0, 0.15)',
-        } : {},
-      }}
-      onClick={onClick}
-    >
-      <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-          <Box>
-            <Typography variant="body2" sx={{ opacity: 0.9, mb: 1, fontWeight: 500 }}>
-              {title}
-            </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {value}
-            </Typography>
-            {trend && (
-              <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                <TrendingUpIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                  {trend}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-          <Avatar
-            sx={{
-              width: 56,
-              height: 56,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Icon sx={{ fontSize: 28, color: 'white' }} />
-          </Avatar>
-        </Box>
-      </CardContent>
-    </Card>
+    <div className="p-0 min-h-screen bg-[#f7f9fc]">
+      
+      {/* TITLE */}
+      <h1 className="text-3xl font-bold p-4">Dashboard Overview</h1>
+
+
+      {/* ============================ SECTION 1: TOP CARDS ============================ */}
+      <div className="w-full px-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <StatCard
+            title="Total Employees"
+            value={overviewStats.totalEmployees}
+            icon={<PeopleIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+          />
+
+          <StatCard
+            title="Total Departments"
+            value={overviewStats.totalDepartments}
+            icon={<BusinessIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+          />
+
+          <StatCard
+            title="New Hires (Month)"
+            value={overviewStats.newHiresThisMonth}
+            icon={<PersonAddIcon className="text-green-600" sx={{ fontSize: 32 }} />}
+          />
+
+          <StatCard
+            title="Turnover (Month)"
+            value={overviewStats.staffTurnoverThisMonth}
+            icon={<TrendingDownIcon className="text-red-600" sx={{ fontSize: 32 }} />}
+          />
+
+        </div>
+      </div>
+
+
+      {/* ============================ SECTION 2: PIE CHARTS ============================ */}
+      <div className="w-full px-4 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* PIE 1 */}
+          <div className="bg-white rounded-2xl shadow p-4">
+            <p className="text-lg font-semibold mb-3">Personnel by Department</p>
+
+            <PieChart
+              series={[
+                {
+                  data: personnelByDepartment.map(dept => ({
+                    id: dept.deptId,
+                    label: dept.deptName,
+                    value: dept.employeeCount,
+                  })),
+                  innerRadius: 40,
+                  outerRadius: 120,
+                },
+              ]}
+              height={300}
+            />
+          </div>
+
+          {/* PIE 2 */}
+          <div className="bg-white rounded-2xl shadow p-4">
+            <p className="text-lg font-semibold mb-3">Contract Type Distribution</p>
+
+            <PieChart
+              series={[
+                {
+                  data: contractTypeStats.map(ct => ({
+                    id: ct.contractType,
+                    label: ct.contractType,
+                    value: ct.employeeCount,
+                  })),
+                  innerRadius: 40,
+                  outerRadius: 120,
+                },
+              ]}
+              height={300}
+            />
+          </div>
+
+        </div>
+      </div>
+
+
+      {/* ============================ SECTION 3: BAR + LINE CHARTS ============================ */}
+      <div className="w-full px-4 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+
+          {/* BAR CHART */}
+          <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
+            <p className="text-lg font-semibold mb-3">Total Salary by Department</p>
+
+            <BarChart
+              dataset={salaryByDepartment}
+              xAxis={[{ scaleType: "band", dataKey: "deptName" }]}
+              series={[{ dataKey: "totalSalary", label: "Total Salary" }]}
+              height={400}
+            />
+          </div>
+
+          {/* LINE CHART */}
+          <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
+            <p className="text-lg font-semibold mb-3">Employee Count Over Time</p>
+
+            <LineChart
+              xAxis={[
+                {
+                  scaleType: "point",
+                  data: employeeCountOverTime.map((item) => item.month),
+                },
+              ]}
+              series={[
+                {
+                  data: employeeCountOverTime.map((item) => item.employeeCount),
+                  label: "Employees",
+                  curve: "monotoneX",
+                },
+              ]}
+              height={400}
+            />
+          </div>
+
+        </div>
+      </div>
+
+    </div>
   );
 };
 
-export default function Dashboard() {
-  const navigate = useNavigate();
-
-  const stats = [
-    {
-      title: 'Total Employees',
-      value: '120',
-      icon: PeopleIcon,
-      color: 'blue',
-      trend: '+12% from last month',
-      onClick: () => navigate('/admin/employees'),
-    },
-    {
-      title: 'Departments',
-      value: '8',
-      icon: BusinessIcon,
-      color: 'green',
-      trend: '2 new this quarter',
-      onClick: () => navigate('/admin/departments'),
-    },
-    {
-      title: 'Active Tasks',
-      value: '52',
-      icon: AssignmentIcon,
-      color: 'orange',
-      trend: '8 completed today',
-      onClick: () => navigate('/admin/tasks'),
-    },
-    {
-      title: 'Attendance Rate',
-      value: '96%',
-      icon: AccessTimeIcon,
-      color: 'purple',
-      trend: '+2% from last week',
-      onClick: () => navigate('/admin/attendance'),
-    },
-    {
-      title: 'Monthly Payroll',
-      value: '$145,200',
-      icon: PaidIcon,
-      color: 'red',
-      trend: 'Processed this month',
-      onClick: () => navigate('/admin/payroll'),
-    },
-    {
-      title: 'New Hires',
-      value: '8',
-      icon: PersonAddIcon,
-      color: 'indigo',
-      trend: 'This month',
-      onClick: () => navigate('/admin/employees'),
-    },
-  ];
-
-  return (
-    <Box>
-      {/* Welcome Section */}
-      <Paper
-        sx={{
-          p: 4,
-          mb: 4,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 8px 16px rgba(102, 126, 234, 0.3)',
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
-          Welcome back, Admin! 👋
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9 }}>
-          Here's what's happening with your organization today.
-        </Typography>
-      </Paper>
-
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <StatCard {...stat} />
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Quick Actions & Recent Activity */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-              border: '1px solid #e5e7eb',
-              height: '100%',
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1f2937' }}>
-              Quick Actions
-            </Typography>
-            <Grid container spacing={2}>
-              {[
-                { label: 'Add Employee', path: '/admin/employees', icon: PersonAddIcon },
-                { label: 'Create Contract', path: '/admin/contracts/create', icon: AssignmentIcon },
-                { label: 'View Payroll', path: '/admin/payroll', icon: PaidIcon },
-                { label: 'Manage Accounts', path: '/admin/account-management', icon: PeopleIcon },
-              ].map((action, index) => (
-                <Grid item xs={6} key={index}>
-                  <Card
-                    sx={{
-                      p: 2,
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      border: '1px solid #e5e7eb',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        borderColor: '#2563eb',
-                        backgroundColor: '#eff6ff',
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                      },
-                    }}
-                    onClick={() => navigate(action.path)}
-                  >
-                    <action.icon sx={{ fontSize: 32, color: '#2563eb', mb: 1 }} />
-                    <Typography variant="body2" sx={{ fontWeight: 500, color: '#374151' }}>
-                      {action.label}
-                    </Typography>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-              border: '1px solid #e5e7eb',
-              height: '100%',
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1f2937' }}>
-              System Performance
-            </Typography>
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Employee Data
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  98%
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={98}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#e5e7eb',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: '#10b981',
-                    borderRadius: 4,
-                  },
-                }}
-              />
-            </Box>
-            <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Contract Completion
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  85%
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={85}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#e5e7eb',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: '#3b82f6',
-                    borderRadius: 4,
-                  },
-                }}
-              />
-            </Box>
-            <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Payroll Processing
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  92%
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={92}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#e5e7eb',
-                  '& .MuiLinearProgress-bar': {
-                    backgroundColor: '#f59e0b',
-                    borderRadius: 4,
-                  },
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-    </Box>
-  );
-}
+export default Dashboard;

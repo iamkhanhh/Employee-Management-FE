@@ -71,6 +71,7 @@ const ClientLayout = () => {
       "/leave-requests": "Leave Requests",
       "/my-kpi": "My KPI",
       "/notifications": "Notifications",
+      "/my-tasks": "My Tasks",
     };
     return titles[path] || "Dashboard";
   };
@@ -81,6 +82,7 @@ const ClientLayout = () => {
     { text: "Leave Requests", icon: <EventBusyIcon />, path: "/leave-requests" },
     { text: "My KPI", icon: <AssessmentIcon />, path: "/my-kpi" },
     { text: "Notifications", icon: <NotificationsIcon />, path: "/notifications" },
+    { text: "My Tasks", icon: <AssessmentIcon />, path: "/my-tasks" },
   ];
 
   // Menu item styles

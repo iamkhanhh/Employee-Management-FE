@@ -6,6 +6,7 @@ import EmployeeFilters from '../../components/EmployeeManagement/EmployeeFilters
 import { AddEmployeeDialog, DeleteEmployeeDialog, EditEmployeeDialog } from '../../components/EmployeeManagement/EmployeeDialogs';
 import { useDepartments } from "../../hooks/useDepartments";
 import { employeeService } from "../../services/employeeService";
+import { accountService } from "../../services/accountService";
 import moment from 'moment';
 
 import IconButton from '@mui/material/IconButton';
@@ -36,10 +37,10 @@ export default function EmployeeList() {
   const { fetchDepartments, departments: deptList } = useDepartments();
 
   const [departments, setDepartments] = useState([]);
-
-    const [formState, setFormState] = useState({
+  const [accounts, setAccounts] = useState([]);
+  const [formState, setFormState] = useState({
     id: "",
-    department: "",
+    userId: "",
     fullName: "",
     gender: "",
     dob: "",
@@ -47,23 +48,24 @@ export default function EmployeeList() {
     address: "",
     hireDate: "",
     status: "",
-    roleInDept: ""
+    roleInDept: "",
+    deptId: "",
+    basicSalary: "",
   });
-
-  const resetForm = () => {
-    setFormState({
-      id: "",
-      department: "",
-      fullName: "",
-      gender: "",
-      dob: "",
-      phoneNumber: "",
-      address: "",
-      hireDate: "",
-      status: "",
-      roleInDept: ""
-    });
-  };
+const resetForm = () => setFormState({
+  id: "",
+  deptId: "",
+  userId: "",
+  fullName: "",
+  gender: "",
+  dob: "",
+  phoneNumber: "",
+  address: "",
+  hireDate: "",
+  status: "",
+  roleInDept: "",
+  basicSalary: "",
+});
 
   useEffect(() => {
     const loadDepartments = async () => {
@@ -75,6 +77,13 @@ export default function EmployeeList() {
     };
     loadDepartments();
   }, [fetchDepartments]);
+  useEffect(() => {
+    const loadAccounts = async () => {
+      const res = await accountService.getAccountsUnlink(); 
+      setAccounts(res.data.data);
+    };
+    loadAccounts();
+  }, []);
 
   // --- Handlers ---
   const handleEdit = (employee) => {
@@ -84,10 +93,11 @@ export default function EmployeeList() {
 
         setFormState({
           id: emp.id,
-          userId: emp.username,   // hoặc emp.userId nếu API trả
+          userId: emp.username,   
           fullName: emp.fullName,
           phoneNumber: emp.phoneNumber,
           address: emp.address,
+          basicSalary: emp.basicSalary,
 
           // Fix Department mapping
           deptId: departments.find(d => d.name === emp.department)?.id || "",
@@ -308,7 +318,7 @@ export default function EmployeeList() {
             <Paper className="p-6 md:p-8" elevation={0} sx={{ borderRadius: '16px', border: '1px solid #e5e7eb', backgroundColor: 'white' }}>
             <Box mb={3}>
               <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
-                Employye List
+                Employee List
               </Typography>
             </Box>
           <EmployeeFilters
@@ -339,7 +349,7 @@ export default function EmployeeList() {
           </div>
         </div>
 
-       <AddEmployeeDialog open={openAdd} onClose={() => { setOpenAdd(false); resetForm(); }} onSubmit={handleSaveEmployee} formState={formState} setFormState={setFormState} departments={departments} />
+       <AddEmployeeDialog open={openAdd} onClose={() => { setOpenAdd(false); resetForm(); }} onSubmit={handleSaveEmployee} formState={formState} setFormState={setFormState} departments={departments} accounts={accounts} />
 
        <EditEmployeeDialog 
         open={openEditDialog} 

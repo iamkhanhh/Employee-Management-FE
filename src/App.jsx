@@ -27,6 +27,8 @@ import MyProfile from "./pages/profile/MyProfile";
 import MyAttendance from "./components/Attendance/MyAttendance";
 import LeaveRequestPage from "./components/profile/LeaveRequestPage/LeaveRequestPage";
 import NotificationClientPage from "./components/profile/NotificationPage/NotificationClientPage";
+import MyTasks from "./pages/employeeScreens/MyTasks";
+
 // Auth
 import Login from "./pages/auth/LoginPage";
 
@@ -57,6 +59,7 @@ function App() {
             <Route path="/leave-requests" element={<LeaveRequestPage />} />
             <Route path="/my-kpi" element={<KpiReviewPage />} /> {/* USER xem KPI cá nhân */}
             <Route path="/notifications" element={<NotificationClientPage />} />
+            <Route path="/my-tasks" element={<MyTasks />} />
           </Route>
         </Route>
 

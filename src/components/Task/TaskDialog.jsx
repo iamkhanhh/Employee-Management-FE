@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel } from '@mui/material';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function TaskDialog({ open, onClose, currentTask, onChange, onSave, onDelete, editMode, employees }) {
+  const { employeeInfo } = useAuth();
+
+  const filteredEmployees = useMemo(() => {
+    if (!employeeInfo || !employees) return [];
+    // Lấy tên phòng ban của người dùng hiện tại
+    const currentUserDepartment = employeeInfo.department;
+    // Lọc những nhân viên có cùng phòng ban
+    return employees.filter(emp => emp.department === currentUserDepartment);
+  }, [employees, employeeInfo]);
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -48,10 +59,10 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
           fullWidth
           sx={{ mt: 2 }}
         >
-          {employees.map((emp) => (
-            <MenuItem key={emp} value={emp}>
-              <Checkbox checked={currentTask.assignments.indexOf(emp) > -1} />
-              <ListItemText primary={emp} />
+          {filteredEmployees.map((emp) => (
+            <MenuItem key={emp.id} value={emp.fullName}>
+              <Checkbox checked={currentTask.assignments.indexOf(emp.fullName) > -1} />
+              <ListItemText primary={emp.fullName} />
             </MenuItem>
           ))}
         </Select>

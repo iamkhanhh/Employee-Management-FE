@@ -24,7 +24,7 @@ export default function TaskList() {
   const [employeeNames, setEmployeeNames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ searchTerm: '', status: '' });
+  const [filters, setFilters] = useState({ year: '', month: '', status: '' });
 
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -39,9 +39,9 @@ export default function TaskList() {
     status: "",
   });
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (currentFilters) => {
     try {
-      const response = await taskService.getMyTasks();
+      const response = await taskService.getMyTasks(currentFilters);
       setTasks(response.data.data || []);
     } catch (err) {
       setError("Failed to fetch tasks.");
@@ -54,7 +54,7 @@ export default function TaskList() {
       try {
         setLoading(true);
         const [tasksResponse, employeesResponse] = await Promise.all([
-          taskService.getMyTasks(),
+          taskService.getMyTasks(filters),
           employeeService.getAllEmployees(),
         ]);
 
@@ -74,7 +74,7 @@ export default function TaskList() {
     };
 
     fetchData();
-  }, []);
+  }, [filters]);
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({ ...prev, [filterName]: value }));
@@ -161,7 +161,7 @@ const handleClickOpen = () => {
       toast.dismiss(loadingToast);
       toast.success(editMode ? "Cập nhật nhiệm vụ thành công!" : "Tạo nhiệm vụ thành công!");
       setOpen(false);
-      await fetchTasks();
+      await fetchTasks(filters);
 
     } catch (error) {
       toast.dismiss(loadingToast);
@@ -194,7 +194,7 @@ const handleClickOpen = () => {
       toast.success(`Đã xóa nhiệm vụ "${taskTitle}" thành công!`);
       setOpenDeleteDialog(false);
       setTaskToDelete(null);
-      await fetchTasks(); // Refresh list
+      await fetchTasks(filters); // Refresh list
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Không thể xóa nhiệm vụ. Vui lòng thử lại!");
@@ -208,17 +208,9 @@ const handleClickOpen = () => {
       start: moment(task.createdAt).format('YYYY-MM-DD HH:mm'),
       end: moment(task.dueDate).format('YYYY-MM-DD HH:mm'),
       status: task.status,
-      assignments: task.assignments?.map(a => a.employeeName) || []
+      assignees: task.assignments?.map(a => a.employeeName) || []
     }));
   }, [tasks]);
-
-  const filteredTasks = useMemo(() => {
-    return processedTasks.filter(task => {
-      const searchTermMatch = !filters.searchTerm || task.title.toLowerCase().includes(filters.searchTerm.toLowerCase());
-      const statusMatch = !filters.status || task.status === filters.status;
-      return searchTermMatch && statusMatch;
-    });
-  }, [processedTasks, filters]);
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>;
@@ -231,18 +223,18 @@ const handleClickOpen = () => {
   return (
     <Box sx={{ padding: 3 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5" fontWeight="bold">
+        <Typography variant="h4" fontWeight={700} gutterBottom color="primary">
           Task Management
         </Typography>
-        <Button variant="contained" onClick={handleClickOpen}>
-          + Add Task
-        </Button>
       </Box>
 
-      <TaskFilter filters={filters} onFilterChange={handleFilterChange} />
-
+      <TaskFilter
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        handleClickOpen={handleClickOpen}
+      />
       <TaskTable
-        rows={filteredTasks}
+        rows={processedTasks}
         onEdit={openEditDialogForTask}
         onDelete={handleDeleteTask}
       />
@@ -255,7 +247,7 @@ const handleClickOpen = () => {
         onSave={handleSaveTask}
         onDelete={() => handleDeleteTask(currentTask)}
         editMode={editMode}
-        employees={employeeNames}
+        employees={employees}
       />
 
       {/* Delete Confirmation Dialog */}

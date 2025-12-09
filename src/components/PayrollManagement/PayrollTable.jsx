@@ -10,11 +10,23 @@ export default function PayrollTable({
   rowCount = 0,
   paginationModel,
   onPaginationModelChange,
-  paginationMode = "server"
+  paginationMode = "server",
+  bonusPenalty,
+  setBonusPenalty
 }) {
   // Đảm bảo rows là array và mỗi row có id hợp lệ
   const safeRows = Array.isArray(rows) ? rows.filter(row => row && row.id != null) : [];
   const safePaginationModel = paginationModel || { page: 0, pageSize: 10 };
+
+  const handleRowClick = (params, event) => {
+    // Prevent row click when interacting with input fields
+    if (event.target.closest('input')) {
+      return;
+    }
+    if (onRowClick) {
+      onRowClick(params);
+    }
+  };
 
   return (
     <Paper sx={{ height: 440, width: '100%', mt: 2 }}>
@@ -27,7 +39,7 @@ export default function PayrollTable({
         onPaginationModelChange={onPaginationModelChange}
         paginationMode={paginationMode}
         pageSizeOptions={[5, 10, 25, 50]}
-        onRowClick={onRowClick}
+        onRowClick={handleRowClick}
         getRowId={(row) => row.id}
         sx={{
           border: 0,
