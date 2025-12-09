@@ -150,7 +150,7 @@ const ContractTable = ({
                         <Tooltip title="Download contract file">
                           <IconButton
                             size="small"
-                            onClick={() => onDownloadFile(contract.fileUrl, `contract_${contract.id}.pdf`)}
+                            onClick={() => onDownloadFile(contract.fileUrl)}
                             sx={{ color: '#1976d2' }}
                           >
                             <CloudDownloadIcon />

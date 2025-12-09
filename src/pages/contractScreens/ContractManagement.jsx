@@ -134,21 +134,31 @@ const ContractManagement = () => {
     setOpenEditDialog(true);
   };
 
-  const handleUpdateContract = async (data) => {
-  const loadingToast = toast.loading("Updating contract...");
-  const result = await updateContract(currentContract.id, data);
-  toast.dismiss(loadingToast);
-  
-  if (result.success) {
-    toast.success("Contract updated successfully!");
-    setOpenEditDialog(false);
-    setCurrentContract(null);
-    fetchContracts(filters); // Refresh danh sách
-  } else {
-    toast.error(result.error || "Failed to update contract");
-  }
-  return result;
-};
+  const handleUpdateContract = async (payload, contractId, newFile) => {
+    try {
+      let fileUrl = null;
+
+      if (newFile) {
+        console.log("📄 New file detected → uploading to S3...");
+
+        const upload = await uploadContractFile(newFile, payload.empId);
+
+        if (!upload.success) return upload;
+
+        fileUrl = upload.data.objectKey;
+      }
+
+      const result = await updateContract(contractId, {
+        ...payload,
+        fileUrl: fileUrl || undefined  // giữ file cũ nếu không đổi
+      });
+
+      return result;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+
 
   // ============================================
   // DELETE CONTRACT
@@ -224,8 +234,8 @@ const ContractManagement = () => {
   // ============================================
   // DOWNLOAD FILE
   // ============================================
-  const handleDownloadFile = (fileUrl, fileName) => {
-    downloadFile(fileUrl, fileName);
+  const handleDownloadFile = (fileUrl) => {
+    downloadFile(fileUrl);
   };
 
   // ============================================

@@ -1,4 +1,4 @@
-import {axiosInstance} from "../lib/axios";
+import { axiosInstance } from "../lib/axios";
 /**
  * Service để quản lý các API liên quan đến Nhân viên.
  */
@@ -7,6 +7,11 @@ export const employeeService = {
    * @param {object} params 
    * @returns {Promise<object>} 
    */
+
+  getPerformanceStatistics: async () => {
+    return axiosInstance.get('/employees/performance-statistics');
+  },
+
   getAllEmployees: async (params) => {
     const queryString = new URLSearchParams(params).toString();
     return axiosInstance.get(`/employees?${queryString}`);

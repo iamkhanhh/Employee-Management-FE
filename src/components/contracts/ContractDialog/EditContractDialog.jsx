@@ -125,7 +125,7 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
     setSubmitError('');
   };
 
-  // Handle submit
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -135,32 +135,26 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
     setLoading(true);
 
     try {
-      const convertToArray = (dateStr) => {
-        if (!dateStr) return null;
-        const [year, month, day] = dateStr.split('-');
-        return [parseInt(year), parseInt(month - 1), parseInt(day)]; // tháng bắt đầu từ 0
-      };
-
       const payload = {
         contractType: formData.contractType,
-        startDate: convertToArray(formData.startDate),
-        endDate: convertToArray(formData.endDate),
-        status: formData.status,
-        file: formData.file || undefined  // chỉ gửi nếu có file mới
+        startDate: formData.startDate,   // giữ string YYYY-MM-DD
+        endDate: formData.endDate,       // giữ string YYYY-MM-DD
+        status: formData.status
       };
 
-      console.log('Sending contract update:', payload);
+      console.log("📤 Sending contract update:", payload);
 
-      const result = await onSubmit(payload, contract.id);
+      // Gửi file mới (nếu có) sang onSubmit để xử lý upload S3
+      const result = await onSubmit(payload, contract.id, formData.file);
 
       if (result?.success) {
         handleClose();
       } else {
-        setSubmitError(result?.error || 'Failed to update contract');
+        setSubmitError(result?.error || "Failed to update contract");
       }
     } catch (err) {
-      console.error('Submit error:', err);
-      setSubmitError('An unexpected error occurred');
+      console.error("Submit error:", err);
+      setSubmitError("An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -339,6 +333,7 @@ const EditContractDialog = ({ open, onClose, onSubmit, contract }) => {
                 style={{ display: 'none' }}
               />
             </Grid>
+           
 
           </Grid>
         </DialogContent>

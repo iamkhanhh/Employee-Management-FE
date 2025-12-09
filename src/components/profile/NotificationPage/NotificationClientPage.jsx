@@ -764,15 +764,15 @@ const NotificationClientPage = () => {
             </Typography>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+        <DialogContent sx={{ mt: 1 }}>
+          <Grid container spacing={3} sx={{ mt: 3 }}>
+            <Grid size={12}>
               <Alert severity="info" icon={<BusinessIcon />}>
                 Thông báo sẽ được gửi đến phòng: <strong>{departmentName}</strong>
               </Alert>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Tiêu đề thông báo *"
@@ -791,7 +791,7 @@ const NotificationClientPage = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 multiline

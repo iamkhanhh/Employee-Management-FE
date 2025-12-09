@@ -199,33 +199,12 @@ const ContractDetailDialog = ({
               </Paper>
             </Grid>
 
-            {contract.fileUrl && (
-              <Grid item xs={12}>
-                <Typography variant="caption" color="text.secondary">
-                  Contract Document
-                </Typography>
-
-                <Paper sx={{ p: 1.5, mt: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <DescriptionIcon />
-                      <Typography fontSize="10px">
-
-                      </Typography>
-                    </Stack>
-
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<DownloadIcon />}
-                      onClick={() => onDownloadFile(contract.fileUrl, "contract.pdf")}
-                    >
-                      Download
-                    </Button>
-                  </Stack>
-                </Paper>
-              </Grid>
-            )}
+             <iframe
+              src={`https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(contract.fileUrl)}`}
+              width="100%"
+              height="800px"
+              style={{ border: "none" }}
+            ></iframe>
 
           </Grid>
         )}

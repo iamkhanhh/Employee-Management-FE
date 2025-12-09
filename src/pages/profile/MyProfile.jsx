@@ -1,3 +1,4 @@
+// src/pages/profile/MyProfile.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -19,7 +20,9 @@ import {
   Tooltip,
   alpha,
   useTheme,
-  CircularProgress
+  CircularProgress,
+  Skeleton,
+  Alert
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -38,20 +41,30 @@ import {
   EventNote as EventNoteIcon,
   Person as PersonIcon,
   Verified as VerifiedIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Refresh as RefreshIcon,
+  Assignment as AssignmentIcon,
+  Timer as TimerIcon,
+  BeachAccess as BeachAccessIcon,
+  PendingActions as PendingActionsIcon
 } from '@mui/icons-material';
 import ProfileInfo from '../../components/profile/ProfileInfo';
 import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
 import EditProfileDialog from '../../components/profile/EditProfileDialog';
 import { formatDate } from '../../utils/dateUtils';
-import WorkTab from '../../components/profile/WorkTab';
 import ContractsTab from '../../components/profile/ContractsTab';
-import AttendanceTab from '../../components/profile/AttendanceTab';
-import LeaveRequestsTab from '../../components/profile/LeaveRequestsTab';
 import { useAuth } from '../../hooks/useAuth';
+import { usePerformanceStatistics } from '../../hooks/usePerformanceStatistics';
 
 const MyProfile = () => {
   const { user: authUser, isLoading } = useAuth();
+  const { 
+    statistics, 
+    isLoading: statsLoading, 
+    error: statsError, 
+    refetch: refetchStats 
+  } = usePerformanceStatistics();
+  
   const [tabValue, setTabValue] = useState(0);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
@@ -106,6 +119,26 @@ const MyProfile = () => {
     );
   }
 
+  // Statistics Loading Skeleton Component
+  const StatisticsSkeleton = () => (
+    <Stack spacing={3}>
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+          <Skeleton width={100} height={20} />
+          <Skeleton width={50} height={28} />
+        </Box>
+        <Skeleton variant="rounded" height={10} />
+      </Box>
+      <Divider />
+      {[1, 2, 3, 4, 5].map((item) => (
+        <Box key={item} sx={{ display: 'flex', justifyContent: 'space-between', pb: 2, borderBottom: '1px dashed #dee2e6' }}>
+          <Skeleton width={120} height={20} />
+          <Skeleton width={40} height={28} />
+        </Box>
+      ))}
+    </Stack>
+  );
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f8f9fa', py: 4 }}>
       <Container maxWidth="xl">
@@ -159,41 +192,6 @@ const MyProfile = () => {
             {user?.position?.position_name}
           </Typography>
           <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" sx={{ gap: 1.5 }}>
-            <Chip
-              icon={<BadgeIcon />}
-              label={user.employee_code}
-              sx={{
-                bgcolor: 'white',
-                border: '2px solid',
-                borderColor: 'primary.main',
-                fontWeight: 600,
-                px: 1,
-                boxShadow: 1
-              }}
-            />
-            <Chip
-              icon={<WorkIcon />}
-              label={user?.department?.dept_name}
-              sx={{
-                bgcolor: 'white',
-                border: '2px solid',
-                borderColor: 'secondary.main',
-                color: 'secondary.main',
-                fontWeight: 600,
-                px: 1,
-                boxShadow: 1
-              }}
-            />
-            <Chip
-              icon={<VerifiedIcon />}
-              label={user.status}
-              color="success"
-              sx={{
-                fontWeight: 600,
-                px: 1,
-                boxShadow: 1
-              }}
-            />
           </Stack>
         </Box>
 
@@ -367,90 +365,268 @@ const MyProfile = () => {
                 </CardContent>
               </Card>
 
-
-              {/* Statistics Card */}
+              {/* Statistics Card - Updated */}
               <Card elevation={2} sx={{ borderRadius: 3 }}>
                 <CardContent sx={{ p: 3 }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      fontWeight: 700,
-                      color: '#212529',
-                      mb: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1
-                    }}
-                  >
-                    <TrendingUpIcon color="primary" />
-                    Performance Statistics
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        color: '#212529',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <TrendingUpIcon color="primary" />
+                      Performance Statistics
+                    </Typography>
+                    <Tooltip title="Refresh Statistics">
+                      <IconButton 
+                        size="small" 
+                        onClick={refetchStats}
+                        disabled={statsLoading}
+                      >
+                        <RefreshIcon 
+                          sx={{ 
+                            animation: statsLoading ? 'spin 1s linear infinite' : 'none',
+                            '@keyframes spin': {
+                              '0%': { transform: 'rotate(0deg)' },
+                              '100%': { transform: 'rotate(360deg)' }
+                            }
+                          }} 
+                        />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
 
-                  <Stack spacing={3}>
-                    {/* KPI Score */}
-                    <Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          KPI Score
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700} color="primary">
-                          {user?.kpi_score || 0}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={user?.kpi_score || 0}
-                        sx={{
-                          height: 10,
-                          borderRadius: 5,
-                          bgcolor: alpha(theme.palette.primary.main, 0.1),
-                          '& .MuiLinearProgress-bar': {
+                  {statsError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      {statsError}
+                    </Alert>
+                  )}
+
+                  {statsLoading ? (
+                    <StatisticsSkeleton />
+                  ) : statistics ? (
+                    <Stack spacing={3}>
+                      {/* Task Completion Rate */}
+                      <Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            Task Completion Rate
+                          </Typography>
+                          <Typography variant="h6" fontWeight={700} color="primary">
+                            {statistics.taskCompletionRate || 0}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={statistics.taskCompletionRate || 0}
+                          sx={{
+                            height: 10,
                             borderRadius: 5,
-                            bgcolor: (user?.kpi_score || 0) >= 80 ? 'success.main' : 'warning.main'
-                          }
-                        }}
-                      />
-                    </Box>
+                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 5,
+                              bgcolor: (statistics.taskCompletionRate || 0) >= 80 ? 'success.main' : 
+                                       (statistics.taskCompletionRate || 0) >= 50 ? 'warning.main' : 'error.main'
+                            }
+                          }}
+                        />
+                      </Box>
 
-                    <Divider />
+                      <Divider />
 
-                    {/* Stats */}
-                    <Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pb: 2, borderBottom: '1px dashed #dee2e6' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Working Days
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                          {user?.total_working_days || 0}
-                        </Typography>
+                      {/* Stats */}
+                      <Box>
+                        {/* Working Days This Month */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            mb: 2, 
+                            pb: 2, 
+                            borderBottom: '1px dashed #dee2e6' 
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.info.main, 0.1),
+                                color: 'info.main'
+                              }}
+                            >
+                              <CalendarIcon fontSize="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Working Days (This Month)
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight={700}>
+                            {statistics.workingDaysThisMonth || 0}
+                          </Typography>
+                        </Box>
+
+                        {/* Completed Tasks */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            mb: 2, 
+                            pb: 2, 
+                            borderBottom: '1px dashed #dee2e6' 
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                color: 'success.main'
+                              }}
+                            >
+                              <CheckCircleIcon fontSize="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Completed Tasks
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight={700}>
+                            <Box component="span" sx={{ color: 'success.main' }}>
+                              {statistics.completedTasksThisMonth || 0}
+                            </Box>
+                            <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                              /{statistics.totalTasksThisMonth || 0}
+                            </Box>
+                          </Typography>
+                        </Box>
+
+                        {/* Overtime Hours */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            mb: 2, 
+                            pb: 2, 
+                            borderBottom: '1px dashed #dee2e6' 
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                color: 'warning.main'
+                              }}
+                            >
+                              <TimerIcon fontSize="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Overtime Hours
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight={700}>
+                            {statistics.overtimeHoursThisMonth || 0}h
+                          </Typography>
+                        </Box>
+
+                        {/* Remaining Leave Days */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            mb: 2, 
+                            pb: 2, 
+                            borderBottom: '1px dashed #dee2e6' 
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                                color: 'secondary.main'
+                              }}
+                            >
+                              <BeachAccessIcon fontSize="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Remaining Leave Days
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" fontWeight={700} color="success.main">
+                            {statistics.remainingLeaveDays || 0}
+                          </Typography>
+                        </Box>
+
+                        {/* Pending Leave Requests */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center'
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1.5,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                                color: 'error.main'
+                              }}
+                            >
+                              <PendingActionsIcon fontSize="small" />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Pending Leave Requests
+                            </Typography>
+                          </Box>
+                          <Chip 
+                            label={statistics.pendingLeaveRequests || 0} 
+                            size="small"
+                            color={statistics.pendingLeaveRequests > 0 ? "warning" : "default"}
+                            sx={{ fontWeight: 700 }}
+                          />
+                        </Box>
                       </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pb: 2, borderBottom: '1px dashed #dee2e6' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Completed Tasks
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                          {user?.completed_tasks || 0}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, pb: 2, borderBottom: '1px dashed #dee2e6' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Current Projects
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700}>
-                          {user?.current_projects || 0}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Remaining Leave Days
-                        </Typography>
-                        <Typography variant="h6" fontWeight={700} color="success.main">
-                          {user?.remaining_leave_days || 0}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Stack>
+                    </Stack>
+                  ) : (
+                    <Typography color="text.secondary" align="center">
+                      No statistics available
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Stack>
@@ -485,18 +661,12 @@ const MyProfile = () => {
                 }}
               >
                 <Tab label="Personal Info" icon={<PersonIcon />} iconPosition="start" />
-                <Tab label="Work" icon={<WorkIcon />} iconPosition="start" />
                 <Tab label="Contracts" icon={<DescriptionIcon />} iconPosition="start" />
-                <Tab label="Attendance" icon={<AccessTimeIcon />} iconPosition="start" />
-                <Tab label="Leave Requests" icon={<EventNoteIcon />} iconPosition="start" />
               </Tabs>
 
               <Box sx={{ p: 4 }}>
                 {tabValue === 0 && <ProfileInfo user={user} />}
-                {tabValue === 1 && <WorkTab user={user} />}
-                {tabValue === 2 && <ContractsTab />}
-                {tabValue === 3 && <AttendanceTab user={user} />}
-                {tabValue === 4 && <LeaveRequestsTab user={user} />}
+                {tabValue === 1 && <ContractsTab />}
               </Box>
             </Paper>
           </Box>

@@ -1,3 +1,4 @@
+// src/hooks/useContracts.js
 import { useState, useCallback } from 'react';
 import { axiosInstance } from '../lib/axios';
 import toast from 'react-hot-toast';
@@ -5,6 +6,7 @@ import toast from 'react-hot-toast';
 export const useContracts = () => {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [pagination, setPagination] = useState({
     page: 0,
     pageSize: 10,
@@ -26,7 +28,6 @@ export const useContracts = () => {
         pageSize: filters.pageSize ?? 10,
       };
 
-      // Chỉ thêm filter khi có giá trị và khác "all"
       if (filters.contractType && filters.contractType !== 'all') {
         params.contractType = filters.contractType;
       }
@@ -44,12 +45,11 @@ export const useContracts = () => {
       }
 
       if (filters.search) {
-        params.keyword = filters.search; // hoặc "search" tùy backend
+        params.keyword = filters.search;
       }
 
       const res = await axiosInstance.get("/contracts", { params });
 
-      // ✅ Kiểm tra response đúng structure
       if (res.data?.code === 0 && res.data?.data) {
         const data = res.data.data;
 
@@ -77,9 +77,112 @@ export const useContracts = () => {
     }
   }, []);
 
+  // ============================================
+  // GENERATE PRESIGNED URL
+  // ============================================
+  const generatePresignedUrl = useCallback(async (fileName, userId, folderType = 'CONTRACTS') => {
+    try {
+      const payload = {
+        fileName,
+        userId,
+        folderType
+      };
 
-  // call url upload
+      console.log('📤 Generating presigned URL:', payload);
 
+      const res = await axiosInstance.post('/generate-presigned-url', payload);
+   
+      if (res.data?.code === 200 && res.data?.data) {
+        console.log('✅ Presigned URL generated:', res.data.data);
+        return {
+          success: true,
+          data: res.data.data // { presignedUrl, objectKey, contentType }
+        };
+      } else {
+        throw new Error(res.data?.message || 'Failed to generate presigned URL');
+      }
+    } catch (error) {
+      console.error('❌ Error generating presigned URL:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }, []);
+
+  // ============================================
+  // UPLOAD FILE TO S3
+  // ============================================
+  const uploadFileToS3 = useCallback(async (presignedUrl, file, contentType) => {
+    try {
+      console.log('📤 Uploading file to S3...', { presignedUrl, contentType });
+
+      // Upload trực tiếp lên S3 bằng fetch (không dùng axios để tránh interceptor)
+      const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': contentType || file.type || 'application/pdf'
+        }
+      });
+
+      if (response.ok) {
+        console.log('✅ File uploaded to S3 successfully');
+        return { success: true };
+      } else {
+        throw new Error(`Upload failed with status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Error uploading to S3:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }, []);
+
+  // ============================================
+  // UPLOAD CONTRACT FILE (COMPLETE FLOW)
+  // ============================================
+  const uploadContractFile = useCallback(async (file, userId) => {
+    setUploading(true);
+
+    try {
+      // Step 1: Generate presigned URL
+      const presignedResult = await generatePresignedUrl(file.name, userId, 'CONTRACTS');
+
+      if (!presignedResult.success) {
+        throw new Error(presignedResult.error || 'Failed to generate upload URL');
+      }
+
+      const { presignedUrl, objectKey, contentType } = presignedResult.data;
+
+      // Step 2: Upload file to S3
+      const uploadResult = await uploadFileToS3(presignedUrl, file, contentType);
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Failed to upload file');
+      }
+
+      console.log('✅ Contract file uploaded successfully, objectKey:', objectKey);
+
+      return {
+        success: true,
+        data: {
+          objectKey,
+          fileName: file.name
+        }
+      };
+    } catch (error) {
+      console.error('❌ Error in upload flow:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    } finally {
+      setUploading(false);
+    }
+  }, [generatePresignedUrl, uploadFileToS3]);
 
   // ============================================
   // FETCH CONTRACT DETAIL
@@ -112,7 +215,6 @@ export const useContracts = () => {
     setLoading(true);
 
     try {
-      // ✅ Chuyển date sang array format [year, month, day] để tránh lỗi parse
       const formatDateToArray = (dateStr) => {
         if (!dateStr) return null;
         const [year, month, day] = dateStr.split('-').map(Number);
@@ -124,7 +226,7 @@ export const useContracts = () => {
         contractType: contractData.contractType,
         startDate: formatDateToArray(contractData.startDate),
         endDate: formatDateToArray(contractData.endDate),
-        fileUrl: contractData.fileUrl || null,
+        fileUrl: contractData.fileUrl ?? null,
         status: contractData.status
       };
 
@@ -133,12 +235,14 @@ export const useContracts = () => {
       const res = await axiosInstance.post('/contracts', payload);
 
       if (res.data?.code === 0) {
+        toast.success('Contract created successfully!');
         return { success: true, data: res.data.data };
       } else {
         throw new Error(res.data?.message || 'Failed to create contract');
       }
     } catch (error) {
       console.error('Error creating contract:', error);
+      toast.error(error.response?.data?.message || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -149,41 +253,92 @@ export const useContracts = () => {
   }, []);
 
   // ============================================
+  // CREATE CONTRACT WITH FILE UPLOAD
+  // ============================================
+  const createContractWithFile = useCallback(async (contractData, file) => {
+    setLoading(true);
+
+    try {
+      let fileUrl = null;
+
+      // Step 1: Upload file if exists
+      if (file) {
+        toast.loading('Uploading contract file...');
+
+        const uploadResult = await uploadContractFile(file, contractData.empId);
+
+        toast.dismiss();
+
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload file');
+        }
+
+        fileUrl = uploadResult.data.objectKey;
+        console.log('📎 File URL:', fileUrl);
+      }
+
+      // Step 2: Create contract with fileUrl
+      const result = await createContract({
+        ...contractData,
+        fileUrl
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error creating contract with file:', error);
+      toast.dismiss();
+      toast.error(error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, [uploadContractFile, createContract]);
+
+  // ============================================
   // UPDATE CONTRACT
   // ============================================
-  // hooks/useContracts.js
-
   const updateContract = useCallback(async (id, updates) => {
     setLoading(true);
 
     try {
-      // ✅ Chuyển date sang array format nếu là string
       const formatDateToArray = (dateStr) => {
         if (!dateStr) return null;
-        if (Array.isArray(dateStr)) return dateStr; // Đã là array thì return
+        if (Array.isArray(dateStr)) return dateStr;
         const [year, month, day] = dateStr.split('-').map(Number);
         return [year, month, day];
       };
 
       const payload = {
-        contractType: updates.contractType,
-        startDate: formatDateToArray(updates.startDate),
-        endDate: formatDateToArray(updates.endDate),
-        fileUrl: updates.fileUrl || null,
-        status: updates.status
+        empId: contractData.empId,
+        contractType: contractData.contractType,
+        startDate: formatDateToArray(contractData.startDate),
+        endDate: formatDateToArray(contractData.endDate),
+
+        // MUST BE OBJECT KEY
+        fileUrl: contractData.fileUrl && typeof contractData.fileUrl === "string"
+          ? contractData.fileUrl
+          : null,
+
+        status: contractData.status
       };
+
 
       console.log('📤 Updating contract with payload:', payload);
 
       const res = await axiosInstance.put(`/contracts/${id}`, payload);
 
       if (res.data?.code === 0) {
+        toast.success('Contract updated successfully!');
         return { success: true, data: res.data.data };
       } else {
         throw new Error(res.data?.message || 'Failed to update contract');
       }
     } catch (error) {
       console.error('Error updating contract:', error);
+      toast.error(error.response?.data?.message || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -192,6 +347,50 @@ export const useContracts = () => {
       setLoading(false);
     }
   }, []);
+
+  // ============================================
+  // UPDATE CONTRACT WITH FILE
+  // ============================================
+  const updateContractWithFile = useCallback(async (id, contractData, file, userId) => {
+    setLoading(true);
+
+    try {
+      let fileUrl = contractData.fileUrl;
+
+      // Upload new file if exists
+      if (file) {
+        toast.loading('Uploading new contract file...');
+
+        const uploadResult = await uploadContractFile(file, userId);
+
+        toast.dismiss();
+
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Failed to upload file');
+        }
+
+        fileUrl = uploadResult.data.objectKey;
+      }
+
+      // Update contract
+      const result = await updateContract(id, {
+        ...contractData,
+        fileUrl
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error updating contract with file:', error);
+      toast.dismiss();
+      toast.error(error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, [uploadContractFile, updateContract]);
 
   // ============================================
   // DELETE CONTRACT
@@ -203,12 +402,14 @@ export const useContracts = () => {
       const res = await axiosInstance.delete(`/contracts/${id}`);
 
       if (res.data?.code === 0) {
+        toast.success('Contract deleted successfully!');
         return { success: true };
       } else {
         throw new Error(res.data?.message || 'Failed to delete contract');
       }
     } catch (error) {
       console.error('Error deleting contract:', error);
+      toast.error(error.response?.data?.message || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -225,18 +426,19 @@ export const useContracts = () => {
     setLoading(true);
 
     try {
-      // Nếu API hỗ trợ xóa nhiều
       const res = await axiosInstance.delete("/contracts/batch", {
         data: { ids }
       });
 
       if (res.data?.code === 0) {
+        toast.success(`Deleted ${ids.length} contracts successfully!`);
         return { success: true };
       } else {
         throw new Error(res.data?.message || 'Failed to delete contracts');
       }
     } catch (error) {
       console.error('Error deleting contracts:', error);
+      toast.error(error.response?.data?.message || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -249,7 +451,7 @@ export const useContracts = () => {
   // ============================================
   // DOWNLOAD FILE
   // ============================================
-  const downloadFile = useCallback(async (fileUrl, fileName) => {
+  const downloadFile = useCallback(async (fileUrl) => {
     try {
       if (!fileUrl) {
         toast.error('File URL not found');
@@ -258,7 +460,7 @@ export const useContracts = () => {
 
       const link = document.createElement('a');
       link.href = fileUrl;
-      link.download = fileName || fileUrl.split('/').pop();
+      link.download =  fileUrl.split('/').pop();
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();
@@ -307,39 +509,22 @@ export const useContracts = () => {
     }
   }, [contracts]);
 
-
-  // ============================================
-  // upload CONTRACTS
-  // ============================================
-  const uploadContract = useCallback(async (contractData) => {
-    setLoading(true);
-      const payload = {
-        fileName: contractData.fileName,
-        userId: contractData.userId,
-        folderType: contractData.folderType
-      };
-
-      const res = await axiosInstance.post('/generate-presigned-url', payload);
-
-      if (res.data?.code === 0) {
-        return { success: true, data: res.data.data };
-      } else {
-        throw new Error(res.data?.message || 'Failed to create contract');
-      }
-  }, []);
-
   return {
     contracts,
     pagination,
     loading,
+    uploading,
     fetchContracts,
     fetchContractDetail,
     createContract,
+    createContractWithFile,
     updateContract,
+    updateContractWithFile,
     deleteContract,
     deleteMultipleContracts,
     downloadFile,
-    uploadContract,
+    uploadContractFile,
+    generatePresignedUrl,
     exportContracts
   };
 };
