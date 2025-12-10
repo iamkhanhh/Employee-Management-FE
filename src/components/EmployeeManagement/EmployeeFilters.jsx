@@ -4,7 +4,7 @@ import { Paper, TextField, FormControl, InputLabel, Select, MenuItem, Button, Bo
 export default function EmployeeFilters({ filters, setFilters, departments, onCreate, onSearch }) {
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-      <Box className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <TextField
           label="Employee"
           placeholder="Search employees"

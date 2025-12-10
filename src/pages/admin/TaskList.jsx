@@ -84,7 +84,7 @@ export default function TaskList() {
     setCurrentTask({
       id: task.id,
       title: task.title,
-      dueDate: moment(task.dueDate, "YYYY-MM-DD HH:mm").format("YYYY-MM-DDTHH:mm"),
+      dueDate: moment(task.dueDate, "YYYY-MM-DD HH:mm").format("YYYY-MM-DD HH:mm"),
       description: task.description,
       assignments: task.assignments?.map(a => a.employeeName) || [],
       status: task.status,
@@ -205,8 +205,8 @@ const handleClickOpen = () => {
     if (!tasks) return [];
     return tasks.map(task => ({
       ...task,
-      start: moment(task.createdAt).format('YYYY-MM-DD HH:mm'),
-      end: moment(task.dueDate).format('YYYY-MM-DD HH:mm'),
+      start: moment(task.createdAt, "DD/MM/YYYY").format("YYYY-MM-DD"),
+      end: moment(task.dueDate, "DD/MM/YYYY").format("YYYY-MM-DD"),
       status: task.status,
       assignees: task.assignments?.map(a => a.employeeName) || []
     }));

@@ -120,7 +120,7 @@ export default function PayrollList() {
     const loadingToast = toast.loading("Calculating payroll...");
     try {
       const adjustments = savedAdjustments.map(adj => ({
-        employeeId: adj.empId,
+        empId: adj.empId,
         allowance: adj.allowance,
         bonus: adj.bonus,
         deduction: adj.deduction

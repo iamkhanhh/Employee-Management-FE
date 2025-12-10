@@ -5,7 +5,7 @@ import AddIcon from '@mui/icons-material/Add';
 export default function AccountFilters({ filters, setFilters, departments, onSearch, onCreate }) {
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-      <Box className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <Box className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search */}
         <TextField
           label="Search"
@@ -13,7 +13,6 @@ export default function AccountFilters({ filters, setFilters, departments, onSea
           value={filters.search}
           onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
           size="small"
-          className="md:col-span-2"
         />
 
         {/* Department */}
