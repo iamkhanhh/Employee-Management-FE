@@ -6,7 +6,7 @@ export const useMyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ year: '', month: '', status: '' });
+  const [filters, setFilters] = useState({ startDate: '', endDate: '', status: '' });
 
   const fetchTasks = async (currentFilters) => {
     try {

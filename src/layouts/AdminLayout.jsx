@@ -579,19 +579,27 @@ export default function AdminLayout() {
 
                                     </ListItemButton>
 
-                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/contracts" selected={location.pathname.startsWith('/admin/contracts')}>
+                                                                        <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/contracts" selected={location.pathname.startsWith('/admin/contracts')}>
 
-                                        <ListItemIcon><SummarizeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+                                                                            <ListItemIcon><SummarizeIcon sx={{ fontSize: 20 }} /></ListItemIcon>
 
-                                        <ListItemText primary="Contract" />
+                                                                            <ListItemText primary="Contract" />
 
-                                    </ListItemButton>
+                                                                        </ListItemButton>
 
-                                </List>
+                                                                        <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/documents" selected={location.pathname.startsWith('/admin/documents')}>
 
-                            </Collapse>
+                                                                            <ListItemIcon><DescriptionIcon sx={{ fontSize: 20 }} /></ListItemIcon>
 
-                        )}
+                                                                            <ListItemText primary="Documents" />
+
+                                                                        </ListItemButton>
+
+                                                                    </List>
+
+                                                                </Collapse>
+
+                                                            )}
 
 
 

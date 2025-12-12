@@ -1,3 +1,4 @@
+// src/constants/index.js
 // API endpoints
 export const API_BASE_URL ='http://localhost:2004/api'
 
@@ -21,3 +22,11 @@ export const ROUTES = {
   DEPARTMENTS: '/departments'
 }
 
+
+export const DOCUMENT_TYPES = {
+  HEALTH_INSURANCE: "Health Insurance",
+  DEGREE: "Degree",
+  CERTIFICATE: "Certificate",
+  ID_CARD: "ID Card",
+  OTHER: "Other",
+};

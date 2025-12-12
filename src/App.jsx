@@ -21,6 +21,7 @@ import ContractManagement from "./pages/contractScreens/ContractManagement";
 import DepartmentManagement from "./pages/departmentScreens/DepartmentManagement";
 import KpiReviewPage from "./pages/admin/KpiReviewPage";
 import NotificationPage from "./pages/admin/NotificationPage";
+import EmployeeDocument from "./pages/employeeScreens/EmployeeDocument";
 
 // Pages - Client (tất cả USER, ADMIN, HR đều vào được)
 import MyProfile from "./pages/profile/MyProfile";
@@ -79,6 +80,7 @@ function App() {
             <Route path="account-management" element={<AccountManagementPage />} />
             <Route path="kpi-review" element={<KpiReviewPage />} /> {/* HR/ADMIN duyệt KPI */}
             <Route path="notification" element={<NotificationPage/>} />
+            <Route path="documents" element={<EmployeeDocument />} />
           </Route>
         </Route>
 

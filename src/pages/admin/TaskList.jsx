@@ -24,7 +24,7 @@ export default function TaskList() {
   const [employeeNames, setEmployeeNames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ year: '', month: '', status: '' });
+  const [filters, setFilters] = useState({ startDate: '', endDate: '', status: '' });
 
   const [open, setOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);

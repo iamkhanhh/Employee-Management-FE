@@ -1,4 +1,5 @@
 import { axiosInstance } from "../lib/axios";
+import moment from "moment";
 
 const TASK_API = "/tasks";
 
@@ -58,7 +59,11 @@ export const taskService = {
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value) {
-          cleanParams.append(key, value);
+          if (key === 'startDate' || key === 'endDate') {
+            cleanParams.append(key, moment(value, 'YYYY-MM-DD').format('DD/MM/YYYY'));
+          } else {
+            cleanParams.append(key, value);
+          }
         }
       });
     }

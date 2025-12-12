@@ -40,8 +40,6 @@ export default function EmployeeFilters({ filters, setFilters, departments, onCr
             <MenuItem value="TERMINATED">Terminated</MenuItem>
           </Select>
         </FormControl>
-
-        {/* Bạn có thể thêm khoảng trống hoặc các filter khác ở đây */}
       </Box>
 
       <Box className="flex flex-wrap items-center gap-3 mt-4">
