@@ -57,7 +57,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePerformanceStatistics } from '../../hooks/usePerformanceStatistics';
 
 const MyProfile = () => {
-  const { user: authUser, isLoading } = useAuth();
+  const { user: authUser, isLoading,employeeInfo } = useAuth();
   const { 
     statistics, 
     isLoading: statsLoading, 
@@ -73,10 +73,10 @@ const MyProfile = () => {
   const theme = useTheme();
 
   useEffect(() => {
-    if (authUser) {
-      setUser(authUser);
+    if (employeeInfo) {
+      setUser(employeeInfo);
     }
-  }, [authUser]);
+  }, [employeeInfo]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -170,7 +170,7 @@ const MyProfile = () => {
             }
           >
             <Avatar
-              src={user.avatar}
+              src={user.avatarUrl}
               sx={{
                 width: 140,
                 height: 140,
@@ -189,7 +189,7 @@ const MyProfile = () => {
             {user.fullName}
           </Typography>
           <Typography variant="h6" sx={{ color: 'text.secondary', mb: 2, fontWeight: 500 }}>
-            {user?.position?.position_name}
+            {user?.roleInDept}
           </Typography>
           <Stack direction="row" spacing={2} justifyContent="center" flexWrap="wrap" sx={{ gap: 1.5 }}>
           </Stack>
@@ -241,7 +241,7 @@ const MyProfile = () => {
                           Email Address
                         </Typography>
                         <Typography variant="body2" fontWeight={600} sx={{ wordBreak: 'break-word' }}>
-                          {user.email}
+                          {user.username}
                         </Typography>
                       </Box>
                     </Box>
@@ -267,7 +267,7 @@ const MyProfile = () => {
                           Phone Number
                         </Typography>
                         <Typography variant="body2" fontWeight={600}>
-                          {user.phone_number}
+                          {user.phoneNumber}
                         </Typography>
                       </Box>
                     </Box>
@@ -319,7 +319,7 @@ const MyProfile = () => {
                           Hire Date
                         </Typography>
                         <Typography variant="body2" fontWeight={600}>
-                          {formatDate(user.hire_date)}
+                          {formatDate(user.hireDate)}
                         </Typography>
                       </Box>
                     </Box>

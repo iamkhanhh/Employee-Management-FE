@@ -47,5 +47,13 @@ export const authService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
+  forgotPassword: async (email) => {
+    try {
+      const response = await axiosInstance.post('/auth/forgot_password', {email})
+      return response
+    } catch (error) {
+      throw error
+    }
+  },
 }

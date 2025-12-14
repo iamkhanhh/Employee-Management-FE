@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 import { axiosInstance } from "../../lib/axios";
+import {authService}  from "../../services/authService";
 
 
 export default function Login() {
@@ -67,9 +68,23 @@ export default function Login() {
     }
   };
 
-  const handleContinue = () => {
-    setResetOpen(false);
-    navigate("/change-password", { state: { email: resetEmail } });
+  const handleContinue = async () => {
+    if (!resetEmail) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+    try {
+      const response = await authService.forgotPassword(resetEmail );
+      toast.success(response.message || "A password reset link has been sent to your email.");
+      setResetOpen(false);
+      setResetEmail("");
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      toast.error(
+        error.response?.data?.message ||
+        "Failed to send password reset link. Please try again."
+      );
+    }
   };
 
   return (

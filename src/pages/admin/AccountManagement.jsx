@@ -3,7 +3,7 @@ import { Paper, CircularProgress, Box, Alert } from "@mui/material";
 import { Typography } from "@mui/material";
 import AccountFilters from '../../components/AccountManagement/AccountFilters';
 import AccountTable from '../../components/AccountManagement/AccountTable';
-import { CreateEditDialog, DeleteDialog, ResetPasswordDialog } from '../../components/AccountManagement/AccountDialogs';
+import { AddAccountDialog, EditAccountDialog, DeleteAccountDialog, ResetPasswordDialog } from '../../components/AccountManagement/AccountDialogs';
 import { accountService } from '../../services/accountService';
 import { useDepartments } from "../../hooks/useDepartments";
 
@@ -14,7 +14,8 @@ export default function AccountManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [openDialog, setOpenDialog] = useState(false);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openResetDialog, setOpenResetDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -37,12 +38,12 @@ export default function AccountManagement() {
 
   // Form state
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    role: '',
-    password: '',
-    confirmPassword: '', 
-    status: '',
+    username: "",
+    email: "",
+    role: "USER",
+    status: "ACTIVE",
+    currentPassword: "",
+    password: "",
   });
 
   const fetchAccounts = async () => {
@@ -92,15 +93,21 @@ export default function AccountManagement() {
       email: '',
       role: '',
       password: '',
-      confirmPassword: '', 
+      confirmPassword: '',
       status: '',
+      fullName: '',
+      gender: '',
+      country: '',
+      dob: '',
+      profilePicImage: '',
+      currentPassword: '',
     });
     setEditingAccount(null);
   };
 
   const handleOpenCreate = () => {
     resetForm();
-    setOpenDialog(true);
+    setOpenAddDialog(true);
   };
 
   const handleEdit = (account) => {
@@ -112,48 +119,84 @@ export default function AccountManagement() {
       password: '',
       status: account.status,
       confirmPassword: '', 
+      fullName: account.fullName,
+      gender: account.gender,
+      country: account.country,
+      dob: account.dob,
+      profilePicImage: account.profilePicImage,
     });
-    setOpenDialog(true);
+    setOpenEditDialog(true);
   };
 
-  const handleSave = async (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.email) {
+    if (!formData.username || !formData.email || !formData.password) {
       toast.error("Vui lòng điền đầy đủ các trường bắt buộc!");
       return;
     }
 
-    const loadingToast = toast.loading(editingAccount ? "Đang cập nhật tài khoản..." : "Đang tạo tài khoản...");
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+
+    const loadingToast = toast.loading("Đang tạo tài khoản...");
     
     try {
-      if (editingAccount) {
-        await accountService.updateAccount(editingAccount.id, formData);
-        toast.dismiss(loadingToast);
-        toast.success(`Đã cập nhật tài khoản "${formData.full_name || formData.username}" thành công!`);
-      } else {
-        if (!formData.password) {
-          toast.dismiss(loadingToast);
-          toast.error("Mật khẩu là bắt buộc cho tài khoản mới!");
-          return;
-        }
-        
-        if (formData.password !== formData.confirmPassword) {
-          toast.dismiss(loadingToast);
-          toast.error("Mật khẩu xác nhận không khớp!");
-          return;
-        }
-        await accountService.createAccount(formData);
-        toast.dismiss(loadingToast);
-        toast.success(`Đã tạo tài khoản "${formData.full_name || formData.username}" thành công!`);
-      }
-      fetchAccounts(); // Refetch accounts after save
-      setOpenDialog(false);
+      await accountService.createAccount(formData);
+      toast.dismiss(loadingToast);
+      toast.success(`Đã tạo tài khoản "${formData.username}" thành công!`);
+      
+      fetchAccounts();
+      setOpenAddDialog(false);
       resetForm();
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error(error.response?.data?.message || `Không thể ${editingAccount ? 'cập nhật' : 'tạo'} tài khoản. Vui lòng thử lại!`);
+      toast.error(error.response?.data?.message || `Không thể tạo tài khoản. Vui lòng thử lại!`);
     }
   };
+
+  const handleSave = async (e) => {
+  e.preventDefault();
+
+  if (!formData.username || !formData.email) {
+    toast.error("Vui lòng điền đầy đủ các trường bắt buộc!");
+    return;
+  }
+
+  // 🔹 Xử lý password theo Cách 1
+  const payload = {
+    ...formData,
+    password: formData.password?.trim() ? formData.password : null,
+  };
+
+  // Không cần gửi confirmPassword lên backend
+  delete payload.confirmPassword;
+
+  const loadingToast = toast.loading("Đang cập nhật tài khoản...");
+
+  try {
+    console.log("Updating account with data:", payload);
+
+    await accountService.updateAccount(editingAccount.id, payload);
+
+    toast.dismiss(loadingToast);
+    toast.success(
+      `Đã cập nhật tài khoản "${formData.fullName || formData.username}" thành công!`
+    );
+
+    fetchAccounts();
+    setOpenEditDialog(false);
+    resetForm();
+  } catch (error) {
+    toast.dismiss(loadingToast);
+    toast.error(
+      error.response?.data?.message ||
+        "Không thể cập nhật tài khoản. Vui lòng thử lại!"
+    );
+  }
+  };
+
 
   const handleDelete = (account) => {
     setDeleteAccount(account);
@@ -252,8 +295,9 @@ export default function AccountManagement() {
       </div>
 
       {/* Dialogs */}
-      <CreateEditDialog open={openDialog} onClose={() => { setOpenDialog(false); resetForm(); }} onSubmit={handleSave} editingAccount={editingAccount} formData={formData} setFormData={setFormData} />
-      <DeleteDialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onConfirm={confirmDelete} deleteAccount={deleteAccount} />
+      <AddAccountDialog open={openAddDialog} onClose={() => { setOpenAddDialog(false); resetForm(); }} onSubmit={handleAdd} formData={formData} setFormData={setFormData} />
+      <EditAccountDialog open={openEditDialog} onClose={() => { setOpenEditDialog(false); resetForm(); }} onSubmit={handleSave} editingAccount={editingAccount} formData={formData} setFormData={setFormData} />
+      <DeleteAccountDialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)} onConfirm={confirmDelete} deleteAccount={deleteAccount} />
       <ResetPasswordDialog open={openResetDialog} onClose={() => setOpenResetDialog(false)} onConfirm={confirmResetPassword} resetAccount={resetAccount} />
     </div>
   );

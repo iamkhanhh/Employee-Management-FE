@@ -33,7 +33,7 @@ const ProfileInfo = ({ user }) => {
                 Full Name
               </Typography>
               <Typography variant="body1" fontWeight={500}>
-                {user.full_name}
+                {user.fullName}
               </Typography>
             </Box>
           </Box>
@@ -90,59 +90,12 @@ const ProfileInfo = ({ user }) => {
                 Phone Number
               </Typography>
               <Typography variant="body1" fontWeight={500}>
-                {user.phone_number}
+                {user.phoneNumber}
               </Typography>
             </Box>
           </Box>
 
-          {/* Emergency Contact */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-            <ContactPhoneIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">
-                Emergency Contact
-              </Typography>
-              <Typography variant="body1" fontWeight={500}>
-                {user.emergency_name} ({user.emergency_relation})
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {user.emergency_contact}
-              </Typography>
-            </Box>
-          </Box>
 
-          {/* Education */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-            <SchoolIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">
-                Education
-              </Typography>
-              <Typography variant="body1" fontWeight={500}>
-                {user.education || 'N/A'}
-              </Typography>
-              {user.major && (
-                <Typography variant="body2" color="text.secondary">
-                  Major: {user.major}
-                </Typography>
-              )}
-            </Box>
-          </Box>
-
-          {/* Languages */}
-          <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-            <LanguageIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">
-                Languages
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                {user.languages?.map((lang, index) => (
-                  <Chip key={index} label={lang} size="small" variant="outlined" />
-                ))}
-              </Stack>
-            </Box>
-          </Box>
         </Stack>
       </Grid>
 

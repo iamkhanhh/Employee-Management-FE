@@ -19,33 +19,37 @@ export const useContracts = () => {
   // ============================================
   // FETCH CONTRACTS với FILTERS
   // ============================================
-  const fetchContracts = useCallback(async (filters = {}) => {
+  const fetchContracts = useCallback(async ({ page = 0, pageSize = 10, status, contractType, empId, startDate, endDate, search }) => {
     setLoading(true);
 
     try {
       const params = {
-        page: filters.page ?? 0,
-        pageSize: filters.pageSize ?? 10,
+        page,
+        pageSize,
       };
 
-      if (filters.contractType && filters.contractType !== 'all') {
-        params.contractType = filters.contractType;
+      if (contractType && contractType !== 'all') {
+        params.contractType = contractType;
       }
 
-      if (filters.status && filters.status !== 'all') {
-        params.status = filters.status;
+      if (status && status !== 'all') {
+        params.status = status;
       }
 
-      if (filters.startDate) {
-        params.startDate = filters.startDate;
+      if (startDate) {
+        params.startDate = startDate;
       }
 
-      if (filters.endDate) {
-        params.endDate = filters.endDate;
+      if (endDate) {
+        params.endDate = endDate;
       }
 
-      if (filters.search) {
-        params.keyword = filters.search;
+      if (empId) {
+        params.empId = empId;
+      }
+
+      if (search) {
+        params.keyword = search;
       }
 
       const res = await axiosInstance.get("/contracts", { params });

@@ -270,19 +270,6 @@ export default function AdminLayout() {
                         )}
 
                     </Box>
-
-
-
-
-
-
-
-
-
-                 
-
-
-
                     <Box sx={{ flexGrow: 1 }} />
 
 
@@ -387,13 +374,22 @@ export default function AdminLayout() {
 
                             </Box>
 
-                            <MenuItem onClick={() => { handleCloseUserMenu(); navigate('/profile'); }} sx={{ py: 1.5, mt: 1 }}>
-
+                            <MenuItem
+                                onClick={() => {
+                                    handleCloseUserMenu();
+                                    navigate('/profile');
+                                }}
+                                sx={{ py: 1.5, mt: 1 }}
+                                >
                                 <PersonIcon fontSize="small" sx={{ mr: 1.5, color: '#6366f1' }} />
 
-                                <Typography variant="body2">My Profile</Typography>
-
+                                {open && (
+                                    <Typography variant="body2">
+                                    My Profile
+                                    </Typography>
+                                )}
                             </MenuItem>
+
 
                             {isAdmin && (
 
