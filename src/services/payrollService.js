@@ -33,9 +33,6 @@ export const payrollService = {
    * @param {object} data - Dữ liệu tạo lương (thường gồm empId, month, year)
    * @returns {Promise<object>} Kết quả tạo
    */
-  createSinglePayroll: async (data) => {
-    return axiosInstance.post('/payrolls/single', data);
-  },
 
   /**
    * [GET /payrolls/employee/{empId}]
@@ -46,14 +43,5 @@ export const payrollService = {
   getPayrollsByEmployee: async (empId) => {
     return axiosInstance.get(`/payrolls/employee/${empId}`);
   },
-
-  /**
-   * [GET /payrolls/department/{deptId}]
-   * Lấy danh sách bảng lương theo phòng ban
-   * @param {string|number} deptId - ID của phòng ban
-   * @returns {Promise<object>} Danh sách lương thuộc phòng ban đó
-   */
-  getPayrollsByDepartment: async (deptId) => {
-    return axiosInstance.get(`/payrolls/department/${deptId}`);
-  },
+  
 };

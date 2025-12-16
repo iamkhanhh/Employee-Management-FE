@@ -14,6 +14,7 @@ import EmployeeList from "./pages/employeeScreens/EmployeeList";
 import EmployeeDetail from "./pages/employeeScreens/EmployeeDetail";
 import TaskList from "./pages/admin/TaskList";
 import PayrollList from "./pages/admin/PayrollList";
+import PayrolllManager from "./pages/admin/payrollManager";
 import AccountManagementPage from "./pages/admin/AccountManagement";
 import LeaveRequestsAdmin from "./pages/admin/LeaveRequestsAdmin";
 import AttendanceManager from "./pages/admin/AttendanceManager";
@@ -77,6 +78,7 @@ function App() {
             <Route path="tasks" element={<TaskList />} />
             <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
             <Route path="payroll" element={<PayrollList />} />
+            <Route path="payroll-manager" element={<PayrolllManager />} />
             <Route path="account-management" element={<AccountManagementPage />} />
             <Route path="kpi-review" element={<KpiReviewPage />} /> {/* HR/ADMIN duyệt KPI */}
             <Route path="notification" element={<NotificationPage/>} />

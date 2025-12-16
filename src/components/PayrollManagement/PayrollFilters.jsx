@@ -1,16 +1,16 @@
 import React from 'react';
-import { Paper,TextField, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
+import { Paper, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 export default function PayrollFilters({
-  query,
-  setQuery,
   status,
   setStatus,
   month,
   setMonth,
   year,
   setYear,
-  onCalculate,
+  departments,
+  department,
+  setDepartment,
 }) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -31,20 +31,19 @@ export default function PayrollFilters({
   ];
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4">
-        <FormControl size="small">
+    <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <FormControl size="small" fullWidth>
           <InputLabel>Status</InputLabel>
           <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <MenuItem value="ALL">All</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="PENDING">Pending</MenuItem>
             <MenuItem value="APPROVED">Approved</MenuItem>
             <MenuItem value="PAID">Paid</MenuItem>
             <MenuItem value="CANCELLED">Cancelled</MenuItem>
           </Select>
         </FormControl>
-        <FormControl size="small">
+        <FormControl size="small" fullWidth>
           <InputLabel>Month</InputLabel>
           <Select label="Month" value={month} onChange={(e) => setMonth(e.target.value)}>
             {months.map((m) => (
@@ -52,7 +51,7 @@ export default function PayrollFilters({
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small">
+        <FormControl size="small" fullWidth>
           <InputLabel>Year</InputLabel>
           <Select label="Year" value={year} onChange={(e) => setYear(e.target.value)}>
             <MenuItem value="all">All</MenuItem>
@@ -61,11 +60,16 @@ export default function PayrollFilters({
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small" fullWidth>
+          <InputLabel>Department</InputLabel>
+          <Select label="Department" value={department} onChange={(e) => setDepartment(e.target.value)}>
+            <MenuItem value="all">All Departments</MenuItem>
+            {departments?.map((dept) => (
+              <MenuItem key={dept.id} value={dept.id}>{dept.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3 pb-6">
-        <Button variant="contained" color="secondary" className="normal-case" onClick={onCalculate}>Calculate Payroll</Button>
-     </div>
     </Paper>
   );
 }

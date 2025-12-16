@@ -84,7 +84,7 @@ export default function TaskList() {
     setCurrentTask({
       id: task.id,
       title: task.title,
-      dueDate: moment(task.dueDate, "YYYY-MM-DD HH:mm").format("YYYY-MM-DD HH:mm"),
+      dueDate: moment(task.dueDate, "dd/MM/yyyy").format("dd/MM/yyyy"),
       description: task.description,
       assignments: task.assignments?.map(a => a.employeeName) || [],
       status: task.status,
@@ -114,65 +114,61 @@ const handleClickOpen = () => {
     const { name, value } = e.target;
     setCurrentTask((prev) => ({ ...prev, [name]: value }));
   };
+const toDDMMYYYY = (date) => {
+  if (!date) return null;
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
+};
 
-  const handleSaveTask = async () => {
-    if (!currentTask.title || !currentTask.dueDate) {
-      toast.error("Vui lòng nhập Tiêu đề và Hạn chót!");
-      return;
+const handleSaveTask = async () => {
+  // 1️⃣ Validate
+  if (!currentTask.title || !currentTask.dueDate) {
+    toast.error("Vui lòng nhập Tiêu đề và Hạn chót!");
+    return;
+  }
+
+  // 2️⃣ Toast loading
+  const toastId = toast.loading(
+    editMode ? "Đang cập nhật nhiệm vụ..." : "Đang tạo nhiệm vụ..."
+  );
+
+  try {
+    // 3️⃣ Map assignments → employeeIds
+    const employeeIds = currentTask.assignments
+      .map(name => employees.find(e => e.fullName === name)?.id)
+      .filter(Boolean);
+
+    // 4️⃣ Gọi API
+    if (editMode) {
+      await taskService.updateStatus(currentTask.id, {
+        status: currentTask.status,
+      });
+    } else {
+      await taskService.createTask({
+        title: currentTask.title,
+        description: currentTask.description,
+        dueDate: toDDMMYYYY(currentTask.dueDate),
+        employeeIds,
+      });
     }
 
-    const loadingToast = toast.loading(editMode ? "Đang cập nhật nhiệm vụ..." : "Đang tạo nhiệm vụ...");
+    // 5️⃣ Success toast (update loading toast)
+    toast.success(
+      editMode
+        ? "Cập nhật nhiệm vụ thành công!"
+        : "Tạo nhiệm vụ thành công!",
+      { id: toastId }
+    );
+    fetchTasks();
+  } catch (error) {
+    console.error(error);
 
-    try {
-      let savedTask;
-      if (editMode) {
-        savedTask = await taskService.updateTask(currentTask.id, {
-          title: currentTask.title,
-          description: currentTask.description,
-          dueDate: currentTask.dueDate,
-        });
-      } else {
-        savedTask = await taskService.createTask({
-          title: currentTask.title,
-          description: currentTask.description,
-          dueDate: currentTask.dueDate,
-        });
-      }
+    // 7️⃣ Error toast
+    toast.error("Có lỗi xảy ra, vui lòng thử lại!", { id: toastId });
+  }
+};
 
-      const taskId = editMode ? currentTask.id : parseInt(savedTask.data.data.id);
-      console.log("Saved task ID:", taskId);
 
-      // Gán assignments
-      for (const name of currentTask.assignments) {
-        const emp = employees.find(e => e.fullName === name);
-        if (!emp?.id) continue;
-
-        try {
-          await taskService.assignTask(taskId, emp.id);
-        } catch (assignError) {
-          // Nếu assign lỗi, xóa task vừa tạo và throw lỗi để thông báo
-          if (!editMode) {
-            await taskService.deleteTask(taskId); // rollback
-          }
-          throw assignError; // đưa ra catch bên ngoài
-        }
-      }
-
-      toast.dismiss(loadingToast);
-      toast.success(editMode ? "Cập nhật nhiệm vụ thành công!" : "Tạo nhiệm vụ thành công!");
-      setOpen(false);
-      await fetchTasks(filters);
-
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      // Thông báo chi tiết nếu có lỗi từ assign
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Có lỗi xảy ra. Vui lòng thử lại!");
-      }
-    }
-  };
 
 
 

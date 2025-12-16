@@ -687,6 +687,13 @@ export default function AdminLayout() {
 
                                         <ListItemIcon><PaidIcon sx={{ fontSize: 20 }} /></ListItemIcon>
 
+                                        <ListItemText primary="Caculator Payroll" />
+
+                                    </ListItemButton>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/payroll-manager" selected={location.pathname.startsWith('/admin/payroll-manager')}>
+
+                                        <ListItemIcon><ReceiptLongIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+
                                         <ListItemText primary="Payroll Management" />
 
                                     </ListItemButton>
@@ -694,6 +701,7 @@ export default function AdminLayout() {
                                 </List>
 
                             </Collapse>
+
 
                         )}
 

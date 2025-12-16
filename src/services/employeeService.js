@@ -38,21 +38,8 @@ export const employeeService = {
    * @returns {Promise<object>} Dữ liệu của nhân viên sau khi cập nhật.
    */
   updateEmployee: async (id, employeeData) => {
-    // Nếu dữ liệu là FormData, sử dụng phương thức POST và thêm _method: 'PUT'
-    // để hỗ trợ upload file khi cập nhật.
-    if (employeeData instanceof FormData) {
-      employeeData.append('_method', 'PUT');
-      return axiosInstance.post(`/employees/${id}`, employeeData);
-    }
-    // Nếu là object JSON thông thường, sử dụng phương thức PUT.
     return axiosInstance.put(`/employees/${id}`, employeeData);
   },
-
-  /**
-   * Xóa một nhân viên.
-   * @param {string|number} id - ID của nhân viên cần xóa.
-   * @returns {Promise<object>} Thông báo thành công từ API.
-   */
   deleteEmployee: async (id) => {
     return axiosInstance.delete(`/employees/${id}`);
   },

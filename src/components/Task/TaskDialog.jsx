@@ -76,8 +76,10 @@ export default function TaskDialog({ open, onClose, currentTask, onChange, onSav
               onChange={onChange}
               label="Status"
             >
-              <MenuItem value="Undone">Undone</MenuItem>
-              <MenuItem value="Done">Done</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
             </Select>
           </FormControl>
         )}

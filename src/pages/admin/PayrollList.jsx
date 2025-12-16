@@ -9,7 +9,6 @@ import { usePayroll } from "../../hooks/usePayroll";
 import { useDepartments } from "../../hooks/useDepartments";
 
 // Components
-import PayrollFilters from '../../components/PayrollManagement/PayrollFilters';
 import PayrollTable from '../../components/PayrollManagement/PayrollTable';
 import DepartmentTable from '../../components/PayrollManagement/DepartmentTable'; // Import DepartmentTable
 import EditPayrollDialog from '../../components/PayrollManagement/EditPayrollDialog';
@@ -41,12 +40,6 @@ export default function PayrollList() {
 
   // New state for department selection
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-
-  // Filters
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [month, setMonth] = useState("all");
-  const [year, setYear] = useState("all");
 
   // Pagination
   const [paginationModel, setPaginationModel] = useState({
@@ -89,12 +82,9 @@ export default function PayrollList() {
   const getPayrolls = useCallback(() => {
     if (selectedDepartment) {
       const params = { deptId: selectedDepartment.id };
-      if (status !== "all") params.status = status;
-      if (month !== "all") params.month = month;
-      if (year !== "all") params.year = year;
       fetchPayrolls(params);
     }
-  }, [selectedDepartment, status, month, year, fetchPayrolls]);
+  }, [selectedDepartment, fetchPayrolls]);
 
   useEffect(() => {
     if (selectedDepartment) {
@@ -257,16 +247,11 @@ export default function PayrollList() {
                 Back to Departments
             </Button>
             <Typography variant="h5" fontWeight={600}>{selectedDepartment.deptName} - Payroll</Typography>
+            <Button variant="contained" color="primary" onClick={handleCalculate}>
+                Calculate Payroll
+            </Button>
         </Box>
 
-        <PayrollFilters
-          query={query} setQuery={setQuery}
-          status={status} setStatus={setStatus}
-          month={month} setMonth={setMonth}
-          year={year} setYear={setYear}
-          onCalculate={handleCalculate}
-        />
-        
         {error && <Typography color="error">{error}</Typography>}
 
         <Box mt={4}>

@@ -12,15 +12,6 @@ export const taskService = {
       throw error;
     }
   },
-  // 4. UPDATE TASK
-  updateTask: async (taskId, data) => {
-    try {
-      const response = await axiosInstance.put(`${TASK_API}/${taskId}`, data);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
 
   // 5. DELETE TASK
   deleteTask: async (taskId) => {
@@ -46,7 +37,7 @@ export const taskService = {
   // 7. UPDATE STATUS
   updateStatus: async (taskId, status) => {
     try {
-      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`,{status});
+      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`,status);
       console.log("Update status response:", response);
       return response;
     } catch (error) {
