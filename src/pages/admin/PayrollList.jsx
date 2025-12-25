@@ -3,21 +3,13 @@ import Paper from '@mui/material/Paper';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, TextField, IconButton } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-
-// Custom Hooks
 import { usePayroll } from "../../hooks/usePayroll";
 import { useDepartments } from "../../hooks/useDepartments";
-
-// Components
 import PayrollTable from '../../components/PayrollManagement/PayrollTable';
 import DepartmentTable from '../../components/PayrollManagement/DepartmentTable'; // Import DepartmentTable
 import EditPayrollDialog from '../../components/PayrollManagement/EditPayrollDialog';
-
-// Services
 import { payrollService } from "../../services/payrollService";
 import { employeeService } from "../../services/employeeService";
-
-// UI
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import toast from 'react-hot-toast';

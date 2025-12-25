@@ -13,7 +13,7 @@ import { employeeService } from '../../services/employeeService';
 import moment from 'moment';
 
 export default function AttendanceManager() {
-  const { user } = useAuth();
+  const { user,employeeInfo } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.isAdmin;
   const currentUserId = user?.id ?? null;
 
@@ -21,6 +21,7 @@ export default function AttendanceManager() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userDetail, setUser] = useState(null);
 
   const [filterEmployeeId, setFilterEmployeeId] = useState(null);
   const [openForm, setOpenForm] = useState(false);
@@ -32,30 +33,43 @@ export default function AttendanceManager() {
   const [year, setYear] = useState(new Date().getFullYear());
 
   // Fetch attendance records
+  useEffect(() => {
+      console.log(">>> employeeInfo in AttendanceManager useEffect:", employeeInfo);
+      if (employeeInfo) {
+        setUser(employeeInfo);
+      }
+  }, [employeeInfo]);
+  
   const fetchRecords = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await attendanceService.getAllRecords({ month, year });
-      const formattedRecords = response.data.data.map(r => ({
-        ...r,
-        date: r.checkIn ? moment(r.checkIn, "DD/MM/YYYY HH:mm:ss").format("DD/MM/YYYY") : '',
-        timeIn: r.checkIn ? moment(r.checkIn, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
-        timeOut: r.checkOut ? moment(r.checkOut, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
-        hoursWorked: r.hoursWorked ?? 0,
-        overtimeHours: r.overtimeHours ?? 0,
-        type: r.type ?? 'work',
-        note: r.note ?? ''
-      }));
-      setRecords(formattedRecords);
-      setError(null);
-    } catch (err) {
-      console.error(err);
-      setError(err);
-      toast.error("Không thể tải dữ liệu chấm công.");
-    } finally {
-      setLoading(false);
+    if (userDetail) {
+      try {
+        setLoading(true);
+        console.log(">>> employeeInfo in AttendanceManager:", userDetail);
+        const response = await attendanceService.getRecordsByDeparmentId(userDetail.deptId);
+        console.log(">>> response in AttendanceManager:", response.data.data);
+        const formattedRecords = response.data.data.map((r, index) => ({
+          ...r,
+          id: r.id ?? `temp-${index}`,
+          empId: r.employeeId,
+          date: r.checkInTime ? moment(r.checkInTime, "DD/MM/YYYY HH:mm:ss").format("DD/MM/YYYY") : '',
+          timeIn: r.checkInTime ? moment(r.checkInTime, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
+          timeOut: r.checkOutTime ? moment(r.checkOutTime, "DD/MM/YYYY HH:mm:ss").format("HH:mm:ss") : '',
+          hoursWorked: r.hoursWorked ?? 0,
+          overtimeHours: r.overtimeHours ?? 0,
+          type: r.type ?? 'work',
+          note: r.note ?? ''
+        }));
+        setRecords(formattedRecords);
+        setError(null);
+      } catch (err) {
+        console.error(err);
+        setError(err);
+        toast.error("Không thể tải dữ liệu chấm công.");
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [month, year]);
+  }, [month, year, userDetail]);
 
   // Fetch employee list
   const fetchEmployees = useCallback(async () => {

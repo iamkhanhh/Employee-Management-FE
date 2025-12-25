@@ -1,24 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { CircularProgress, Alert } from "@mui/material";
 
-// MUI Charts vẫn dùng được
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { LineChart } from "@mui/x-charts/LineChart";
 
-// Service
 import { getDashboardStats } from "../../services/dashboardService";
 
-// Icons (có thể giữ nguyên MUI icons)
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 
 
-// ========================
-//     STAT CARD
-// ========================
 const StatCard = ({ title, value, icon }) => (
   <div className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between">
     <div className="flex items-center mb-2">
@@ -160,9 +154,6 @@ const Dashboard = () => {
 
         </div>
       </div>
-
-
-      {/* ============================ SECTION 3: BAR + LINE CHARTS ============================ */}
       <div className="w-full px-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
 

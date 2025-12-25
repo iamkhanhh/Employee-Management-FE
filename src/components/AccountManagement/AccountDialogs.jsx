@@ -11,10 +11,6 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-
-/* =====================================================
-   ADD ACCOUNT
-===================================================== */
 export function AddAccountDialog({
   open,
   onClose,
@@ -324,10 +320,6 @@ export function DeleteAccountDialog({
     </Dialog>
   );
 }
-
-/* =====================================================
-   RESET PASSWORD
-===================================================== */
 export function ResetPasswordDialog({
   open,
   onClose,

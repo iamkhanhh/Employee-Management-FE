@@ -12,6 +12,9 @@ export const attendanceService = {
     const queryString = new URLSearchParams(params).toString();
     return axiosInstance.get(`/attendance`);
   },
+  getRecordsByDeparmentId: async (depId) => {
+    return axiosInstance.get(`/attendance/department?deptId=${depId}`);
+  },
   getMyRecords: async (params) => {
     const queryString = new URLSearchParams(params).toString();
     return axiosInstance.get(`/attendance/me?${queryString}`);

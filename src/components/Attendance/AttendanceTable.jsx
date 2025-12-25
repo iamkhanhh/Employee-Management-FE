@@ -8,7 +8,7 @@ export default function AttendanceTable({ records, employees, onEdit, onDelete, 
   const rows = records.map(r => ({
     id: r.id,
     employeeId: r.empId,
-    employeeName: employees.find(e => e.id === r.empId)?.name || 'Unknown',
+    employeeName: r.fullName,
     date: r.date,
     timeIn: r.timeIn,
     timeOut: r.timeOut,
