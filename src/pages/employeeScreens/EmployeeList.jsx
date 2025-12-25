@@ -238,7 +238,7 @@ const resetForm = () => setFormState({
         page: paginationModel.page, 
         limit: paginationModel.pageSize,
         search: filters.query,
-        department: filters.department !== 'all' ? filters.department : undefined,
+        deptId: filters.department !== 'all' ? filters.department : undefined,
         position: filters.position !== 'all' ? filters.position : undefined,
         status: filters.workStatus !== 'all' ? filters.workStatus : undefined,
       };
