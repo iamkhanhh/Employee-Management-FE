@@ -78,8 +78,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
 } from "recharts";
 
 import { axiosInstance } from "../../lib/axios";
@@ -94,6 +92,7 @@ const RATING_CONFIG = {
   C: { color: "#ff9800", bg: "#fff3e0", label: "Khá" },
   D: { color: "#ff5722", bg: "#fbe9e7", label: "Trung bình" },
   E: { color: "#f44336", bg: "#ffebee", label: "Yếu" },
+  F: { color: "#9e9e9e", bg: "#f5f5f5", label: "Kém" },
 };
 
 const CHART_COLORS = ["#4caf50", "#8bc34a", "#ff9800", "#ff5722", "#f44336"];
@@ -103,6 +102,7 @@ const PIE_COLORS = {
   C: "#ff9800",
   D: "#ff5722",
   E: "#f44336",
+  F: "#9e9e9e",
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -155,7 +155,7 @@ const ScoreProgress = ({ score, maxScore = 5, showLabel = true }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// RADAR CHART COMPONENT - CHI TIẾT ĐÁNH GIÁ NHÂN VIÊN
+// RADAR CHART COMPONENT
 // ═══════════════════════════════════════════════════════════════
 const EmployeeRadarChart = ({ scores }) => {
   if (!scores || scores.length === 0) return null;
@@ -212,10 +212,8 @@ const EmployeeRadarChart = ({ scores }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// PERIOD OVERVIEW CHARTS - BIỂU ĐỒ TỔNG HỢP CHO TRƯỞNG PHÒNG
+// PERIOD OVERVIEW CHARTS
 // ═══════════════════════════════════════════════════════════════
-
-// 1. PIE CHART - Phân bố xếp loại
 const RatingDistributionPieChart = ({ reviews }) => {
   if (!reviews || reviews.length === 0) return null;
 
@@ -266,7 +264,6 @@ const RatingDistributionPieChart = ({ reviews }) => {
   );
 };
 
-// 2. BAR CHART - Điểm trung bình theo nhân viên
 const EmployeeScoresBarChart = ({ reviews }) => {
   if (!reviews || reviews.length === 0) return null;
 
@@ -278,7 +275,7 @@ const EmployeeScoresBarChart = ({ reviews }) => {
       rating: r.finalRating || "C",
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 10); // Top 10
+    .slice(0, 10);
 
   return (
     <Box sx={{ width: "100%", height: 350 }}>
@@ -314,11 +311,9 @@ const EmployeeScoresBarChart = ({ reviews }) => {
   );
 };
 
-// 3. RADAR CHART - Điểm trung bình theo tiêu chí (tổng hợp)
 const CriteriaAverageRadarChart = ({ reviews, criteria }) => {
   if (!reviews || reviews.length === 0 || !criteria || criteria.length === 0) return null;
 
-  // Tính điểm trung bình cho mỗi tiêu chí
   const criteriaScores = criteria.map((c) => {
     let totalScore = 0;
     let count = 0;
@@ -381,125 +376,46 @@ const CriteriaAverageRadarChart = ({ reviews, criteria }) => {
   );
 };
 
-// 4. SCORE DISTRIBUTION BAR CHART
-const ScoreDistributionChart = ({ reviews }) => {
-  if (!reviews || reviews.length === 0) return null;
-
-  // Phân bố điểm theo khoảng
-  const ranges = [
-    { range: "0-1", min: 0, max: 1, count: 0, color: "#f44336" },
-    { range: "1-2", min: 1, max: 2, count: 0, color: "#ff5722" },
-    { range: "2-3", min: 2, max: 3, count: 0, color: "#ff9800" },
-    { range: "3-4", min: 3, max: 4, count: 0, color: "#8bc34a" },
-    { range: "4-5", min: 4, max: 5.01, count: 0, color: "#4caf50" },
-  ];
-
-  reviews.forEach((r) => {
-    const score = r.averageScore || 0;
-    const range = ranges.find((rg) => score >= rg.min && score < rg.max);
-    if (range) range.count++;
-  });
-
-  return (
-    <Box sx={{ width: "100%", height: 300 }}>
-      <ResponsiveContainer>
-        <BarChart data={ranges} margin={{ top: 20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="range" />
-          <YAxis allowDecimals={false} />
-          <RechartsTooltip
-            formatter={(value) => [`${value} nhân viên`, "Số lượng"]}
-            contentStyle={{
-              backgroundColor: "#fff",
-              border: "1px solid #e0e0e0",
-              borderRadius: 8,
-            }}
-          />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-            {ranges.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </Box>
-  );
-};
-
 // ═══════════════════════════════════════════════════════════════
 // MAIN CONTENT COMPONENT
 // ═══════════════════════════════════════════════════════════════
 const KpiReviewContent = ({ user }) => {
   // ─────────────────────────────────────────────────────────────
-  // STATE: Employee Info
+  // STATE
   // ─────────────────────────────────────────────────────────────
   const [employeeInfo, setEmployeeInfo] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
   const [loadingEmployee, setLoadingEmployee] = useState(true);
   const [employeeError, setEmployeeError] = useState("");
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Criteria
-  // ─────────────────────────────────────────────────────────────
   const [criteria, setCriteria] = useState([]);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: View Mode (periods list / period detail)
-  // ─────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState("list");
   const [selectedPeriodForDetail, setSelectedPeriodForDetail] = useState(null);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Period Detail Tab (table / charts)
-  // ─────────────────────────────────────────────────────────────
   const [periodDetailTab, setPeriodDetailTab] = useState(0);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: KPI Periods
-  // ─────────────────────────────────────────────────────────────
   const [periods, setPeriods] = useState([]);
   const [periodsLoading, setPeriodsLoading] = useState(false);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
   const [periodsPagination, setPeriodsPagination] = useState({
     page: 0,
     size: 10,
     totalElements: 0,
     totalPages: 0,
   });
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: My KPI
-  // ─────────────────────────────────────────────────────────────
   const [myKpi, setMyKpi] = useState([]);
   const [myKpiLoading, setMyKpiLoading] = useState(false);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Department Reviews (for HEAD)
-  // ─────────────────────────────────────────────────────────────
   const [selectedPeriodId, setSelectedPeriodId] = useState("");
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Period Detail Reviews
-  // ─────────────────────────────────────────────────────────────
+  const [unreviewedEmployees, setUnreviewedEmployees] = useState([]);
+  const [unreviewedLoading, setUnreviewedLoading] = useState(false);
   const [periodDetailReviews, setPeriodDetailReviews] = useState([]);
   const [periodDetailLoading, setPeriodDetailLoading] = useState(false);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Dialogs - Period CRUD
-  // ─────────────────────────────────────────────────────────────
   const [openPeriodDialog, setOpenPeriodDialog] = useState(false);
   const [periodForm, setPeriodForm] = useState({ id: null, periodName: "", startDate: "", endDate: "" });
   const [periodFormError, setPeriodFormError] = useState("");
   const [savingPeriod, setSavingPeriod] = useState(false);
-
   const [openDeletePeriodDialog, setOpenDeletePeriodDialog] = useState(false);
   const [deletingPeriod, setDeletingPeriod] = useState(null);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Dialogs - Review
-  // ─────────────────────────────────────────────────────────────
   const [openReviewDialog, setOpenReviewDialog] = useState(false);
   const [reviewForm, setReviewForm] = useState({ empId: null, empName: "", scores: [], comment: "" });
   const [openReviewDetailDialog, setOpenReviewDetailDialog] = useState(false);
@@ -507,19 +423,11 @@ const KpiReviewContent = ({ user }) => {
   const [loadingReviewDetail, setLoadingReviewDetail] = useState(false);
   const [openMyKpiDetail, setOpenMyKpiDetail] = useState(false);
   const [selectedMyKpi, setSelectedMyKpi] = useState(null);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Review Detail Tab
-  // ─────────────────────────────────────────────────────────────
   const [reviewDetailTab, setReviewDetailTab] = useState(0);
-
-  // ─────────────────────────────────────────────────────────────
-  // STATE: Snackbar
-  // ─────────────────────────────────────────────────────────────
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   // ─────────────────────────────────────────────────────────────
-  // COMPUTED: Permissions
+  // COMPUTED
   // ─────────────────────────────────────────────────────────────
   const isAdmin = useMemo(() => {
     return user?.role === "ADMIN" || user?.role === "HR" || user?.roles?.includes("ADMIN") || user?.roles?.includes("HR");
@@ -549,7 +457,7 @@ const KpiReviewContent = ({ user }) => {
         try {
           const deptRes = await axiosInstance.get("/departments");
           const deptList = deptRes.data?.data || [];
-          const foundDept = deptList.find(d => d.deptName === deptName);
+          const foundDept = deptList.find(d => d.deptName?.trim() === deptName?.trim());
           if (foundDept) {
             setDepartmentId(foundDept.id);
           }
@@ -650,13 +558,54 @@ const KpiReviewContent = ({ user }) => {
   }, [selectedPeriodId, departmentId, isHead, isAdmin]);
 
   const fetchEmployees = useCallback(async () => {
-    if (!departmentId) return;
+    if (!departmentId) {
+      console.warn("⚠️ No departmentId, skipping fetchEmployees");
+      return;
+    }
+
+    console.log("🔍 Fetching employees for department:", departmentId); // ← DEBUG
+    setEmployeesLoading(true);
+
     try {
       const res = await axiosInstance.get(`/employees/department/${departmentId}`);
-      setEmployees(res.data?.data || []);
+      const empList = res.data?.data || [];
+
+      console.log("✅ Employees loaded:", empList.length, empList); // ← DEBUG
+
+      setEmployees(empList);
     } catch (err) {
-      console.error("Fetch employees error:", err);
+      console.error("❌ Fetch employees error:", err);
       setEmployees([]);
+    } finally {
+      setEmployeesLoading(false);
+    }
+  }, [departmentId]);
+
+  const fetchUnreviewedEmployees = useCallback(async (periodId) => {
+    const pId = parseInt(periodId, 10);
+    const dId = parseInt(departmentId, 10);
+
+    if (!dId || !pId) {
+      console.warn("⚠️ Invalid departmentId or periodId, skipping fetchUnreviewedEmployees", { dId, pId });
+      setUnreviewedEmployees([]);
+      return;
+    }
+
+    setUnreviewedLoading(true);
+    try {
+      const res = await axiosInstance.get('/employees/without-kpi', {
+        params: {
+          kpiPeriodId: pId,
+          deptId: dId,
+        },
+      });
+      setUnreviewedEmployees(res.data?.data || []);
+    } catch (err) {
+      setUnreviewedEmployees([]);
+      console.error("❌ Fetch unreviewed employees error:", err);
+      setSnackbar({ open: true, message: "Lỗi tải danh sách nhân viên chưa đánh giá", severity: "error" });
+    } finally {
+      setUnreviewedLoading(false);
     }
   }, [departmentId]);
 
@@ -686,7 +635,14 @@ const KpiReviewContent = ({ user }) => {
     setSelectedPeriodForDetail(period);
     setViewMode("periodDetail");
     setPeriodDetailTab(0);
+    fetchUnreviewedEmployees(period.id);
     fetchPeriodDetailReviews(period.id);
+
+    // ✅ THÊM: Fetch employees nếu chưa có
+    // if (isHead && departmentId && employees.length === 0) {
+    //   console.log("🔄 Fetching employees for period detail...");
+    //   fetchEmployees();
+    // }
   };
 
   const handleBackToPeriodsList = () => {
@@ -858,27 +814,38 @@ const KpiReviewContent = ({ user }) => {
   };
 
   const calculateFinalScore = () => {
-    return reviewForm.scores.reduce((sum, s) => sum + (s.scoreValue * s.weight), 0);
+    return reviewForm.scores.reduce((sum, s) => sum + (Number(s.scoreValue || 0) * s.weight), 0);
   };
 
   const handleSubmitReview = async () => {
-    if (!selectedPeriodId) {
+    const targetPeriodId = selectedPeriodForDetail?.id || selectedPeriodId;
+
+    if (!targetPeriodId) {
       setSnackbar({ open: true, message: "Vui lòng chọn kỳ đánh giá", severity: "warning" });
       return;
     }
 
     try {
-      await axiosInstance.post(`/review/periods/${selectedPeriodId}/reviews`, {
+      // API chuẩn: không gửi kpiPeriodId trong body vì đã có trong URL
+      await axiosInstance.post(`/review/periods/${targetPeriodId}/reviews`, {
         empId: reviewForm.empId,
         scores: reviewForm.scores.map(s => ({
           criteriaId: s.criteriaId,
-          scoreValue: s.scoreValue,
+          scoreValue: Number(s.scoreValue),
         })),
         comment: reviewForm.comment.trim(),
       });
+
       setSnackbar({ open: true, message: "Đánh giá thành công!", severity: "success" });
       setOpenReviewDialog(false);
-      fetchReviews();
+
+      // Reload data
+      if (selectedPeriodForDetail) {
+        fetchPeriodDetailReviews(selectedPeriodForDetail.id);
+      }
+      if (selectedPeriodId) {
+        fetchReviews();
+      }
     } catch (err) {
       setSnackbar({
         open: true,
@@ -915,7 +882,7 @@ const KpiReviewContent = ({ user }) => {
     return { label: "Đang diễn ra", color: "success", icon: <TrendingUpIcon /> };
   };
 
-  // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────em
   // COMPUTED: Stats
   // ─────────────────────────────────────────────────────────────
   const myKpiStats = useMemo(() => {
@@ -926,12 +893,6 @@ const KpiReviewContent = ({ user }) => {
     return { avgScore, latestReview, totalReviews: myKpi.length, bestScore };
   }, [myKpi]);
 
-  const unreviewedEmployees = useMemo(() => {
-    const reviewedIds = reviews.map(r => r.empId);
-    return employees.filter(e => !reviewedIds.includes(e.id));
-  }, [employees, reviews]);
-
-  // PERIOD DETAIL STATS
   const periodDetailStats = useMemo(() => {
     if (!selectedPeriodForDetail) return null;
 
@@ -1030,6 +991,7 @@ const KpiReviewContent = ({ user }) => {
           </Typography>
         </Box>
       </Box>
+
       {/* Criteria Info */}
       <Box mb={4} mt={4}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
@@ -1188,8 +1150,6 @@ const KpiReviewContent = ({ user }) => {
         </Box>
       )}
 
-
-
       {/* ═══════════════════════════════════════════════════════ */}
       {/* HEAD/ADMIN VIEW */}
       {/* ═══════════════════════════════════════════════════════ */}
@@ -1303,7 +1263,7 @@ const KpiReviewContent = ({ user }) => {
           )}
 
           {/* ═══════════════════════════════════════════════════════ */}
-          {/* VIEW MODE: PERIOD DETAIL (DANH SÁCH + BIỂU ĐỒ) */}
+          {/* VIEW MODE: PERIOD DETAIL */}
           {/* ═══════════════════════════════════════════════════════ */}
           {viewMode === "periodDetail" && selectedPeriodForDetail && (
             <Box>
@@ -1463,7 +1423,7 @@ const KpiReviewContent = ({ user }) => {
                   <Tab
                     icon={<RateReviewIcon />}
                     iconPosition="start"
-                    label="Danh Sách Đánh Giá"
+                    label="Danh Sách Nhân Viên"
                   />
                   <Tab
                     icon={<BarChartIcon />}
@@ -1472,86 +1432,143 @@ const KpiReviewContent = ({ user }) => {
                   />
                 </Tabs>
 
-                {/* TAB 0: DANH SÁCH ĐÁNH GIÁ */}
+                {/* TAB 0: DANH SÁCH NHÂN VIÊN (ĐÃ & CHƯA ĐÁNH GIÁ) */}
                 {periodDetailTab === 0 && (
-                  <Box>
+                  <Box p={3}>
                     {periodDetailLoading ? (
                       <Box textAlign="center" py={6}>
                         <CircularProgress />
                         <Typography mt={2}>Đang tải...</Typography>
                       </Box>
                     ) : (
-                      <TableContainer>
-                        <Table>
-                          <TableHead>
-                            <TableRow sx={{ bgcolor: "#f5f5f5" }}>
-                              <TableCell sx={{ fontWeight: 700 }}>#</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Nhân viên</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Phòng ban</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Điểm TB</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Xếp loại</TableCell>
-                              <TableCell sx={{ fontWeight: 700 }}>Người đánh giá</TableCell>
-                              <TableCell align="center" sx={{ fontWeight: 700 }}>Thao tác</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {periodDetailReviews.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                                  <RateReviewIcon sx={{ fontSize: 60, color: "#ccc", mb: 2 }} />
-                                  <Typography color="text.secondary">Chưa có đánh giá nào trong kỳ này</Typography>
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              periodDetailReviews.map((review, i) => (
-                                <TableRow key={review.id} hover>
-                                  <TableCell>{i + 1}</TableCell>
-                                  <TableCell>
-                                    <Stack direction="row" spacing={1} alignItems="center">
-                                      <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.main" }}>
-                                        {review.empName?.[0]?.toUpperCase()}
+                      <Grid container spacing={3}>
+                        {/* CỘT TRÁI: CHƯA ĐÁNH GIÁ */}
+                        <Grid item xs={12} md={6}>
+                          <Paper elevation={3} sx={{ height: "100%" }}>
+                            <Box sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
+                              <Typography variant="h6" fontWeight="bold">
+                                ⏳ Chưa đánh giá ({unreviewedEmployees.length})
+                              </Typography>
+                            </Box>
+                            <Box sx={{ maxHeight: 600, overflowY: "auto", position: "relative" }}>
+                              {unreviewedLoading ? (
+                                <Box textAlign="center" py={6}>
+                                  <CircularProgress />
+                                  <Typography mt={2} color="text.secondary">Đang tải danh sách...</Typography>
+                                </Box>
+                              ) : (
+                                unreviewedEmployees.length === 0 ? (
+                                <Box textAlign="center" py={6}>
+                                  <CheckCircleIcon sx={{ fontSize: 60, color: "success.main", mb: 2 }} />
+                                  <Typography color="text.secondary">
+                                    Tất cả nhân viên đã được đánh giá!
+                                  </Typography>
+                                </Box>
+                              ) : (
+                                unreviewedEmployees.map((emp) => (
+                                  <Box
+                                    key={emp.id}
+                                    sx={{
+                                      p: 2,
+                                      borderBottom: "1px solid #e0e0e0",
+                                      cursor: "pointer",
+                                      "&:hover": { bgcolor: "#fff3e0" },
+                                    }}
+                                    onClick={() => handleOpenReviewDialog(emp)}
+                                  >
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                      <Avatar sx={{ bgcolor: "warning.main" }}>
+                                        {emp.fullName?.[0]?.toUpperCase()}
                                       </Avatar>
-                                      <Box>
-                                        <Typography fontWeight={500}>{review.empName}</Typography>
+                                      <Box flexGrow={1}>
+                                        <Typography fontWeight="bold">{emp.fullName}</Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                          ID: {review.empId}
+                                          Vai trò: {emp.roleInDept || "N/A"}
                                         </Typography>
                                       </Box>
-                                    </Stack>
-                                  </TableCell>
-                                  <TableCell>{review.deptName || "-"}</TableCell>
-                                  <TableCell>
-                                    <Box sx={{ width: 120 }}>
-                                      <ScoreProgress score={review.averageScore || 0} />
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <RatingChip rating={review.finalRating || "C"} />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2">{review.recordedByName || "-"}</Typography>
-                                  </TableCell>
-                                  <TableCell align="center">
-                                    <Tooltip title="Xem chi tiết">
-                                      <IconButton
-                                        color="info"
-                                        onClick={() => handleOpenReviewDetail(review, selectedPeriodForDetail.id)}
-                                        disabled={loadingReviewDetail}
+                                      <Button
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={<RateReviewIcon />}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenReviewDialog(emp);
+                                        }}
                                       >
-                                        {loadingReviewDetail ? (
-                                          <CircularProgress size={20} />
-                                        ) : (
+                                        Đánh giá
+                                      </Button>
+                                    </Stack>
+                                  </Box>
+                                ))
+                              ))}
+                            </Box>
+                          </Paper>
+                        </Grid>
+
+                        {/* CỘT PHẢI: ĐÃ ĐÁNH GIÁ */}
+                        <Grid item xs={12} md={6}>
+                          <Paper elevation={3} sx={{ height: "100%" }}>
+                            <Box sx={{ p: 2, bgcolor: "success.light", color: "success.contrastText" }}>
+                              <Typography variant="h6" fontWeight="bold">
+                                ✅ Đã đánh giá ({periodDetailReviews.length})
+                              </Typography>
+                            </Box>
+                            <Box sx={{ maxHeight: 600, overflowY: "auto" }}>
+                              {periodDetailReviews.length === 0 ? (
+                                <Box textAlign="center" py={6}>
+                                  <WarningIcon sx={{ fontSize: 60, color: "#ccc", mb: 2 }} />
+                                  <Typography color="text.secondary">
+                                    Chưa có nhân viên nào được đánh giá
+                                  </Typography>
+                                </Box>
+                              ) : (
+                                periodDetailReviews.map((review) => (
+                                  <Box
+                                    key={review.id}
+                                    sx={{
+                                      p: 2,
+                                      borderBottom: "1px solid #e0e0e0",
+                                      cursor: "pointer",
+                                      "&:hover": { bgcolor: "#e8f5e9" },
+                                    }}
+                                    onClick={() => handleOpenReviewDetail(review, selectedPeriodForDetail.id)}
+                                  >
+                                    <Stack direction="row" spacing={2} alignItems="center">
+                                      <Avatar sx={{ bgcolor: "success.main" }}>
+                                        {review.empName?.[0]?.toUpperCase()}
+                                      </Avatar>
+                                      <Box flexGrow={1}>
+                                        <Typography fontWeight="bold">{review.empName}</Typography>
+                                        <Stack direction="row" spacing={1} mt={0.5} alignItems="center">
+                                          <Box flexGrow={1} sx={{ maxWidth: 150 }}>
+                                            <ScoreProgress score={review.averageScore || 0} showLabel={false} />
+                                          </Box>
+                                          <Typography variant="caption" fontWeight="bold">
+                                            {(review.averageScore || 0).toFixed(2)}
+                                          </Typography>
+                                        </Stack>
+                                      </Box>
+                                      <RatingChip rating={review.finalRating || "C"} />
+                                      <Tooltip title="Xem chi tiết">
+                                        <IconButton
+                                          color="info"
+                                          size="small"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenReviewDetail(review, selectedPeriodForDetail.id);
+                                          }}
+                                        >
                                           <VisibilityIcon />
-                                        )}
-                                      </IconButton>
-                                    </Tooltip>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Stack>
+                                  </Box>
+                                ))
+                              )}
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      </Grid>
                     )}
                   </Box>
                 )}
@@ -1571,8 +1588,7 @@ const KpiReviewContent = ({ user }) => {
                       </Box>
                     ) : (
                       <Grid container spacing={3}>
-                        {/* Biểu đồ 1: Phân bố xếp loại (Pie Chart) */}
-                        <Grid size={4}>
+                        <Grid item xs={12} md={4}>
                           <Paper variant="outlined" sx={{ p: 2 }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
                               <PieChartIcon sx={{ mr: 1, verticalAlign: "middle" }} />
@@ -1583,8 +1599,7 @@ const KpiReviewContent = ({ user }) => {
                           </Paper>
                         </Grid>
 
-                        {/* Biểu đồ 2: Điểm theo tiêu chí (Radar Chart) */}
-                        <Grid size={4}>
+                        <Grid item xs={12} md={4}>
                           <Paper variant="outlined" sx={{ p: 2 }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
                               <RadarIcon sx={{ mr: 1, verticalAlign: "middle" }} />
@@ -1595,8 +1610,7 @@ const KpiReviewContent = ({ user }) => {
                           </Paper>
                         </Grid>
 
-                        {/* Biểu đồ 3: Điểm theo nhân viên (Bar Chart) */}
-                        <Grid size={4}>
+                        <Grid item xs={12} md={4}>
                           <Paper variant="outlined" sx={{ p: 2 }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
                               <BarChartIcon sx={{ mr: 1, verticalAlign: "middle" }} />
@@ -1606,7 +1620,6 @@ const KpiReviewContent = ({ user }) => {
                             <EmployeeScoresBarChart reviews={periodDetailReviews} />
                           </Paper>
                         </Grid>
-
                       </Grid>
                     )}
                   </Box>
@@ -1631,9 +1644,9 @@ const KpiReviewContent = ({ user }) => {
             </Typography>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ m: 4 }}>
+        <DialogContent sx={{ mt: 2 }}>
           <Grid container spacing={2}>
-            <Grid size={12}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Tên kỳ đánh giá"
@@ -1643,7 +1656,7 @@ const KpiReviewContent = ({ user }) => {
                 error={!!periodFormError}
               />
             </Grid>
-            <Grid size={6}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 type="date"
@@ -1653,7 +1666,7 @@ const KpiReviewContent = ({ user }) => {
                 onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })}
               />
             </Grid>
-            <Grid size={6}>
+            <Grid item xs={6}>
               <TextField
                 fullWidth
                 type="date"
@@ -1720,18 +1733,25 @@ const KpiReviewContent = ({ user }) => {
                     <Chip label={`${(score.weight * 100).toFixed(0)}%`} size="small" color="primary" />
                   </Stack>
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography sx={{ minWidth: 20 }}>1</Typography>
-                    <Slider
+                    <TextField
+                      label="Điểm"
+                      type="number"
+                      size="small"
                       value={score.scoreValue}
-                      onChange={(_, v) => handleScoreChange(score.criteriaId, v)}
-                      min={1}
-                      max={5}
-                      step={0.5}
-                      marks
-                      valueLabelDisplay="on"
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        if (parseFloat(val) > 5) val = 5;
+                        if (parseFloat(val) < 0) val = 0;
+                        handleScoreChange(score.criteriaId, val);
+                      }}
+                      inputProps={{ min: 0, max: 5, step: 0.1 }}
+                      sx={{ width: 100 }}
                     />
-                    <Typography sx={{ minWidth: 20 }}>5</Typography>
-                    <Rating value={score.scoreValue} precision={0.5} readOnly />
+                    <Rating
+                      value={Number(score.scoreValue)}
+                      precision={0.5}
+                      onChange={(_, v) => handleScoreChange(score.criteriaId, v)}
+                    />
                   </Stack>
                 </Paper>
               </Grid>
@@ -1762,9 +1782,7 @@ const KpiReviewContent = ({ user }) => {
         </DialogActions>
       </Dialog>
 
-      {/* ═══════════════════════════════════════════════════════ */}
-      {/* DIALOG: REVIEW DETAIL VỚI RADAR CHART */}
-      {/* ═══════════════════════════════════════════════════════ */}
+      {/* DIALOG: REVIEW DETAIL */}
       <Dialog
         open={openReviewDetailDialog}
         onClose={() => setOpenReviewDetailDialog(false)}
@@ -1787,7 +1805,6 @@ const KpiReviewContent = ({ user }) => {
             </Box>
           ) : selectedReview ? (
             <Box>
-              {/* Employee Header */}
               <Box sx={{ p: 3, bgcolor: "#f5f5f5" }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar sx={{ width: 64, height: 64, bgcolor: "primary.main", fontSize: "1.8rem" }}>
@@ -1809,26 +1826,16 @@ const KpiReviewContent = ({ user }) => {
                 </Stack>
               </Box>
 
-              {/* Tabs */}
               <Tabs
                 value={reviewDetailTab}
                 onChange={(_, v) => setReviewDetailTab(v)}
                 variant="fullWidth"
                 sx={{ borderBottom: 1, borderColor: "divider" }}
               >
-                <Tab
-                  icon={<RadarIcon />}
-                  iconPosition="start"
-                  label="Biểu Đồ Radar"
-                />
-                <Tab
-                  icon={<RateReviewIcon />}
-                  iconPosition="start"
-                  label="Chi Tiết Điểm"
-                />
+                <Tab icon={<RadarIcon />} iconPosition="start" label="Biểu Đồ Radar" />
+                <Tab icon={<RateReviewIcon />} iconPosition="start" label="Chi Tiết Điểm" />
               </Tabs>
 
-              {/* TAB 0: RADAR CHART */}
               {reviewDetailTab === 0 && (
                 <Box p={3}>
                   <Typography variant="h6" fontWeight="bold" gutterBottom textAlign="center">
@@ -1836,7 +1843,6 @@ const KpiReviewContent = ({ user }) => {
                   </Typography>
                   <EmployeeRadarChart scores={selectedReview.scores} />
 
-                  {/* Legend */}
                   <Box mt={2}>
                     <Grid container spacing={1} justifyContent="center">
                       {selectedReview.scores?.map((score) => (
@@ -1857,7 +1863,6 @@ const KpiReviewContent = ({ user }) => {
                 </Box>
               )}
 
-              {/* TAB 1: CHI TIẾT ĐIỂM */}
               {reviewDetailTab === 1 && (
                 <Box p={3}>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
@@ -1872,7 +1877,7 @@ const KpiReviewContent = ({ user }) => {
                         p: 2,
                         mb: 2,
                         borderLeft: `4px solid ${score.scoreValue >= 4 ? "#4caf50" :
-                            score.scoreValue >= 3 ? "#ff9800" : "#f44336"
+                          score.scoreValue >= 3 ? "#ff9800" : "#f44336"
                           }`
                       }}
                     >
@@ -1883,16 +1888,11 @@ const KpiReviewContent = ({ user }) => {
                             Trọng số: {(score.weight * 100).toFixed(0)}%
                           </Typography>
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="h5" fontWeight="bold" color="primary">
-                          </Typography>
-                        </Stack>
                       </Stack>
                       <ScoreProgress score={score.scoreValue} />
                     </Paper>
                   ))}
 
-                  {/* Comment */}
                   {selectedReview.comment && (
                     <Box mt={3}>
                       <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
@@ -1906,7 +1906,6 @@ const KpiReviewContent = ({ user }) => {
                     </Box>
                   )}
 
-                  {/* Meta Info */}
                   <Box mt={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
                     <Grid container spacing={2}>
                       <Grid item xs={6} sm={3}>
@@ -1949,7 +1948,6 @@ const KpiReviewContent = ({ user }) => {
         <DialogContent dividers>
           {selectedMyKpi && (
             <Box>
-              {/* Header */}
               <Box textAlign="center" mb={3} p={2} bgcolor="#f5f5f5" borderRadius={2}>
                 <RatingChip rating={selectedMyKpi.rating || "C"} />
                 <Typography variant="h2" fontWeight="bold" color="primary" mt={2}>
@@ -1957,7 +1955,6 @@ const KpiReviewContent = ({ user }) => {
                 </Typography>
               </Box>
 
-              {/* Radar Chart */}
               <Typography variant="h6" fontWeight="bold" gutterBottom textAlign="center">
                 📊 Biểu Đồ Đánh Giá
               </Typography>
@@ -1965,7 +1962,6 @@ const KpiReviewContent = ({ user }) => {
 
               <Divider sx={{ my: 3 }} />
 
-              {/* Detail Scores */}
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 📋 Chi Tiết Từng Tiêu Chí
               </Typography>

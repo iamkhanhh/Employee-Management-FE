@@ -164,7 +164,6 @@ const ClientLayout = () => {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              {getPageTitle(location.pathname)}
             </Typography>
           </Box>
 

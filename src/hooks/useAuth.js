@@ -5,12 +5,20 @@ import { authService } from '../services/authService';
 import { axiosInstance } from '../lib/axios';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
+  // 1. Khởi tạo user từ localStorage để tránh bị null khi reload trang
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      return null;
+    }
+  });
   const [employeeInfo, setEmployeeInfo] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => !!localStorage.getItem('token'));
 
   // ═══════════════════════════════════════════════════════════════
   // FETCH DEPARTMENTS
@@ -34,13 +42,6 @@ export const useAuth = () => {
   const fetchEmployeeInfo = useCallback(async (currentUser) => {
      console.log(">>> fetchEmployeeInfo CALLED with:", currentUser);
     const userRole = currentUser?.role;
-
-    // Chỉ bỏ qua employee info cho Admin
-    if (userRole === 'ADMIN') {
-      console.log('User is ADMIN → skip employees/me');
-      await fetchDepartments();
-      return null;
-    }
 
     try {
       console.log(">>> Calling /employees/me API...");
@@ -80,7 +81,14 @@ export const useAuth = () => {
           setUser(response);
           setIsAuthenticated(true);
           console.log('📌 User loaded:', response);
-          await fetchEmployeeInfo(response);
+          
+          // 2. Bọc fetchEmployeeInfo trong try-catch riêng để không làm logout user nếu lỗi
+          try {
+            await fetchEmployeeInfo(response);
+          } catch (empErr) {
+            console.warn("⚠️ fetchEmployeeInfo failed but User is valid:", empErr);
+            // Không logout ở đây, vì user vẫn hợp lệ
+          }
         } else {
           setUser(null);
           setEmployeeInfo(null);
@@ -146,7 +154,19 @@ export const useAuth = () => {
   // COMPUTED VALUES
   // ═══════════════════════════════════════════════════════════════
 
-  const isAdmin = user?.role === 'ADMIN';
+  // Cập nhật logic check role: Hỗ trợ cả chuỗi và số (0: Admin, 2: HR, 3: Accountant)
+  // Sử dụng == để so sánh lỏng (loose equality) tránh lỗi kiểu dữ liệu (string vs number)
+  const isSuperAdmin = user?.role === 'ADMIN' || user?.role == 0 || user?.roles?.includes('ADMIN');
+  const isHr = user?.role === 'HR' || user?.role == 2 || user?.roles?.includes('HR');
+  const isAccountant = user?.role === 'ACCOUNTANT' || user?.role == 3 || user?.roles?.includes('ACCOUNTANT');
+
+  // Mở rộng quyền isAdmin để bao gồm HR và Accountant (cho phép truy cập dashboard)
+  const isAdmin = isSuperAdmin || isHr || isAccountant;
+
+  // Phân quyền chức năng (để ẩn/hiện menu và giao diện)
+  const canAccessHR = isSuperAdmin || isHr;
+  const canAccessPayroll = isSuperAdmin || isAccountant;
+  const canAccessAttendance = isSuperAdmin || isHr || isAccountant;
 
   // ⭐ SỬA LỖI: roleInDept thay vì roleInDep
   const isHead = employeeInfo?.roleInDept === 'HEAD';
@@ -175,6 +195,12 @@ export const useAuth = () => {
     isAuthenticated,
 
     isAdmin,
+    isSuperAdmin,
+    isHr,
+    isAccountant,
+    canAccessHR,
+    canAccessPayroll,
+    canAccessAttendance,
     isHead,
     canManage,
     fullName,

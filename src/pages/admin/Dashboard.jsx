@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { CircularProgress, Alert } from "@mui/material";
 
+// MUI Charts vẫn dùng được
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { LineChart } from "@mui/x-charts/LineChart";
 
+// Service
 import { getDashboardStats } from "../../services/dashboardService";
 
+// Icons (có thể giữ nguyên MUI icons)
 import PeopleIcon from "@mui/icons-material/People";
 import BusinessIcon from "@mui/icons-material/Business";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import PaidIcon from '@mui/icons-material/Paid';
+
+import { useAuth } from "../../hooks/useAuth";
 
 
+// ========================
+//     STAT CARD
+// ========================
 const StatCard = ({ title, value, icon }) => (
   <div className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between">
     <div className="flex items-center mb-2">
@@ -28,6 +37,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { canAccessHR, canAccessPayroll } = useAuth();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -80,30 +90,42 @@ const Dashboard = () => {
       <div className="w-full px-4 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-          <StatCard
-            title="Total Employees"
-            value={overviewStats.totalEmployees}
-            icon={<PeopleIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
-          />
+          {canAccessHR && (
+            <>
+              <StatCard
+                title="Total Employees"
+                value={overviewStats.totalEmployees}
+                icon={<PeopleIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+              />
 
-          <StatCard
-            title="Total Departments"
-            value={overviewStats.totalDepartments}
-            icon={<BusinessIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
-          />
+              <StatCard
+                title="Total Departments"
+                value={overviewStats.totalDepartments}
+                icon={<BusinessIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+              />
 
-          <StatCard
-            title="New Hires (Month)"
-            value={overviewStats.newHiresThisMonth}
-            icon={<PersonAddIcon className="text-green-600" sx={{ fontSize: 32 }} />}
-          />
+              <StatCard
+                title="New Hires (Month)"
+                value={overviewStats.newHiresThisMonth}
+                icon={<PersonAddIcon className="text-green-600" sx={{ fontSize: 32 }} />}
+              />
 
-          <StatCard
-            title="Turnover (Month)"
-            value={overviewStats.staffTurnoverThisMonth}
-            icon={<TrendingDownIcon className="text-red-600" sx={{ fontSize: 32 }} />}
-          />
+              <StatCard
+                title="Turnover (Month)"
+                value={overviewStats.staffTurnoverThisMonth}
+                icon={<TrendingDownIcon className="text-red-600" sx={{ fontSize: 32 }} />}
+              />
+            </>
+          )}
 
+          {/* Widget dành riêng cho Kế toán/Admin: Tổng chi lương */}
+          {canAccessPayroll && salaryByDepartment && (
+            <StatCard
+              title="Total Salary Expense"
+              value={new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(salaryByDepartment.reduce((a, b) => a + b.totalSalary, 0))}
+              icon={<PaidIcon className="text-yellow-600" sx={{ fontSize: 32 }} />}
+            />
+          )}
         </div>
       </div>
 
@@ -113,6 +135,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
           {/* PIE 1 */}
+          {canAccessHR && (
           <div className="bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Personnel by Department</p>
 
@@ -131,8 +154,10 @@ const Dashboard = () => {
               height={300}
             />
           </div>
+          )}
 
           {/* PIE 2 */}
+          {canAccessHR && (
           <div className="bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Contract Type Distribution</p>
 
@@ -151,13 +176,18 @@ const Dashboard = () => {
               height={300}
             />
           </div>
+          )}
 
         </div>
       </div>
+
+
+      {/* ============================ SECTION 3: BAR + LINE CHARTS ============================ */}
       <div className="w-full px-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
 
           {/* BAR CHART */}
+          {canAccessPayroll && (
           <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Total Salary by Department</p>
 
@@ -168,8 +198,10 @@ const Dashboard = () => {
               height={400}
             />
           </div>
+          )}
 
           {/* LINE CHART */}
+          {canAccessHR && (
           <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Employee Count Over Time</p>
 
@@ -190,6 +222,7 @@ const Dashboard = () => {
               height={400}
             />
           </div>
+          )}
 
         </div>
       </div>

@@ -54,7 +54,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* ==================== CLIENT ROUTES - TẤT CẢ ROLE ĐỀU VÀO ĐƯỢC ==================== */}
-        <Route element={<ProtectedRoute allowedRoles={["USER", "ADMIN", "HR"]} />}>
+        <Route element={<ProtectedRoute allowedRoles={["USER", "HR"]} />}>
           <Route element={<ClientLayout />}>
             <Route path="/profile" element={<MyProfile />} />
             <Route path="/my-attendance" element={<MyAttendance />} />
@@ -66,23 +66,36 @@ function App() {
         </Route>
 
         {/* ==================== ADMIN ROUTES - CHỈ ADMIN & HR ==================== */}
-        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "HR"]} />}>
+        <Route element={<ProtectedRoute allowedRoles={["ADMIN", "HR","ACCOUNTANT"]} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
+            
+            {/* === NHÓM CHUNG (ADMIN, HR, ACCOUNTANT) === */}
+            {/* Dashboard & Communication */}
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="employees" element={<EmployeeList />} />
-            <Route path="employees/:id" element={<EmployeeDetail />} />
-            <Route path="departments" element={<DepartmentManagement />} />
-            <Route path="contracts" element={<ContractManagement />} />
-            <Route path="attendance" element={<AttendanceManager />} />
-            <Route path="tasks" element={<TaskList />} />
-            <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
-            <Route path="payroll" element={<PayrollList />} />
-            <Route path="payroll-manager" element={<PayrolllManager />} />
-            <Route path="account-management" element={<AccountManagementPage />} />
-            <Route path="kpi-review" element={<KpiReviewPage />} /> {/* HR/ADMIN duyệt KPI */}
             <Route path="notification" element={<NotificationPage/>} />
-            <Route path="documents" element={<EmployeeDocument />} />
+            
+            {/* Timekeeping (Chấm công, Nghỉ phép, Task) - Cả 3 role đều cần */}
+            <Route path="attendance" element={<AttendanceManager />} />
+            <Route path="leave-requests" element={<LeaveRequestsAdmin />} />
+            <Route path="tasks" element={<TaskList />} />
+
+            {/* === NHÓM HR MANAGEMENT (CHỈ ADMIN & HR) === */}
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN", "HR"]} />}>
+              <Route path="employees" element={<EmployeeList />} />
+              <Route path="employees/:id" element={<EmployeeDetail />} />
+              <Route path="departments" element={<DepartmentManagement />} />
+              <Route path="contracts" element={<ContractManagement />} />
+              <Route path="account-management" element={<AccountManagementPage />} />
+              <Route path="kpi-review" element={<KpiReviewPage />} />
+              <Route path="documents" element={<EmployeeDocument />} />
+            </Route>
+
+            {/* === NHÓM PAYROLL (CHỈ ADMIN & ACCOUNTANT) === */}
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN", "ACCOUNTANT"]} />}>
+              <Route path="payroll" element={<PayrollList />} />
+              <Route path="payroll-manager" element={<PayrolllManager />} />
+            </Route>
           </Route>
         </Route>
 

@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import toast, { Toaster } from 'react-hot-toast';
 import { axiosInstance } from "../../lib/axios";
 import {authService}  from "../../services/authService";
+import { useAuth } from "../../hooks/useAuth";
 
 
 export default function Login() {
@@ -32,6 +33,7 @@ export default function Login() {
     }
 
     try {
+      // Dùng axios trực tiếp để đảm bảo gửi đúng key "email" thay vì "username"
       const res = await axiosInstance.post("/auth/login", {
         email: username,
         password: password
@@ -39,25 +41,51 @@ export default function Login() {
 
       console.log("Login response:", res.data);
 
-      if (res.data.status === "success" || res.data.token) {
-        // Lưu token + user info (nếu backend trả về)
-        if (res.data.token) {
-          localStorage.setItem("token", res.data.token);
+      // Xử lý trường hợp response có thể bọc trong data hoặc không
+      const responseData = res.data;
+      const token = responseData.token || responseData.data?.token;
+      const user = responseData.user || responseData.data?.user;
+
+      if (responseData.status === "success" || token) {
+        // 1. Lưu token ngay lập tức để các request sau (như getMe) có thể dùng
+        if (token) {
+          localStorage.setItem("token", token);
         }
-        if (res.data.user) {
-          localStorage.setItem("user", JSON.stringify(res.data.user));
+
+        // 2. Lấy thông tin user đầy đủ từ API /me để đảm bảo có Role chính xác
+        // (Phòng trường hợp response login thiếu role hoặc role chưa chuẩn)
+        let currentUser = user;
+        try {
+          const me = await authService.getMe();
+          if (me) {
+            currentUser = me;
+          }
+        } catch (err) {
+          console.warn("Failed to fetch full user info, using login response", err);
+        }
+
+        // 3. Lưu user chuẩn vào localStorage
+        if (currentUser) {
+          localStorage.setItem("user", JSON.stringify(currentUser));
         }
 
         // THÀNH CÔNG → CHUYỂN HƯỚNG VỀ /profile LUÔN!
-        toast.success(res.data.message || "Welcome back! 👋");
+        toast.success(responseData.message || "Welcome back! 👋");
 
         // Delay nhẹ 1s để user thấy toast rồi mới chuyển trang (UX mượt)
         setTimeout(() => {
-          navigate("/profile", { replace: true });
+          const role = currentUser?.role;
+          // 0: ADMIN, 2: HR, 3: ACCOUNTANT -> Chuyển hướng vào Dashboard
+          if (role === "ACCOUNTANT" || role == 3 || role == 0 || role == 2) {
+            // Dùng window.location.href để reload app, cập nhật AuthContext từ localStorage
+            window.location.href = "/admin/dashboard";
+          } else {
+            window.location.href = "/profile";
+          }
         }, 800);
 
       } else {
-        toast.error(res.data.message || "Login failed");
+        toast.error(responseData.message || "Login failed");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -127,6 +155,7 @@ export default function Login() {
                         placeholder="your@email.com"
                         className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-100"
                         required
+                        autoComplete="username"
                       />
                     </div>
 
@@ -153,6 +182,7 @@ export default function Login() {
                           className="w-full rounded-lg border border-gray-300 bg-white px-3.5 py-3 pr-12 text-gray-900 placeholder-gray-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-100"
                           placeholder="••••••"
                           required
+                          autoComplete="current-password"
                         />
                         <button
                           type="button"

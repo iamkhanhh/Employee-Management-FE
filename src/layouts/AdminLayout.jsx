@@ -49,6 +49,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import BusinessIcon from '@mui/icons-material/Business';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import { useAuth } from '../hooks/useAuth';
 
 const drawerWidth = 280;
 const collapsedDrawerWidth = 72;
@@ -88,21 +89,13 @@ const subMenuItemStyles = {
 
 
 const categoryHeaderStyles = {
-
     mx: 1,
-
     borderRadius: '10px',
-
     mb: 0.5,
-
     '& .MuiListItemIcon-root': { color: '#60a5fa', minWidth: 40 },
-
     '& .MuiListItemText-primary': { color: '#f1f5f9', fontWeight: 600, fontSize: '0.95rem' },
-
     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
-
 };
-
 
 
 export default function AdminLayout() {
@@ -112,8 +105,6 @@ export default function AdminLayout() {
     const location = useLocation();
 
     const navigate = useNavigate();
-
-
 
     const [openHR, setOpenHR] = useState(true);
 
@@ -127,52 +118,34 @@ export default function AdminLayout() {
 
     const [openReports, setOpenReports] = useState(false);
 
-
-
     const [anchorElUser, setAnchorElUser] = useState(null);
 
-    const isAdmin = true;
-
-
+    const { 
+        user, 
+        logout, 
+        isAdmin, // (SuperAdmin || HR || Accountant) -> Cho phép vào layout này
+        isSuperAdmin,
+        canAccessHR, 
+        canAccessPayroll, 
+        canAccessAttendance 
+    } = useAuth();
 
     const currentDrawerWidth = open ? drawerWidth : collapsedDrawerWidth;
-
-
-
     const handleDrawerToggle = () => setOpen(!open);
-
     const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
-
     const handleCloseUserMenu = () => setAnchorElUser(null);
-
-
 
     const handleLogout = () => {
 
         handleCloseUserMenu();
 
-        localStorage.removeItem('token');
-
-        localStorage.removeItem('user');
-
+        logout();
         navigate("/login");
 
     };
-
-
-
-
-
-
-
     return (
-
         <Box sx={{ display: "flex", minHeight: '100vh' }}>
-
             <CssBaseline />
-
-
-
             {/* AppBar */}
 
             <MuiAppBar
@@ -280,9 +253,9 @@ export default function AdminLayout() {
 
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', alignItems: 'flex-end' }}>
 
-                            <Typography variant="body2" sx={{ color: '#f1f5f9', fontWeight: 600 }}>Admin User</Typography>
+                            <Typography variant="body2" sx={{ color: '#f1f5f9', fontWeight: 600 }}>{user?.fullName || user?.username || 'Admin'}</Typography>
 
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>Administrator</Typography>
+                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>{user?.role}</Typography>
 
                         </Box>
 
@@ -304,7 +277,7 @@ export default function AdminLayout() {
 
                         >
 
-                            <Avatar sx={{ width: 40, height: 40, background: headerGradient, fontWeight: 600 }}>A</Avatar>
+                            <Avatar sx={{ width: 40, height: 40, background: headerGradient, fontWeight: 600 }}>{user?.fullName?.charAt(0) || user?.username?.charAt(0) || 'A'}</Avatar>
 
                         </IconButton>
 
@@ -368,9 +341,9 @@ export default function AdminLayout() {
 
                             <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e5e7eb' }}>
 
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Admin User</Typography>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{user?.fullName || user?.username}</Typography>
 
-                                <Typography variant="caption" sx={{ color: '#64748b' }}>admin@company.com</Typography>
+                                <Typography variant="caption" sx={{ color: '#64748b' }}>{user?.email}</Typography>
 
                             </Box>
 
@@ -490,6 +463,7 @@ export default function AdminLayout() {
 
 
                         {/* Account Management */}
+                        {isSuperAdmin && (
 
                         <Tooltip title={!open ? "Account Management" : ""} placement="right">
 
@@ -502,16 +476,13 @@ export default function AdminLayout() {
                                 selected={location.pathname === '/admin/account-management'}
 
                                 sx={menuItemStyles}
-
                             >
-
                                 <ListItemIcon><ManageAccountsIcon /></ListItemIcon>
 
                                 {open && <ListItemText primary="Account Management" />}
-
                             </ListItemButton>
-
                         </Tooltip>
+                        )}
 
 
 
@@ -534,6 +505,8 @@ export default function AdminLayout() {
 
 
                         {/* HR Management */}
+                        {canAccessHR && (
+                        <>
 
                         <ListItemButton onClick={() => setOpenHR(!openHR)} sx={categoryHeaderStyles}>
 
@@ -596,10 +569,14 @@ export default function AdminLayout() {
                                                                 </Collapse>
 
                                                             )}
+                        </>
+                        )}
 
 
 
                         {/* Timekeeping */}
+                        {canAccessAttendance && (
+                        <>
 
                         <ListItemButton onClick={() => setOpenTimekeeping(!openTimekeeping)} sx={categoryHeaderStyles}>
 
@@ -641,23 +618,19 @@ export default function AdminLayout() {
 
                                     </ListItemButton>
 
-                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/leave-requests">
-
-                                        <ListItemIcon><EventBusyIcon sx={{ fontSize: 20 }} /></ListItemIcon>
-
-                                        <ListItemText primary="Leave Requests" />
-
-                                    </ListItemButton>
-
                                 </List>
 
                             </Collapse>
 
                         )}
+                        </>
+                        )}
 
 
 
                         {/* Payroll */}
+                        {canAccessPayroll && (
+                        <>
 
                         <ListItemButton onClick={() => setOpenPayroll(!openPayroll)} sx={categoryHeaderStyles}>
 
@@ -704,48 +677,11 @@ export default function AdminLayout() {
 
 
                         )}
-
-
-
-                        {/* Performance */}
-
-                        <ListItemButton onClick={() => setOpenPerformance(!openPerformance)} sx={categoryHeaderStyles}>
-
-                            <ListItemIcon><TimelineIcon /></ListItemIcon>
-
-                            {open && (
-
-                                <>
-
-                                    <ListItemText primary="Performance" />
-
-                                    {openPerformance ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
-
-                                </>
-
-                            )}
-
-                        </ListItemButton>
-
-                        {open && (
-
-                            <Collapse in={openPerformance} timeout="auto" unmountOnExit>
-
-                                <List component="div" disablePadding>
-
-                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/kpi" selected={location.pathname.startsWith('/admin/kpi')}>
-
-                                        <ListItemIcon><TaskAltIcon sx={{ fontSize: 20 }} /></ListItemIcon>
-
-                                        <ListItemText primary="Evaluations" />
-
-                                    </ListItemButton>
-
-                                </List>
-
-                            </Collapse>
-
+                        </>
                         )}
+
+
+
 
 
 
@@ -789,39 +725,6 @@ export default function AdminLayout() {
 
                         )}
 
-
-
-                        {/* Reports */}
-
-                        <ListItemButton onClick={() => setOpenReports(!openReports)} sx={categoryHeaderStyles}>
-
-                            <ListItemIcon><DashboardIcon /></ListItemIcon>
-
-                            {open && (
-
-                                <>
-
-                                    <ListItemText primary="Reports" />
-
-                                    {openReports ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
-
-                                </>
-
-                            )}
-
-                        </ListItemButton>
-
-                        {open && (
-
-                            <Collapse in={openReports} timeout="auto" unmountOnExit>
-
-                                <List component="div" disablePadding>
-
-                                </List>
-
-                            </Collapse>
-
-                        )}
 
                     </List>
 

@@ -22,8 +22,7 @@ export default function AccountManagement() {
   const [resetAccount, setResetAccount] = useState(null);
   const [departments, setDepartments] = useState([]);
   const { fetchDepartments, departments: deptList } = useDepartments();
-  
-  
+
 
   // Filter state
   const [pagination, setPagination] = useState({ page: 0, pageSize: 10 });

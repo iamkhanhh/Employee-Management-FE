@@ -37,7 +37,7 @@ export const taskService = {
   // 7. UPDATE STATUS
   updateStatus: async (taskId, status) => {
     try {
-      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`,status);
+      const response = await axiosInstance.patch(`${TASK_API}/${taskId}/status`,{status});
       console.log("Update status response:", response);
       return response;
     } catch (error) {
