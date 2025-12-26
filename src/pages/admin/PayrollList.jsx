@@ -259,6 +259,10 @@ export default function PayrollList() {
             paginationMode="client"
             bonusPenalty={bonusPenalty}
             setBonusPenalty={setBonusPenalty}
+            getRowClassName={(params) => {
+              const isSaved = savedAdjustments.some(adj => adj.empId === params.row.id);
+              return isSaved ? 'row-highlight' : '';
+            }}
             />
         </Box>
       </>

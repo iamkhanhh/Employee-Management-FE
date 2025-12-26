@@ -12,7 +12,8 @@ export default function PayrollTable({
   onPaginationModelChange,
   paginationMode = "server",
   bonusPenalty,
-  setBonusPenalty
+  setBonusPenalty,
+  getRowClassName,
 }) {
   // Đảm bảo rows là array và mỗi row có id hợp lệ
   const safeRows = Array.isArray(rows) ? rows.filter(row => row && row.id != null) : [];
@@ -41,6 +42,7 @@ export default function PayrollTable({
         pageSizeOptions={[5, 10, 25, 50]}
         onRowClick={handleRowClick}
         getRowId={(row) => row.id}
+        getRowClassName={getRowClassName}
         sx={{
           border: 0,
           '& .MuiDataGrid-row': {
@@ -49,6 +51,12 @@ export default function PayrollTable({
               backgroundColor: 'rgba(0, 0, 0, 0.04)',
             },
           },
+          '& .row-highlight': {
+            backgroundColor: 'rgba(255, 243, 205, 0.5)', // A light yellow
+            '&:hover': {
+              backgroundColor: 'rgba(255, 243, 205, 0.7)',
+            }
+          }
         }}
       />
     </Paper>
