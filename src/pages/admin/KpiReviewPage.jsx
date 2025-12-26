@@ -510,6 +510,7 @@ const KpiReviewContent = ({ user }) => {
   const fetchPeriodDetailReviews = useCallback(async (periodId) => {
     setPeriodDetailLoading(true);
     try {
+      // Sửa lại: Gọi đúng URL không kèm params, sau đó lọc ở client
       const res = await axiosInstance.get(`/review/periods/${periodId}/reviews`);
       const allReviews = res.data?.data || [];
 
@@ -542,6 +543,7 @@ const KpiReviewContent = ({ user }) => {
     if (!selectedPeriodId) return;
     setReviewsLoading(true);
     try {
+      // Sửa lại: Gọi đúng URL không kèm params
       const res = await axiosInstance.get(`/review/periods/${selectedPeriodId}/reviews`);
       const allReviews = res.data?.data || [];
 
@@ -842,6 +844,7 @@ const KpiReviewContent = ({ user }) => {
       // Reload data
       if (selectedPeriodForDetail) {
         fetchPeriodDetailReviews(selectedPeriodForDetail.id);
+        fetchUnreviewedEmployees(selectedPeriodForDetail.id);
       }
       if (selectedPeriodId) {
         fetchReviews();
@@ -963,16 +966,16 @@ const KpiReviewContent = ({ user }) => {
     return <LoadingScreen message="Đang tải thông tin nhân viên..." />;
   }
 
-  if (employeeError) {
-    return (
-      <Container maxWidth="md" sx={{ py: 10 }}>
-        <Alert severity="error" action={<Button onClick={fetchEmployeeInfo}>Thử lại</Button>}>
-          <Typography variant="h6" gutterBottom>Không thể tải thông tin nhân viên</Typography>
-          <Typography variant="body2">{employeeError}</Typography>
-        </Alert>
-      </Container>
-    );
-  }
+  // if (employeeError) {
+  //   return (
+  //     <Container maxWidth="md" sx={{ py: 10 }}>
+  //       <Alert severity="error" action={<Button onClick={fetchEmployeeInfo}>Thử lại</Button>}>
+  //         <Typography variant="h6" gutterBottom>Không thể tải thông tin nhân viên</Typography>
+  //         <Typography variant="body2">{employeeError}</Typography>
+  //       </Alert>
+  //     </Container>
+  //   );
+  // }
 
   // ─────────────────────────────────────────────────────────────
   // RENDER: Main
@@ -1443,7 +1446,7 @@ const KpiReviewContent = ({ user }) => {
                     ) : (
                       <Grid container spacing={3}>
                         {/* CỘT TRÁI: CHƯA ĐÁNH GIÁ */}
-                        <Grid item xs={12} md={6}>
+                        <Grid size={4}>
                           <Paper elevation={3} sx={{ height: "100%" }}>
                             <Box sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
                               <Typography variant="h6" fontWeight="bold">
@@ -1482,9 +1485,9 @@ const KpiReviewContent = ({ user }) => {
                                       </Avatar>
                                       <Box flexGrow={1}>
                                         <Typography fontWeight="bold">{emp.fullName}</Typography>
-                                        <Typography variant="caption" color="text.secondary">
+                                        {/* <Typography variant="caption" color="text.secondary">
                                           Vai trò: {emp.roleInDept || "N/A"}
-                                        </Typography>
+                                        </Typography> */}
                                       </Box>
                                       <Button
                                         variant="contained"
@@ -1506,7 +1509,7 @@ const KpiReviewContent = ({ user }) => {
                         </Grid>
 
                         {/* CỘT PHẢI: ĐÃ ĐÁNH GIÁ */}
-                        <Grid item xs={12} md={6}>
+                        <Grid size={8}>
                           <Paper elevation={3} sx={{ height: "100%" }}>
                             <Box sx={{ p: 2, bgcolor: "success.light", color: "success.contrastText" }}>
                               <Typography variant="h6" fontWeight="bold">
@@ -1588,7 +1591,7 @@ const KpiReviewContent = ({ user }) => {
                       </Box>
                     ) : (
                       <Grid container spacing={3}>
-                        <Grid item xs={12} md={4}>
+                        <Grid size={6}>
                           <Paper variant="outlined" sx={{ p: 2 }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
                               <PieChartIcon sx={{ mr: 1, verticalAlign: "middle" }} />
@@ -1599,18 +1602,7 @@ const KpiReviewContent = ({ user }) => {
                           </Paper>
                         </Grid>
 
-                        <Grid item xs={12} md={4}>
-                          <Paper variant="outlined" sx={{ p: 2 }}>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
-                              <RadarIcon sx={{ mr: 1, verticalAlign: "middle" }} />
-                              Điểm TB Theo Tiêu Chí
-                            </Typography>
-                            <Divider sx={{ mb: 2 }} />
-                            <CriteriaAverageRadarChart reviews={periodDetailReviews} criteria={criteria} />
-                          </Paper>
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
+                        <Grid size={6}>
                           <Paper variant="outlined" sx={{ p: 2 }}>
                             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
                               <BarChartIcon sx={{ mr: 1, verticalAlign: "middle" }} />

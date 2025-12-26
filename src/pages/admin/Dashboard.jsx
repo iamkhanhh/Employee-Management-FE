@@ -90,41 +90,32 @@ const Dashboard = () => {
       <div className="w-full px-4 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-          {canAccessHR && (
+          { (
             <>
               <StatCard
                 title="Total Employees"
                 value={overviewStats.totalEmployees}
-                icon={<PeopleIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+                icon={<PeopleIcon className="text-blue-600" sx={{ fontSize: 30 }} />}
               />
 
               <StatCard
                 title="Total Departments"
                 value={overviewStats.totalDepartments}
-                icon={<BusinessIcon className="text-blue-600" sx={{ fontSize: 32 }} />}
+                icon={<BusinessIcon className="text-blue-600" sx={{ fontSize: 30 }} />}
               />
 
               <StatCard
                 title="New Hires (Month)"
                 value={overviewStats.newHiresThisMonth}
-                icon={<PersonAddIcon className="text-green-600" sx={{ fontSize: 32 }} />}
+                icon={<PersonAddIcon className="text-green-600" sx={{ fontSize: 30 }} />}
               />
 
               <StatCard
-                title="Turnover (Month)"
-                value={overviewStats.staffTurnoverThisMonth}
-                icon={<TrendingDownIcon className="text-red-600" sx={{ fontSize: 32 }} />}
-              />
-            </>
-          )}
-
-          {/* Widget dành riêng cho Kế toán/Admin: Tổng chi lương */}
-          {canAccessPayroll && salaryByDepartment && (
-            <StatCard
               title="Total Salary Expense"
               value={new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(salaryByDepartment.reduce((a, b) => a + b.totalSalary, 0))}
-              icon={<PaidIcon className="text-yellow-600" sx={{ fontSize: 32 }} />}
+              icon={<PaidIcon className="text-yellow-600" sx={{ fontSize: 30 }} />}
             />
+            </>
           )}
         </div>
       </div>
@@ -135,7 +126,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
           {/* PIE 1 */}
-          {canAccessHR && (
+          { (
           <div className="bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Personnel by Department</p>
 
@@ -157,7 +148,7 @@ const Dashboard = () => {
           )}
 
           {/* PIE 2 */}
-          {canAccessHR && (
+          { (
           <div className="bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Contract Type Distribution</p>
 
@@ -187,7 +178,7 @@ const Dashboard = () => {
         <div className="flex flex-col lg:flex-row gap-4">
 
           {/* BAR CHART */}
-          {canAccessPayroll && (
+          { (
           <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Total Salary by Department</p>
 
@@ -201,7 +192,7 @@ const Dashboard = () => {
           )}
 
           {/* LINE CHART */}
-          {canAccessHR && (
+          { (
           <div className="w-full lg:w-1/2 bg-white rounded-2xl shadow p-4">
             <p className="text-lg font-semibold mb-3">Employee Count Over Time</p>
 

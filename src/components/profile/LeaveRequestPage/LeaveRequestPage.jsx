@@ -552,8 +552,8 @@ const LeaveRequestContent = ({ user }) => {
     try {
       await axiosInstance.post("/leaves", {
         leaveType: form.leaveType,
-        startDate: form.startDate,
-        endDate: form.endDate,
+        startDate: formatDateForAPI(form.startDate),
+        endDate: formatDateForAPI(form.endDate),
         reason: form.reason.trim(),
       });
 

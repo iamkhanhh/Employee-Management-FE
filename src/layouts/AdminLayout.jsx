@@ -49,6 +49,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import BusinessIcon from '@mui/icons-material/Business';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { useAuth } from '../hooks/useAuth';
 
 const drawerWidth = 280;
@@ -572,6 +573,49 @@ export default function AdminLayout() {
                         </>
                         )}
 
+                        {/* Performance */}
+                        {isSuperAdmin && (
+                        <>
+
+                        <ListItemButton onClick={() => setOpenPerformance(!openPerformance)} sx={categoryHeaderStyles}>
+
+                            <ListItemIcon><TrendingUpIcon /></ListItemIcon>
+
+                            {open && (
+
+                                <>
+
+                                    <ListItemText primary="Performance" />
+
+                                    {openPerformance ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
+
+                                </>
+
+                            )}
+
+                        </ListItemButton>
+
+                        {open && (
+
+                            <Collapse in={openPerformance} timeout="auto" unmountOnExit>
+
+                                <List component="div" disablePadding>
+
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/kpi-review" selected={location.pathname.startsWith('/admin/kpi-review')}>
+
+                                        <ListItemIcon><AssessmentIcon sx={{ fontSize: 20 }} /></ListItemIcon>
+
+                                        <ListItemText primary="KPI Review" />
+
+                                    </ListItemButton>
+
+                                </List>
+
+                            </Collapse>
+
+                        )}
+                        </>
+                        )}
 
 
                         {/* Timekeeping */}
@@ -586,7 +630,7 @@ export default function AdminLayout() {
 
                                 <>
 
-                                    <ListItemText primary="Timekeeping" />
+                                    <ListItemText primary="Timekeeping" /> 
 
                                     {openTimekeeping ? <ExpandLess sx={{ color: '#94a3b8' }} /> : <ExpandMore sx={{ color: '#94a3b8' }} />}
 
@@ -602,7 +646,7 @@ export default function AdminLayout() {
 
                                 <List component="div" disablePadding>
 
-                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/tasks">
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/tasks" selected={location.pathname.startsWith('/admin/tasks')}>
 
                                         <ListItemIcon><ListAltIcon sx={{ fontSize: 20 }} /></ListItemIcon>
 
@@ -656,7 +700,7 @@ export default function AdminLayout() {
 
                                 <List component="div" disablePadding>
 
-                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/payroll" selected={location.pathname.startsWith('/admin/payroll')}>
+                                    <ListItemButton sx={subMenuItemStyles} component={NavLink} to="/admin/payroll">
 
                                         <ListItemIcon><PaidIcon sx={{ fontSize: 20 }} /></ListItemIcon>
 
@@ -775,39 +819,19 @@ export default function AdminLayout() {
 
 
             {/* Main Content - SÁT SIDEBAR */}
-
             <Box
-
                 component="main"
-
                 sx={{
-
                     flexGrow: 1,
-
                     p: 3,
-
                     background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-
                     minHeight: '100vh',
-
                 }}
-
             >
-
                 <Toolbar sx={{ minHeight: '70px !important' }} />
-
-
-
-
-
                 {/* Page Content */}
-
                 <Outlet />
-
             </Box>
-
         </Box>
-
     );
-
 }

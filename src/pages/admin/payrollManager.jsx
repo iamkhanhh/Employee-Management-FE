@@ -68,11 +68,7 @@ export default function PayrolllManager() {
       ),
     },
     { field: 'employeeId', headerName: 'Employee ID', flex: 1, minWidth: 120 },
-    { field: 'basicSalary', headerName: 'Basic Salary', flex: 1, minWidth: 130, type: 'number', 
-      renderCell: (params) => (
-        <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>
-      )
-    },
+   
     { field: 'allowance', headerName: 'Allowance', flex: 1, minWidth: 120, type: 'number',
       renderCell: (params) => (
         <span>{params.value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(params.value) : '-'}</span>

@@ -87,8 +87,12 @@ function App() {
               <Route path="departments" element={<DepartmentManagement />} />
               <Route path="contracts" element={<ContractManagement />} />
               <Route path="account-management" element={<AccountManagementPage />} />
-              <Route path="kpi-review" element={<KpiReviewPage />} />
               <Route path="documents" element={<EmployeeDocument />} />
+            </Route>
+
+            {/* === ADMIN ONLY === */}
+            <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+              <Route path="kpi-review" element={<KpiReviewPage />} />
             </Route>
 
             {/* === NHÓM PAYROLL (CHỈ ADMIN & ACCOUNTANT) === */}
